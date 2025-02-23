@@ -25,3 +25,4 @@ jobs:
             git pull origin main
             # Restart services if needed (e.g., Node, Flask, Apache, etc.)
             # Example: sudo systemctl restart my-service
+            sudo systemctl restart flask_app
