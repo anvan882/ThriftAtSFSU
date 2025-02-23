@@ -10,5 +10,9 @@ def index():
 def joseph():
     return render_template('template/about_JosephA.html')
 
+@app.route("/annison")
+def annison():
+    return render_template('annison.html')
+
 if __name__ == '__main__':
     app.run()
