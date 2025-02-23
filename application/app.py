@@ -10,5 +10,9 @@ def index():
 def annison():
     return render_template('annison.html')
 
+@app.route("/sid")
+def sid():
+    return render_template('sid.html')
+
 if __name__ == '__main__':
     app.run()
