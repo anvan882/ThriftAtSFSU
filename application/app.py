@@ -26,9 +26,5 @@ def annison():
 def sid():
     return render_template('sid.html')
 
-@app.route("/joseph")
-def joseph():
-    return render_template('about_JosephA.html')
-
 if __name__ == '__main__':
     app.run()
