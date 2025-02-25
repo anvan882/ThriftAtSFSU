@@ -7,16 +7,33 @@
 
 # Below is a list of items required. Missing items will causes points to be deducted from multiple milestone submissions.
 
-1. Server URL or IP
-2. SSH username
+1. Server URL or IP: `54.215.133.155`
+2. SSH username: `ubuntu`
 3. SSH password or key.
     <br> If a ssh key is used please upload the key to the credentials folder.
+    <br> `ssh-key.pem`
 4. Database URL or IP and port used.
     <br><strong> NOTE THIS DOES NOT MEAN YOUR DATABASE NEEDS A PUBLIC FACING PORT.</strong> But knowing the IP and port number will help with SSH tunneling into the database. The default port is more than sufficient for this class.
-5. Database username
-6. Database password
-7. Database name (basically the name that contains all your tables)
+    <br>`127.0.0.1:3306`
+5. Database username: `ubuntu`
+6. Database password: `921652677`
+7. Database name (basically the name that contains all your tables): `ubuntu`
 8. Instructions on how to use the above information.
+```bash
+# How to ssh into server (be cautious!!)
+ssh -i "ssh-key.pem" ubuntu@ec2-54-
+215-133-155.us-west-1.compute.amazonaws.com
+
+# Connect to SQL through SSH on SQLWB
+Connection Name: SqlEc2
+SSH Hostname: 54.215.133.155
+SSH username: ubuntu
+SSH Key File: path you your key file
+MySQL Hostname: 127.0.0.1
+MySQL Server Port: 3306
+Username: ubuntu
+Password: 921652677
+```
 
 # Most important things to Remember
 ## These values need to kept update to date throughout the semester. <br>
