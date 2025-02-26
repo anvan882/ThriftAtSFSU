@@ -8,7 +8,7 @@ def index():
 
 @app.route("/joseph")
 def joseph():
-    return render_template('about_JosephA.html')
+    return render_template('josephA.html')
 
 if __name__ == '__main__':
     app.run()
