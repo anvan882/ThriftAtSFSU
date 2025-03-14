@@ -1,23 +1,13 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Home Page</title>
-    <link rel="stylesheet" href="styles.css">
-</head>
-<body>
-    <h1>About Me</h1>
-    <div>
-        <h2>Joseph Shur</h2>
-        <img src="/static/joe-headshot-2025.jpg" width="100px">
+{% extends "aboutPage.html" %}
+
+{% block content %}
+    <img src="{{url_for('static', filename='joe-headshot-2025.jpg')}}" width="200px">
         <div>Joseph Shur is currently studying Computer Science at San Francisco State University. 
             He plans on working with both front- and back-end for his career in CS, having learned 
             languages such as Java, HTML, and CSS/Bootstrap, and working with other languages 
             like NodeJS, Express. He is currently learning Python and C++, as well as how to utilize
             other server technologies to further his capability for future projects. 
         </div>
-    </div>
-    <a href="/">Home Page</a>
-</body>
-</html>
+        <a href="https://www.linkedin.com/in/joeshur" target="_blank">Linkedin</a>
+        <a href="https://github.com/joseph-shur" target="_blank">GitHub</a>
+{% endblock %}
