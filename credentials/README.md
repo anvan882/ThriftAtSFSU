@@ -21,8 +21,7 @@
 8. Instructions on how to use the above information.
 ```bash
 # How to ssh into server (be cautious!!)
-ssh -i "ssh-key.pem" ubuntu@ec2-54-
-215-133-155.us-west-1.compute.amazonaws.com
+ssh -i "ssh-key.pem" ubuntu@54.215.133.155
 
 # Connect to SQL through SSH on SQLWB
 Connection Name: SqlEc2
@@ -33,6 +32,12 @@ MySQL Hostname: 127.0.0.1
 MySQL Server Port: 3306
 Username: ubuntu
 Password: 921652677
+
+# Create SSH Tunnel from Local VM to EC2 Example
+ssh -fN -L 3306:localhost:3306 ubuntu@54.215.133.155 -i /home/sid/Code/csc648-fa25-0104-team15/credentials/ssh-key.pem
+
+# To Kill Tunnel
+ps -ef | grep "ssh -fN -L 3306:localhost:3306" | grep -v grep | awk '{print $2}' | xargs kill
 ```
 
 # Most important things to Remember

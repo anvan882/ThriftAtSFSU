@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Search Results</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <h1>Search Results</h1>
+    <p>{{ count }} result{{ 's' if count != 1 else '' }} found</p>
+
+    <a href="{{ url_for('home') }}">Back to Search</a>
+    <hr>
+
+    {% for item in items %}
+        <div style="border:1px solid #ccc; padding:10px; margin-bottom:15px;">
+            <h3>{{ item.title }} — ${{ item.price }}</h3>
+            <p>{{ item.description }}</p>
+            {% if item.image_url %}
+                <img src="{{ item.image_url }}" alt="Product image" width="150">
+            {% else %}
+                <p><em>No image available</em></p>
+            {% endif %}
+        </div>
+    {% else %}
+        <p>No items found matching your search.</p>
+    {% endfor %}
+</body>
+</html>
