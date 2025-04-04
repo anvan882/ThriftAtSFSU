@@ -1,16 +1,17 @@
 import mysql.connector
 from mysql.connector import errorcode
 import time
+import os
 
 db_name = input("Enter the name of the database to connect to: ").strip()
 
 # Database connection config
 db = mysql.connector.connect(
-    user=os.getenv("DB_USER"),
-    host=os.getenv("DB_HOST"),
-    password=os.getenv("DB_PASSWORD"),
-    database=os.getenv("DB_NAME"),
-    port=os.getenv("DB_PORT"),
+    user="ubuntu",
+    host="127.0.0.1",
+    password="921652677",
+    database=db_name,
+    port=3306,
 )
 
 # Define table creation SQL
@@ -136,7 +137,7 @@ DROP_ORDER = [
 action = input("Enter action (drop, create, reset): ").strip().lower()
 
 try:
-    cnx = mysql.connector.connect(**config)
+    cnx = db  # using our already created connection
     cursor = cnx.cursor()
 
     if action in ['drop', 'reset']:

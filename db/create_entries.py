@@ -4,23 +4,22 @@ import os
 import re
 from decimal import Decimal
 
-
-def get_image_filename(title):
+def get_image_filename(title, ext='jpg'):
     """
-    Convert the product title to a lowercase, conjoined string.
-    Example: "iPhone 12" becomes "iphone12.jpg"
+    Convert the product title to a lowercase, conjoined string with the specified extension.
+    Example: "iPhone 12" becomes "iphone12.jpg" (if ext='jpg')
     """
-    return re.sub(r'\W+', '', title.lower()) + ".jpg"
+    return re.sub(r'\W+', '', title.lower()) + f".{ext}"
 
 db_name = input("Enter the name of the database to connect to: ").strip()
 
 # Database connection config
 db = mysql.connector.connect(
-    user=os.getenv("DB_USER"),
-    host=os.getenv("DB_HOST"),
-    password=os.getenv("DB_PASSWORD"),
-    database=os.getenv("DB_NAME"),
-    port=os.getenv("DB_PORT"),
+    user="ubuntu",
+    host="127.0.0.1",
+    password="921652677",
+    database=db_name,
+    port=3306,
 )
 
 # Sample Users and Categories
@@ -58,10 +57,10 @@ sample_products = [
 ]
 
 # Path to your images folder
-image_folder = "/home/sid/Code/db/images"  # Update if needed
+image_folder = "/home/sid/Code/csc648-fa25-0104-team15/db/images"  # Update if needed
 
 try:
-    cnx = mysql.connector.connect(**config)
+    cnx = db  # using our already created connection
     cursor = cnx.cursor(prepared=True)
 
     # Insert Users
@@ -113,9 +112,7 @@ try:
             print(f"Warning: Image file not found for product '{title}' at {image_path}. Inserting NULL.")
             image_blob = None
 
-        # Convert explicitly to Decimal
         price_decimal = Decimal(str(price))
-
         product_data = (title, description, price_decimal, category_id, seller_id, image_blob)
         cursor.execute(insert_product_query, product_data)
 
