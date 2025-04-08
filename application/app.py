@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, url_for, Response
+from flask import Flask, render_template, request, Response
 from dotenv import load_dotenv
 import mysql.connector
 from mysql.connector import pooling
@@ -18,30 +18,22 @@ dbconfig = {
 }
 cnxpool = pooling.MySQLConnectionPool(pool_name="mypool", pool_size=10, **dbconfig)
 
-# Home Page: also serves as search form
-@app.route("/")
+@app.route("/", methods=["GET"])
 def home():
-    connection = cnxpool.get_connection()
-    cursor = connection.cursor(dictionary=True)
-    cursor.execute("SELECT name FROM Categories")
-    categories = [row['name'] for row in cursor.fetchall()]
-    cursor.close()
-    connection.close()
-    return render_template('index.html', categories=categories, keyword='', category='')
+    """Combined Home Page + Search Page"""
 
-# Search Results Page (avoiding loading image blobs)
-@app.route("/search", methods=["GET"])
-def search():
+    # Retrieve possible filter values from the query parameters
     category = request.args.get('category', '')
     keyword = request.args.get('keyword', '')
 
+    # Fetch all categories to populate the dropdown
     connection = cnxpool.get_connection()
     cursor = connection.cursor(dictionary=True)
-    
-    # Get categories for the search bar on the results page
     cursor.execute("SELECT name FROM Categories")
     categories = [row['name'] for row in cursor.fetchall()]
-    
+
+    # If no category/keyword specified, it shows all products
+    # If category or keyword is specified, it filters accordingly
     query = """
         SELECT p.product_id, p.title, p.price, p.description, c.name AS category_name,
                IF(p.product_image IS NOT NULL, 1, 0) AS has_image
@@ -53,13 +45,18 @@ def search():
     keyword_like = f"%{keyword}%"
     cursor.execute(query, (category, category, keyword_like, keyword_like))
     results = cursor.fetchall()
+
     cursor.close()
     connection.close()
 
-    return render_template('results.html', items=results, count=len(results),
-                           keyword=keyword, category=category, categories=categories)
+    # Pass categories, the filtered results, and the current search parameters
+    return render_template('index.html',
+                           categories=categories,
+                           items=results,
+                           keyword=keyword,
+                           category=category,
+                           count=len(results))
 
-# Serve Image Route with dynamic MIME type detection
 @app.route('/image/<int:product_id>')
 def serve_image(product_id):
     connection = cnxpool.get_connection()
@@ -71,7 +68,6 @@ def serve_image(product_id):
     
     if result and result.get('product_image'):
         image_blob = result['product_image']
-        # Detect image type by inspecting the first bytes of the blob
         if image_blob.startswith(b'\x89PNG'):
             mime = 'image/png'
         elif image_blob.startswith(b'\xff\xd8'):
@@ -84,23 +80,31 @@ def serve_image(product_id):
 # About Me Pages
 @app.route("/joe")
 def joe():
-    return render_template('joe.html', name="Joseph Shur") 
+    return render_template('about_team/joe.html', name="Joseph Shur") 
 
 @app.route("/hilary")
 def hilary():
-    return render_template('hilary.html', name="Hilary Lui")
+    return render_template('about_team/hilary.html', name="Hilary Lui")
 
 @app.route("/joseph")
 def joseph():
-    return render_template('joseph.html', name="Joseph Alhambra")
+    return render_template('about_team/joseph.html', name="Joseph Alhambra")
 
 @app.route("/annison")
 def annison():
-    return render_template('annison.html', name="Annison Van")
+    return render_template('about_team/annison.html', name="Annison Van")
 
 @app.route("/sid")
 def sid():
-    return render_template('sid.html', name="Sid Padmanabhuni")
+    return render_template('about_team/sid.html', name="Sid Padmanabhuni")
+
+@app.route('/login')
+def login():
+    return render_template('auth/login.html')
+
+@app.route('/signup')
+def signup():
+    return render_template('auth/signup.html')
 
 if __name__ == '__main__':
     if os.getenv("FLASK_ENV") == "production":
