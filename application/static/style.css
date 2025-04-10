@@ -1,7 +1,7 @@
 :root {
   --accent-purple: #6a0dad;
   --accent-purple-dark: #550a9e;
-  --bg-color: #f7f7f7;
+  --bg-color: #3a3535;
   --text-color: #333;
   --light-border: #ccc;
   --hover-bg: #efefef;
@@ -29,7 +29,7 @@ body {
 /* ========== Navbar Styles ========== */
 
 .navbar {
-  background: #fff;
+  background: #3a3535;
   border-bottom: 2px solid var(--accent-purple);
   display: flex;
   align-items: center;
@@ -149,7 +149,7 @@ body {
 }
 
 .auth-buttons .btn-outline {
-  background: transparent;
+  background-color: whitesmoke;
   color: var(--accent-purple);
   border: 2px solid var(--accent-purple);
 }
@@ -263,15 +263,20 @@ body {
 }
 
 .product-card {
-  background: #fff;
-  border: 1px solid var(--light-border);
+  padding: 16px;
   border-radius: 10px;
-  padding: 15px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  background: white;
+  transition: box-shadow 0.4s ease-in-out;
+}
+
+.product-card:hover {
+  box-shadow: 0 8px 20px 4px rgba(218, 165, 32, 0.45);
 }
 
 .product-title {
-  margin-bottom: 8px;
+  margin-top: 5px;
+  margin-bottom: 5px;
 }
 
 .product-description {
@@ -285,6 +290,36 @@ body {
   max-height: 250px;
   object-fit: cover;
   display: block;
+}
+
+.wishlist-button {
+  margin-top: auto;
+  background-color: transparent;
+  border: 1px solid #6a0dad;    
+  color: #6a0dad;                
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.3s ease;
+}
+
+.wishlist-button:hover {
+  background-color: #6a0dad;     
+  color: white;                  
+  border-color: #6a0dad;         
+}
+
+.wishlist-button .heart {
+  font-size: 16px;
+  transition: color 0.3s ease;
+}
+
+.wishlist-button.wishlisted .heart {
+  color: #FFD700;
 }
 
 /* ========== Responsive ========== */
@@ -321,3 +356,4 @@ body {
   height: 1px;
   overflow: hidden;
 }
+
