@@ -3,7 +3,7 @@
   --accent-purple-dark: #550a9e;
   --accent-purple-light: #f3e5f5;
   --accent-purple-medium: #9b4dca;
-  --bg-color: #f8f9fa;
+  --bg-color: #f2f2f2;
   --text-color: #2c3e50;
   --text-color-light: #6c757d;
   --light-border: #e9ecef;
@@ -26,10 +26,39 @@ body {
   line-height: 1.6;
 }
 
-.container {
-  max-width: 1200px;
-  margin: auto;
+
+.containerGrid {
+  display: grid;
+  grid-template-columns: 20% 80%;
+  position: fixed;
+  top: 120px;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden; 
+}
+
+.containerFixed {
+  grid-column: 1;
+  display: flex;
+  flex-direction: column;  /* Arrange child elements vertically */
+  justify-content: flex-start;  /* Align items to the top */
+  background-color: #F5F7FA;
+  color: #2D2D2D;
+  height: 85vh;
   padding: 20px;
+  overflow: auto;
+  max-width: 400px;  /* Optional: restrict max width for better responsiveness */
+  width: 100%;  /* Take up full width of parent container */
+  box-sizing: border-box;  /* Ensure padding is included in width calculation */
+}
+
+.container {
+  grid-column: 2;
+  max-width: 1200px;
+  /*margin: auto;*/
+  height: 85vh;
+  padding: 20px;
+  overflow-y: auto;
 }
 
 /* ========== Navbar Styles ========== */
@@ -51,6 +80,7 @@ body {
 .navbar-left {
   display: flex;
   align-items: center;
+  padding: 0;
 }
 
 .logo {
@@ -66,17 +96,27 @@ body {
   color: var(--accent-purple-dark);
 }
 
+.logoPurple{
+  color: #9b4dca;
+}
+
+.logoYellow{
+  color: rgb(226, 196, 23);
+}
+
 /* ========== Submenu Styles ========== */
 .submenu {
   background-color: #f3f3f3;
   padding: 0.25rem 1rem;
-  position: relative;
+  position: sticky;
+  top: 80px;
   z-index: 999;
   box-shadow: var(--card-shadow);
 }
 
 .submenu ul {
   display: flex;
+  justify-content: flex-end;
   gap: 1.5rem;
   list-style: none;
   padding: 0;
@@ -236,6 +276,173 @@ body {
 
 .search-form button:hover {
   background-color: var(--accent-purple-dark);
+}
+
+/* ========== Filters ========== */
+.filters h2 {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+/* Price Range section */
+.price-range {
+  display: flex;
+  align-items: center;
+  margin: 10px 0px;
+  padding-left: 20px;
+}
+
+.priceBox {
+  border-radius: 7px;
+}
+
+.price-range label {
+  margin-right: 10px;
+}
+
+.price-range input {
+  width: 90px; /* Control the width of the input fields */
+  padding: 5px;
+  margin: 0px 10px;
+}
+
+.price-range span {
+  margin: 0 10px;  /* Add space between min/max */
+}
+
+.condition {
+  padding-top: 10px;
+}
+
+/* Condition section */
+.condition label {
+  display: block;
+  margin: 0px;
+}
+
+.conditionButton {
+  padding-left: 20px;
+}
+
+.radio-buttons {
+  display: flex;
+  flex-direction: column;
+}
+
+.radio-buttons label {
+  
+}
+
+/* Seller Rating section */
+.seller-rating {
+  display: flex;
+  justify-content: left;
+  margin-top: 10px;
+}
+
+.seller-rating label {
+  display: block;
+  margin-bottom: 0px;
+}
+
+.stars {
+  display: flex;
+  position: relative;
+  justify-content: flex-start;
+  padding-bottom: 10px;
+  padding-left: 10px;
+}
+
+.star {
+  font-size: 30px;
+  color: gray;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.star.filled {
+  color: rgb(255, 242, 0);
+}
+
+.posted-since {
+  margin-top: 15px;
+  display: flex;
+  flex-direction: column;
+}
+
+.calendar-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 5px;
+}
+
+.calendar-button {
+  padding: 8px 12px;
+  background-color: var(--accent-purple);
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.calendar-button:hover {
+  background-color: #cc88fd
+}
+
+.hidden-date {
+  opacity: 0;
+  position: absolute;
+  pointer-events: none;
+  width: 0;
+  height: 0;
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+
+
+
+
+.apply-button {
+  margin-top: 25px; /* Pushes the button to the bottom in a flex column */
+  padding: 12px 20px;
+  font-size: 1rem;
+  background-color: var(--accent-purple); /* Green background */
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  width: 100%; /* Full width */
+  max-width: 300px; /* Optional max-width for better control */
+  align-self: center; /* Center the button horizontally */
+  transition: background-color 0.2s ease;
+}
+
+.apply-button:hover {
+  background-color: #cc88fd;
+}
+
+
+/* Make sure the elements are responsive */
+@media (max-width: 600px) {
+  /* On smaller screens, adapt the layout */
+  .containerFixed {
+    padding: 15px;
+  }
+
+  .price-range input {
+    width: 80px;  /* Smaller input fields for smaller screens */
+  }
+
+  .stars {
+    font-size: 25px;  /* Make the stars a bit smaller on mobile */
+  }
+
+  .filters h2 {
+    font-size: 1.2rem;  /* Adjust font size for smaller screens */
+  }
 }
 
 /* ========== Search Info / Results ========== */

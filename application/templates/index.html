@@ -12,7 +12,9 @@
   <!-- ========== Top Navbar with Search and Auth ========== -->
   <nav class="navbar">
     <div class="navbar-left">
-      <a href="{{ url_for('home') }}" class="logo">SFSU Thrift Market</a>
+      <a href="{{ url_for('home') }}" class="logo">
+        <span class="logoPurple">Thrift</span><span class="logoYellow">@SFSU</span>
+      </a>
     </div>
 
     <form action="{{ url_for('home') }}" method="get" class="search-form">
@@ -58,39 +60,111 @@
   </nav>
 
   <!-- ========== Main Container ========== -->
-  <div class="container">
+  <section style="display: flex; justify-content: center;">
+  <div class="containerGrid">
 
-    <!-- ========== Show Search Criteria / Results Info ========== -->
-    <div class="search-info">
-      <p>Showing <strong>{{ count }}</strong> result{{ 's' if count != 1 else '' }}
-        {% if category or keyword %}
-        for
-        {% if category %} Category: <strong>{{ category }}</strong>{% endif %}
-        {% if keyword %} Keyword: <strong>{{ keyword }}</strong>{% endif %}
-        {% else %}
-        (All Products)
-        {% endif %}
-      </p>
+    <!-- ===== Filter Container =====-->
+    <div class="containerFixed">
+      <div class="filters">
+        <h2>Filters</h2>
+
+        <p>Price Range</p>
+        <div class="price-range">
+          <input type="text" class="priceBox" placeholder="min">
+          <p>to</p>
+          <input type="text" class="priceBox" placeholder="max">
+        </div>
+    
+        <div class="condition">
+          <label>Condition</label>
+          <div class="radio-buttons">
+            <label class="conditionButton"><input type="radio" name="condition" value="very-worn"> Very Worn</label>
+            <label class="conditionButton"><input type="radio" name="condition" value="used"> Used</label>
+            <label class="conditionButton"><input type="radio" name="condition" value="fairly-used"> Fairly Used</label>
+            <label class="conditionButton"><input type="radio" name="condition" value="good-condition"> Good Condition</label>
+            <label class="conditionButton"><input type="radio" name="condition" value="great-condition"> Great Condition</label>
+          </div>
+        </div>
+    
+        <div class="seller-rating">
+          <p style="padding-top: 13px;">Seller Rating:</p>
+          <div class="stars">
+            <span class="star" data-value="1">&#10029;</span>
+            <span class="star" data-value="2">&#10029;</span>
+            <span class="star" data-value="3">&#10029;</span>
+            <span class="star" data-value="4">&#10029;</span>
+            <span class="star" data-value="5">&#10029;</span>
+          </div>
+        </div>
+      </div>
+      
+
+      <div class="posted-since">
+        <label id="selectedDateDisplay" for="postedDate">Posted Since:</label>
+        <div class="calendar-wrapper">
+          <button type="button" class="calendar-button" onclick="document.getElementById('postedDate').showPicker()">📅 Pick a Date</button>
+          <input type="date" id="postedDate" class="hidden-date" onchange="document.getElementById('selectedDateDisplay').textContent = 'Posted Since: ' + this.value;">
+
+        </div>
+      </div>
+
+      <button class="apply-button">Apply</button>
+
+      <!--script for clicking the star rating & selecting date-->
+      <script>
+        const stars = document.querySelectorAll('.star');
+        stars.forEach(star => {
+          star.addEventListener('click', function () {
+            const value = this.getAttribute('data-value');
+          
+            stars.forEach(s => {
+              if (s.getAttribute('data-value') <= value) {
+                s.classList.add('filled');
+              } else {
+                s.classList.remove('filled');
+              }
+            });
+          });
+        });
+      </script>
     </div>
 
-    <!-- ========== Product Listing ========== -->
-    <div class="product-list">
-      {% for item in items %}
-      <div class="card product-card">
-        <h3 class="product-title">{{ item.title }} — ${{ item.price }}</h3>
-        <p class="product-description">{{ item.description }}</p>
-        {% if item.has_image %}
-        <img src="{{ url_for('serve_image', product_id=item.product_id) }}" alt="Product image" class="product-image">
-        {% else %}
-        <p><em>No image available</em></p>
-        {% endif %}
+    
+
+    <!-- =====Search Results Container=====-->
+    <div class="container">
+      <!-- ========== Show Search Criteria / Results Info ========== -->
+      <div class="search-info">
+        <p>Showing <strong>{{ count }}</strong> result{{ 's' if count != 1 else '' }}
+          {% if category or keyword %}
+          for
+          {% if category %} Category: <strong>{{ category }}</strong>{% endif %}
+          {% if keyword %} Keyword: <strong>{{ keyword }}</strong>{% endif %}
+          {% else %}
+          (All Products)
+          {% endif %}
+        </p>
       </div>
-      {% else %}
-      <p>No items found matching your search.</p>
-      {% endfor %}
+
+      <!-- ========== Product Listing ========== -->
+      <div class="product-list">
+        {% for item in items %}
+        <div class="card product-card">
+          <h3 class="product-title">{{ item.title }} — ${{ item.price }}</h3>
+          <p class="product-description">{{ item.description }}</p>
+          {% if item.has_image %}
+          <img src="{{ url_for('serve_image', product_id=item.product_id) }}" alt="Product image" class="product-image">
+          {% else %}
+          <p><em>No image available</em></p>
+          {% endif %}
+        </div>
+        {% else %}
+        <p>No items found matching your search.</p>
+        {% endfor %}
+      </div>
     </div>
   </div>
-
+  </section>
 </body>
 
 </html>
