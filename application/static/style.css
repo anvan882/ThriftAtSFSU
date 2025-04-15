@@ -29,7 +29,7 @@ body {
 
 .containerGrid {
   display: grid;
-  grid-template-columns: 20% 80%;
+  grid-template-columns: auto 1fr;
   position: fixed;
   top: 120px;
   width: 100vw;
@@ -54,7 +54,7 @@ body {
 
 .container {
   grid-column: 2;
-  max-width: 1200px;
+  /* max-width: 1200px; */ /* Removed to allow full expansion */
   /*margin: auto;*/
   height: 85vh;
   padding: 20px;
@@ -107,7 +107,8 @@ body {
 /* ========== Submenu Styles ========== */
 .submenu {
   background-color: #f3f3f3;
-  padding: 0.25rem 1rem;
+  /* padding: 0.25rem 1rem; */ /* Adjusted for full width ul */
+  padding: 0.25rem 2rem; /* Match navbar padding */
   position: sticky;
   top: 80px;
   z-index: 999;
@@ -116,13 +117,13 @@ body {
 
 .submenu ul {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
+  align-items: center;
   gap: 1.5rem;
   list-style: none;
   padding: 0;
   margin: 0;
-  max-width: 1200px;
-  margin: 0 auto;
+  width: 100%;
 }
 
 .submenu ul li a {
@@ -526,6 +527,87 @@ body {
   background-color: #ffffff;
 }
 
+/* ========== Visually Hidden Utility ========== */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+
+/* ========== Collapsible Filters Button (Base Styles) ========== */
+.toggle-filters-btn {
+  display: inline-flex; /* Use flex to align text and icon */
+  align-items: center;
+  gap: 8px; /* Space between text and icon */
+  background-color: transparent;
+  color: var(--accent-purple);
+  border: none;
+  border-radius: 4px;
+  padding: 6px 12px; /* Adjusted padding */
+  /* font-size: 1.5rem; */  /* Removed (was for icon char) */
+  /* font-weight: bold; */ /* Removed */
+  font-size: 0.9rem; /* Match other submenu text */
+  font-weight: 500; /* Match other submenu text */
+  cursor: pointer;
+  height: auto;
+  /* line-height: 1; */ /* Removed */
+  line-height: normal;
+  transition: background-color 0.2s ease, color 0.2s ease;
+  overflow: hidden; /* Prevent layout shifts during animation */
+}
+
+.toggle-filters-btn .button-text {
+  /* Styles for text if needed */
+}
+
+.toggle-filters-btn .icon-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  width: 20px; /* Width of the icon */
+  height: 16px; /* Height of the icon */
+}
+
+.toggle-filters-btn .icon-bar {
+  display: block;
+  width: 100%;
+  height: 2px; /* Thickness of the bars */
+  background-color: var(--accent-purple);
+  border-radius: 1px;
+  transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+.toggle-filters-btn:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+  color: var(--accent-purple-dark);
+}
+
+.toggle-filters-btn:hover .icon-bar {
+  background-color: var(--accent-purple-dark);
+}
+
+/* Animation styles when active (filters shown) */
+.toggle-filters-btn.active .icon-bar:nth-child(1) {
+  transform: translateY(7px) rotate(45deg); /* Move down and rotate */
+}
+
+.toggle-filters-btn.active .icon-bar:nth-child(2) {
+  opacity: 0; /* Fade out middle bar */
+}
+
+.toggle-filters-btn.active .icon-bar:nth-child(3) {
+  transform: translateY(-7px) rotate(-45deg); /* Move up and rotate */
+}
+
+
+/* Style for when filters are open (optional, e.g., change icon) */
+/* .toggle-filters-btn.active { ... } */
+
 /* ========== Responsive Design ========== */
 @media (max-width: 768px) {
   .navbar {
@@ -547,17 +629,46 @@ body {
   .product-list {
     grid-template-columns: 1fr;
   }
-}
 
-.visually-hidden {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  border: 0;
+  /* Show toggle button on small screens */
+  .toggle-filters-btn {
+    display: block;
+  }
+
+  /* Adjust grid for collapsed state */
+  .containerGrid {
+    grid-template-columns: 100%; /* Single column layout */
+    top: 110px; /* Adjust if submenu height changes */
+  }
+
+  .containerFixed,
+  .container {
+    grid-column: 1 / -1; /* Span full width */
+    max-width: 100%; /* Allow full width */
+  }
+
+  /* Hide filters container when collapsed */
+  #filtersContainer.collapsed {
+    display: none;
+  }
+
+  /* Ensure filter container is displayed by default unless collapsed */
+  #filtersContainer {
+     /* Optional: Start collapsed on mobile */
+     /* display: none; */ /* Remove or comment this if you want it open initially */
+
+     /* Add some initial styles if needed */
+     position: relative; /* Or adjust as needed */
+     height: auto; /* Adjust height calculation if needed */
+     width: 100%;
+     max-width: none; /* Override desktop max-width */
+     order: -1; /* Place filters above results if needed */
+  }
+
+  /* Adjust main content container padding/margin if needed when filters are hidden */
+  .container {
+      height: calc(100vh - 110px); /* Adjust based on navbar/submenu height */
+  }
 }
 
 /* ========== About Page Styles ========== */
@@ -677,5 +788,88 @@ body {
     top: 0;
     left: 0;
     margin-bottom: 1rem;
+  }
+}
+
+/* Hide filters container when collapsed - applies globally */
+#filtersContainer.collapsed {
+  display: none;
+}
+
+/* ========== Price Range Slider (noUiSlider) Styles ========== */
+.price-slider-container {
+  padding: 10px 20px 20px 20px; /* Added horizontal padding */
+}
+
+#price-slider {
+  margin: 10px 0;
+}
+
+.price-slider-values {
+  text-align: center;
+  color: var(--text-color-light);
+  font-size: 0.9rem;
+  margin-top: 8px;
+}
+
+/* Base slider track */
+.noUi-target {
+  background: var(--light-border); /* Match site's border color */
+  border-radius: 4px;
+  border: 1px solid var(--light-border);
+  box-shadow: none; /* Remove shadow for cleaner look */
+  height: 4px; /* Thinner track */
+}
+
+/* Connecting bar between handles */
+.noUi-connect {
+  background: var(--accent-purple-medium); /* Match site's purple */
+  border-radius: 4px;
+  box-shadow: none;
+}
+
+/* Slider handles */
+.noUi-handle {
+  background: #fff;
+  border: 2px solid var(--accent-purple-medium); /* Match site's purple */
+  border-radius: 50%; /* Circular handles */
+  height: 14px; /* Smaller handles */
+  width: 14px; /* Smaller handles */
+  top: -6px; /* Adjust for new size */
+  right: -7px; /* Adjust for new size */
+  cursor: grab;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1); /* Subtle shadow */
+  transition: transform 0.2s ease, border-color 0.2s ease; /* Smooth transitions */
+}
+
+/* Handle hover and active states */
+.noUi-handle:hover {
+  transform: scale(1.1); /* Slightly enlarge on hover */
+  border-color: var(--accent-purple); /* Darker purple on hover */
+}
+
+.noUi-active {
+  transform: scale(1.15); /* Slightly larger when dragging */
+  border-color: var(--accent-purple); /* Darker purple when active */
+}
+
+.noUi-handle:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(155, 77, 202, 0.2); /* Match site's purple with transparency */
+}
+
+/* Remove the default lines inside the handles */
+.noUi-handle::before,
+.noUi-handle::after {
+  display: none;
+}
+
+/* Improve touch interaction on mobile */
+@media (max-width: 768px) {
+  .noUi-handle {
+    height: 16px; /* Slightly larger for touch */
+    width: 16px;
+    top: -7px;
+    right: -8px;
   }
 }

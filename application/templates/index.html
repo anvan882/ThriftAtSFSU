@@ -5,6 +5,8 @@
   <meta charset="UTF-8">
   <title>Thrift at SFSU</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <!-- Add noUiSlider CSS -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/15.7.1/nouislider.min.css" rel="stylesheet">
 </head>
 
 <body>
@@ -46,6 +48,20 @@
   <!-- ========== Submenu for About the Team ========== -->
   <nav class="submenu">
     <ul>
+      <!-- Filter Toggle Button -->
+      <li>
+        <!-- Updated button structure for text + animated icon -->
+        <button id="toggleFiltersBtn" class="toggle-filters-btn">
+          <span class="button-text">Filters</span>
+          <span class="icon-container">
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </span>
+        </button>
+      </li>
+      
+      <!-- About the Team Dropdown -->
       <li class="dropdown">
         <a href="#">About the Team ▾</a>
         <ul class="dropdown-menu">
@@ -63,16 +79,22 @@
   <section style="display: flex; justify-content: center;">
   <div class="containerGrid">
 
+    <!-- Hamburger button to toggle filters -->
+    <!-- MOVED TO SUBMENU -->
+    <!-- <button id="toggleFiltersBtn" class="toggle-filters-btn">☰</button> -->
+
     <!-- ===== Filter Container =====-->
-    <div class="containerFixed">
+    <div class="containerFixed" id="filtersContainer">
       <div class="filters">
         <h2>Filters</h2>
 
         <p>Price Range</p>
-        <div class="price-range">
-          <input type="text" class="priceBox" placeholder="min">
-          <p>to</p>
-          <input type="text" class="priceBox" placeholder="max">
+        <!-- Add slider container and value displays -->
+        <div class="price-slider-container">
+          <div id="price-slider"></div>
+          <div class="price-slider-values">
+            $<span id="slider-price-min">0</span> - $<span id="slider-price-max">2000</span>
+          </div>
         </div>
     
         <div class="condition">
@@ -165,6 +187,74 @@
     </div>
   </div>
   </section>
+
+  <!-- Script to toggle filters visibility -->
+  <script>
+    const toggleBtn = document.getElementById('toggleFiltersBtn');
+    const filtersContainer = document.getElementById('filtersContainer');
+
+    toggleBtn.addEventListener('click', () => {
+      filtersContainer.classList.toggle('collapsed');
+      toggleBtn.classList.toggle('active'); 
+    });
+
+    // Optional: Hide button on larger screens using JS, 
+    // but CSS media queries are generally preferred for this.
+    // function checkScreenSize() {
+    //   if (window.innerWidth > 768) { // Example breakpoint
+    //     toggleBtn.style.display = 'none';
+    //     filtersContainer.classList.remove('collapsed'); // Ensure filters are shown
+    //   } else {
+    //     toggleBtn.style.display = 'block';
+    //     // Optional: Default to collapsed on small screens
+    //     // if (!filtersContainer.classList.contains('user-toggled')) {
+    //     //   filtersContainer.classList.add('collapsed');
+    //     // }
+    //   }
+    // }
+    // window.addEventListener('resize', checkScreenSize);
+    // checkScreenSize(); // Initial check
+
+    // Add a class to track if the user explicitly toggled
+    // toggleBtn.addEventListener('click', () => {
+    //   filtersContainer.classList.toggle('collapsed');
+    //   filtersContainer.classList.add('user-toggled'); 
+    // });
+
+  </script>
+  <!-- Add noUiSlider JS -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/15.7.1/nouislider.min.js"></script>
+  <!-- Script to initialize the slider -->
+  <script>
+    const priceSlider = document.getElementById('price-slider');
+    const minPriceDisplay = document.getElementById('slider-price-min');
+    const maxPriceDisplay = document.getElementById('slider-price-max');
+
+    noUiSlider.create(priceSlider, {
+        start: [0, 2000], // Initial min and max values
+        connect: true,    // Connect the handles with a colored bar
+        range: {
+            'min': 0,
+            'max': 2000 // Adjust max as needed
+        },
+        step: 10, // Price steps
+        format: { // Format numbers as integers
+          to: function (value) {
+            return Math.round(value);
+          },
+          from: function (value) {
+            return Number(value);
+          }
+        }
+    });
+
+    // Update display values when slider changes
+    priceSlider.noUiSlider.on('update', function (values, handle) {
+        minPriceDisplay.textContent = values[0];
+        maxPriceDisplay.textContent = values[1];
+        // TODO: Potentially update hidden input fields here if needed for form submission
+    });
+  </script>
 </body>
 
 </html>
