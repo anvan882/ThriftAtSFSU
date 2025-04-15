@@ -77,6 +77,11 @@ def serve_image(product_id):
         return Response(image_blob, mimetype=mime)
     return Response(status=404)
 
+# Profile
+@app.route("/profile")
+def profile(): 
+        return render_template('profile.html')
+
 # About Me Pages
 @app.route("/joe")
 def joe():

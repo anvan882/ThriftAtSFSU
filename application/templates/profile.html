@@ -35,11 +35,9 @@
         </svg>
       </button>
     </form>
-
     <div class="auth-buttons">
       <a href="{{ url_for('profile') }}" class="btn btn-outline">Profile</a>
     </div>
-
     <div class="auth-buttons">
       <a href="{{ url_for('login') }}" class="btn btn-outline">Login</a>
     </div>
@@ -62,37 +60,40 @@
   </nav>
 
   <!-- ========== Main Container ========== -->
-  <div class="container">
-
-    <!-- ========== Show Search Criteria / Results Info ========== -->
-    <div class="search-info">
-      <p>Showing <strong>{{ count }}</strong> result{{ 's' if count != 1 else '' }}
-        {% if category or keyword %}
-        for
-        {% if category %} Category: <strong>{{ category }}</strong>{% endif %}
-        {% if keyword %} Keyword: <strong>{{ keyword }}</strong>{% endif %}
-        {% else %}
-        (All Products)
-        {% endif %}
-      </p>
+  <div class="profile-main-container">
+    <div class="col">
+        <div class="profile-header">
+            <h1>John Doe</h1>
+            <p>joined Apr 15, 2024</p>
+            <p>Average Rating: 4.6/5</p>
+            <p>13 listings</p>
+            <div class="profile-buttons">
+                <a href="" class="btn btn-outline">Edit Profile</a>
+            </div>
+        </div>
+        <div class="profile-bio">
+            <h2>Bio</h2>
+            <p>Hey there! My name is John Doe, and I'm a third-year student at SF State. 
+            I like to join the SFSU Campus Rec events and I enjoy playing video games and 
+            hanging out with friends. Looking to sell some old clothes, if you're interested 
+            hmu!
+            </p>
+        </div>
     </div>
 
-    <!-- ========== Product Listing ========== -->
-    <div class="product-list">
-      {% for item in items %}
-      <div class="card product-card">
-        <h3 class="product-title">{{ item.title }} — ${{ item.price }}</h3>
-        <p class="product-description">{{ item.description }}</p>
-        {% if item.has_image %}
-        <img src="{{ url_for('serve_image', product_id=item.product_id) }}" alt="Product image" class="product-image">
-        {% else %}
-        <p><em>No image available</em></p>
-        {% endif %}
-      </div>
-      {% else %}
-      <p>No items found matching your search.</p>
-      {% endfor %}
+    <div class="col">
+        <div class="profile-recent-orders">
+            <h2>Recent Orders</h2>
+            <ul>
+                <li>Item One</li>
+                <li>Item Two</li>
+                <li>Item Three</li>
+                <li>Item Four</li>
+                <a href="" class="btn btn-outline">View All Orders</a>
+            </ul>
+        </div>
     </div>
+    
   </div>
 
 </body>
