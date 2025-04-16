@@ -86,14 +86,13 @@
         <p class="product-description">{{ item.description }}</p>
         <button class="wishlist-button" onclick="toggleWishlist('{{ item.product_id }}', this)">
           ♡ Add to Wishlist
-        </button>        
+        </button>
       </div>
       {% else %}
       <p>No items found matching your search.</p>
       {% endfor %}
     </div>
   </div>
-
 </body>
 
 </html>

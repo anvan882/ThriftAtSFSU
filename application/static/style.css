@@ -1,7 +1,7 @@
 :root {
   --accent-purple: #6a0dad;
   --accent-purple-dark: #550a9e;
-  --bg-color: #3a3535;
+  --bg-color: #ffffff;
   --text-color: #333;
   --light-border: #ccc;
   --hover-bg: #efefef;
@@ -29,7 +29,7 @@ body {
 /* ========== Navbar Styles ========== */
 
 .navbar {
-  background: #3a3535;
+  background: #ffffff;
   border-bottom: 2px solid var(--accent-purple);
   display: flex;
   align-items: center;
