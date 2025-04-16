@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <title></title>
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="stylesheet" href="{{ url_for('static', filename='messaging.css') }}">
+    </head>
+    <body>
+        <!-- Navbar -->
+        <div class="navbar">
+            <strong>NavBar</strong>
+        </div>
+        
+        <!-- Main container -->
+        <div class="container">
+            <!-- Sidebar with users -->
+            <div class="sidebar">
+                <input type="text" id="chat-search" placeholder="Search conversations..." class="chat-search" />
+
+                <div class="user-box">
+                    <div class="user-avatar"></div>
+                    <div class="user-name">Username</div>
+                </div>
+                <div class="user-box">
+                    <div class="user-avatar"></div>
+                    <div class="user-name">Username</div>
+                </div>
+                <div class="user-box">
+                    <div class="user-avatar"></div>
+                    <div class="user-name">Username</div>
+                </div>
+                <div class="user-box">
+                    <div class="user-avatar"></div>
+                    <div class="user-name">Username</div>
+                </div>
+            </div>
+        
+            <!-- Chat area -->
+            <div class="chat-area">
+                <div class="chat-header">
+                    <div class="profile-pic">Profile Picture</div>
+                    <div id="chat-user-name">Username</div>
+                </div>
+                <div class="chat-messages">
+                    <div class="message received">Hi there!</div>
+                    <div class="message sent">Hello!</div>
+                    <div class="message received">How are you?</div>
+                </div>
+                <div class="chat-input">
+                    <input type="text" placeholder="Type a message..." />
+                    <button>Send</button>
+                </div>
+                
+            </div>
+        </div>
+        <script src="" async defer></script>
+    </body>
+</html>

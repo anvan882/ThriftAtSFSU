@@ -106,6 +106,11 @@ def login():
 def signup():
     return render_template('auth/signup.html')
 
+# Messaging page
+@app.route("/messaging_page")
+def messaging():
+    return render_template('messaging_page.html')
+
 if __name__ == '__main__':
     if os.getenv("FLASK_ENV") == "production":
         app.debug = False
