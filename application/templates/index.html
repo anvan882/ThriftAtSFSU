@@ -166,19 +166,24 @@
           (All Products)
           {% endif %}
         </p>
+        <a href="{{ url_for('newListing') }}" style="text-decoration: none;">
+          <div class="new-listing-button">+Add New Listing</div>
+        </a>
       </div>
 
       <!-- ========== Product Listing ========== -->
       <div class="product-list">
         {% for item in items %}
         <div class="card product-card">
-          <h3 class="product-title">{{ item.title }} — ${{ item.price }}</h3>
-          <p class="product-description">{{ item.description }}</p>
-          {% if item.has_image %}
-          <img src="{{ url_for('serve_image', product_id=item.product_id) }}" alt="Product image" class="product-image">
-          {% else %}
-          <p><em>No image available</em></p>
-          {% endif %}
+          <a href="{{ url_for('listingIndie') }}" style="text-decoration: none;">
+            <h3 class="product-title">{{ item.title }} — ${{ item.price }}</h3>
+            <p class="product-description">{{ item.description }}</p>
+            {% if item.has_image %}
+            <img src="{{ url_for('serve_image', product_id=item.product_id) }}" alt="Product image" class="product-image">
+            {% else %}
+            <p><em>No image available</em></p>
+            {% endif %}
+          </a>
         </div>
         {% else %}
         <p>No items found matching your search.</p>

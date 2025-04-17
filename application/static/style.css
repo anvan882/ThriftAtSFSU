@@ -454,11 +454,21 @@ body {
   margin: 1.5rem 0;
   box-shadow: var(--card-shadow);
   color: var(--text-color-light);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .search-info strong {
   color: var(--text-color);
   font-weight: 600;
+}
+
+.new-listing-button{
+  background-color: #6a0dad;
+  color: white;
+  border-radius: 5px;
+  padding: 10px;
 }
 
 /* ========== Product List ========== */
@@ -872,4 +882,166 @@ body {
     top: -7px;
     right: -8px;
   }
+}
+
+
+/* ================New Listing Form================= */
+.creationForm {
+  max-width: 700px;
+  margin: 2rem auto;
+  padding: 2rem;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: var(--hover-shadow);
+}
+
+.listing-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-group label {
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: var(--text-color);
+}
+
+.form-group input[type="text"],
+.form-group input[type="number"],
+.form-group select,
+.form-group textarea {
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--light-border);
+  border-radius: 8px;
+  font-size: 1rem;
+  background-color: #f9f9f9;
+  transition: var(--transition);
+}
+
+.form-group input[type="file"] {
+  padding: 0.5rem 0;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  border-color: var(--accent-purple);
+  background-color: #fff;
+  outline: none;
+}
+
+.btn-submit {
+  padding: 0.75rem 1.5rem;
+  background-color: var(--accent-purple);
+  color: white;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: var(--transition);
+  font-size: 1rem;
+}
+
+.btn-submit:hover {
+  background-color: var(--accent-purple-dark);
+}
+
+
+
+
+/* ================Listing Information================= */
+/* ========== Listing Info Section ========== */
+.listingInfo {
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 2rem auto;
+  background-color: #fff;
+  border-radius: 12px;
+  box-shadow: var(--card-shadow);
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.product-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2rem;
+  align-items: flex-start;
+}
+
+.product-image img {
+  max-width: 400px;
+  width: 100%;
+  border-radius: 12px;
+  object-fit: cover;
+  box-shadow: var(--hover-shadow);
+}
+
+.product-details {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.product-price {
+  font-size: 2rem;
+  color: var(--accent-purple);
+  margin-bottom: 0.5rem;
+}
+
+.product-condition {
+  font-weight: 500;
+  color: var(--text-color-light);
+  margin-bottom: 1rem;
+}
+
+.product-description {
+  font-size: 1rem;
+  color: var(--text-color);
+  line-height: 1.5;
+}
+
+.seller-profile {
+  margin-top: 2rem;
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.profile-pic img {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  object-fit: cover;
+  box-shadow: var(--card-shadow);
+}
+
+.profile-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.btn-purple {
+  background-color: var(--accent-purple);
+  color: white;
+  border: none;
+  padding: 0.5rem 1.25rem;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.btn-purple:hover {
+  background-color: var(--accent-purple-dark);
 }

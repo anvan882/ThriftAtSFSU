@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>Thrift at SFSU</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+  <!-- ========== Top Navbar with Search and Auth ========== -->
+  <nav class="navbar">
+    <div class="navbar-left">
+      <a href="{{ url_for('home') }}" class="logo">
+        <span class="logoPurple">Thrift</span><span class="logoYellow">@SFSU</span>
+      </a>
+    </div>
+
+    
+
+    <div class="auth-buttons">
+      <a href="{{ url_for('login') }}" class="btn btn-outline">Login</a>
+    </div>
+  </nav>
+
+  <!-- ========== Submenu for About the Team ========== -->
+  <nav class="submenu">
+    <ul>
+      <li class="dropdown">
+        <a href="#">About the Team ▾</a>
+        <ul class="dropdown-menu">
+          <li><a href="{{ url_for('joe') }}">Joseph Shur</a></li>
+          <li><a href="{{ url_for('sid') }}">Sid Padmanabhuni</a></li>
+          <li><a href="{{ url_for('hilary') }}">Hilary Lui</a></li>
+          <li><a href="{{ url_for('annison') }}">Annison Van</a></li>
+          <li><a href="{{ url_for('joseph') }}">Joseph Alhambra</a></li>
+        </ul>
+      </li>
+    </ul>
+  </nav>
+
+  <!-- ========== Listing Info Container ========== -->
+  <section class="listingInfo">
+    <div class="product-container">
+      <div class="product-image">
+        <img src="{{ url_for('static', filename='pfp/placeholderIMG.png') }}" alt="Product Image">
+      </div>
+      <div class="product-details">
+        <h2 class="product-price">$xxx</h2>
+        <p class="product-condition">Condition: [Insert Condition Here]</p>
+        <p class="product-description">
+          This is a placeholder description for the listing. You can update this with actual product details.
+        </p>
+        <div class="seller-profile">
+          <div class="profile-pic">
+            <img src="{{ url_for('static', filename='pfp/silhouette.png') }}" alt="Seller Profile Picture">
+          </div>
+          <div class="profile-actions">
+            <button class="btn btn-purple">View Profile</button>
+            <button class="btn btn-purple">Contact Seller</button>
+            <button class="btn btn-purple">Ratings</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</body>
+
+</html>
