@@ -509,3 +509,63 @@ body {
   margin: auto;
   padding: 20px;
 }
+
+.profile-info {
+  width: 40%;
+}
+
+.profile-grouping {
+  display: flex;
+}
+
+.profile-main-section {
+  margin: 20px;
+  padding: 20px;
+  background-color: #ffffff;
+}
+
+.profile-side-section {
+  width: 350px;
+  margin: 20px;
+  padding: 20px;
+  background-color: #ffffff;
+}
+
+.profile-listing-row {
+  display: flex;
+  margin: 20px;
+  padding: 20px;
+  background-color: #ffffff;
+}
+
+.listing-card {
+  width: 20%;
+  margin: 20px;
+  padding: 20px;
+  background-color: #ffffff;
+  border: solid 2px #550a9e;
+  border-radius: 4px;
+}
+
+.listing-img {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  width: 50%;
+}
+
+.profile-review-row {
+  display: flex;
+  margin: 20px;
+  padding: 20px;
+  background-color: #ffffff;
+}
+
+.review-card {
+  width: 20%;
+  margin: 20px;
+  padding: 20px;
+  background-color: #ffffff;
+  border: solid 2px #550a9e;
+  border-radius: 4px;
+}
