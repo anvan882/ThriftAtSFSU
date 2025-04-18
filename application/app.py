@@ -109,7 +109,12 @@ def signup():
 # Messaging page
 @app.route("/messaging_page")
 def messaging():
-    return render_template('messaging_page.html')
+    users = [
+        {'name': 'John Doe'},
+        {'name': 'Jane Doe'}
+    ]
+    return render_template('messaging_page.html', users=users)
+
 
 if __name__ == '__main__':
     if os.getenv("FLASK_ENV") == "production":

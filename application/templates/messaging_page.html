@@ -20,23 +20,14 @@
             <div class="sidebar">
                 <input type="text" id="chat-search" placeholder="Search conversations..." class="chat-search" />
 
+                {% for user in users %}
                 <div class="user-box">
                     <div class="user-avatar"></div>
-                    <div class="user-name">Username</div>
+                    <div class="user-name">{{ user.name }}</div>
                 </div>
-                <div class="user-box">
-                    <div class="user-avatar"></div>
-                    <div class="user-name">Username</div>
-                </div>
-                <div class="user-box">
-                    <div class="user-avatar"></div>
-                    <div class="user-name">Username</div>
-                </div>
-                <div class="user-box">
-                    <div class="user-avatar"></div>
-                    <div class="user-name">Username</div>
-                </div>
+                {% endfor %}
             </div>
+
         
             <!-- Chat area -->
             <div class="chat-area">
@@ -56,6 +47,5 @@
                 
             </div>
         </div>
-        <script src="" async defer></script>
     </body>
 </html>
