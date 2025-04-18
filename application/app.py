@@ -106,6 +106,27 @@ def login():
 def signup():
     return render_template('auth/signup.html')
 
+@app.route('/wishlist')
+def wishlist():
+    # Dummy data for testing
+    items = [
+        {
+            'product_id': 1,
+            'title': 'Vintage Hoodie',
+            'price': 20,
+            'description': 'Comfy and warm hoodie from the 90s',
+            'has_image': True
+        },
+        {
+            'product_id': 2,
+            'title': 'Retro Sneakers',
+            'price': 45,
+            'description': 'Classic 80s style shoes',
+            'has_image': False
+        }
+    ]
+    return render_template('wishlist.html', items=items)
+
 if __name__ == '__main__':
     if os.getenv("FLASK_ENV") == "production":
         app.debug = False

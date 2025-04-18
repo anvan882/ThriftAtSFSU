@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Your Wishlist — ThrifterSFSU</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='wishlist.css') }}">
+</head>
+<body>
+  <!-- ======== Navbar ======== -->
+  <nav class="navbar">
+    <div class="logo">ThrifterSFSU</div>
+    <ul class="nav-links">
+      <li><a href="/">Home</a></li>
+      <li><a href="/wishlist" class="active">Wishlist</a></li>
+      <li><a href="/profile">Account</a></li>
+    </ul>
+  </nav>
+
+  <!-- ======== Page Title ======== -->
+  <header class="page-header">
+    <h1>Your Wishlist</h1>
+    <p>Browse your favorite saved items below.</p>
+  </header>
+
+  <!-- ======== Wishlist Items ======== -->
+  <main class="container">
+    <div class="product-list">
+      {% for item in items %}
+      <div class="card product-card" data-product-id="{{ item.product_id }}">
+        {% if item.has_image %}
+        <img src="{{ url_for('serve_image', product_id=item.product_id) }}" alt="Product image" class="product-image">
+        {% else %}
+        <div class="product-placeholder">No image</div>
+        {% endif %}
+        <h3 class="product-title">{{ item.title }} — ${{ item.price }}</h3>
+        <p class="product-description">{{ item.description }}</p>
+
+        <!-- Dummy placeholder for remove form -->
+        {#
+        <form action="{{ url_for('remove_from_wishlist', product_id=item.product_id) }}" method="POST">
+          <button type="submit" class="wishlist-button active">
+            ❤️ Remove from Wishlist
+          </button>
+        </form>
+        #}
+      </div>
+      {% else %}
+      <p class="empty-state">You haven't wishlisted any items yet.</p>
+      {% endfor %}
+    </div>
+  </main>
+
+  <!-- ======== Footer ======== -->
+  <footer class="footer">
+    <p>&copy; 2025 ThrifterSFSU. Built by SFSU Students.</p>
+  </footer>
+</body>
+</html>
