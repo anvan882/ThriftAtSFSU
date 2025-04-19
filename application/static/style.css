@@ -531,6 +531,13 @@ body {
   background-color: #ffffff;
 }
 
+.profile-schedule {
+  display: flex;
+  margin: 20px;
+  padding: 20px;
+  background-color: #ffffff;
+}
+
 .profile-listing-row {
   display: flex;
   margin: 20px;
