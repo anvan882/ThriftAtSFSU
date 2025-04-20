@@ -127,3 +127,11 @@ if __name__ == '__main__':
     else:
         app.debug = True
     app.run()
+
+@app.route('/listingIndie')
+def listingIndie():
+    return render_template('listings/listing_indie.html')
+
+@app.route('/newListing')
+def newListing():
+    return render_template('listings/new_listing.html')
