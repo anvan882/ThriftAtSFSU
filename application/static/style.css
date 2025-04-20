@@ -321,3 +321,23 @@ body {
   height: 1px;
   overflow: hidden;
 }
+
+/* Override for messaging page layout */
+.messaging-page .container {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: row;
+  max-width: 1200px;
+  width: 100%;
+  margin: auto;
+  padding: 0;
+  overflow: hidden;
+}
+
+body.messaging-page {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+

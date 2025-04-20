@@ -6,34 +6,40 @@
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
+html, body {
+    height: 100%;
+    overflow: hidden;
+}
+
 body {
     background-color: #f9f9fb;
     color: #333;
+    overflow-x: hidden;
 }
 
-/* Navbar */
-.navbar {
-    background-color: #6a0dad;
-    color: white;
-    font-size: 20px;
-    font-weight: 600;
-    padding: 15px 30px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-}
-
-/* Layout */
-.container {
+/* Scoped fix for chat layout */
+.messaging-page .container {
     display: flex;
+    flex-direction: row;
+    max-width: 1200px;
+    margin: auto;
     height: calc(100vh - 60px);
+    padding: 0 !important;
+    overflow: hidden;
 }
 
 /* Sidebar */
 .sidebar {
+    display: flex;
+    flex-direction: column;
     width: 260px;
     background-color: #fff;
     border-right: 1px solid #3a3838;
-    padding: 20px 10px;
-    overflow-y: auto;
+    border-left: 1px solid #3a3838;
+    padding: 10px;
+    height: 100%;
+    flex-shrink: 0;
+    overflow: hidden;
 }
 
 .user-box {
@@ -68,7 +74,6 @@ body {
     font-weight: bold;
 }
 
-/* Use this to display initials instead of images */
 .user-avatar::before {
     content: "U";
 }
@@ -81,22 +86,32 @@ body {
     margin-left: 10px;
 }
 
+.highlighted {
+    background-color: #dac4f9;
+}
+
 /* Chat Area */
 .chat-area {
     flex-grow: 1;
     display: flex;
     flex-direction: column;
     background-color: #fff;
-    padding: 20px;
     border-left: 1px solid #eee;
+    overflow: hidden;
+    height: 100%;
+    max-width: 100%;
+    padding: 0;
+    box-sizing: border-box;
 }
 
 .chat-header {
+    flex-shrink: 0;
     height: 120px;
     display: flex;
     align-items: center;
     border-bottom: 1px solid #3a3838;
-    margin-bottom: 20px;
+    padding: 20px;
+    box-sizing: border-box;
 }
 
 .profile-pic {
@@ -112,7 +127,6 @@ body {
     font-weight: 600;
 }
 
-/* Messages */
 .chat-search {
     width: 100%;
     padding: 10px 14px;
@@ -127,11 +141,11 @@ body {
 
 .chat-messages {
     flex-grow: 1;
+    overflow-y: auto;
+    padding: 20px;
     display: flex;
     flex-direction: column;
-    gap: 6px;
-    padding: 10px 0;
-    overflow-y: auto;
+    gap: 10px;
 }
 
 .message {
@@ -156,10 +170,12 @@ body {
 }
 
 .chat-input {
+    flex-shrink: 0;
     display: flex;
-    padding: 20px 20px;
+    padding: 20px;
     border-top: 1px solid #3a3838;
     background-color: white;
+    box-sizing: border-box;
 }
 
 .chat-input input {
@@ -186,3 +202,36 @@ body {
     background-color: #5a008a;
 }
 
+.chat-placeholder {
+    flex-grow: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    color: #999;
+    text-align: center;
+    padding: 20px;
+}
+
+.user-link {
+    text-decoration: none;
+    color: inherit;
+    display: block;
+}
+
+.incoming-chat,
+.outgoing-chat {
+    flex: 1;
+    overflow-y: auto;
+    padding-right: 4px;
+    margin-bottom: 8px;
+    padding-left: 4px;
+    border-top: 1px solid #3a3838;
+    padding-top: 10px;
+}
+
+.incoming-chat h4,
+.outgoing-chat h4 {
+    font-size: 14px;
+    margin-bottom: 8px;
+}
