@@ -77,6 +77,11 @@ def serve_image(product_id):
         return Response(image_blob, mimetype=mime)
     return Response(status=404)
 
+# Profile
+@app.route("/profile")
+def profile(): 
+        return render_template('profile.html')
+
 # About Me Pages
 @app.route("/joe")
 def joe():
@@ -121,13 +126,6 @@ def login():
 def signup():
     return render_template('auth/signup.html')
 
-if __name__ == '__main__':
-    if os.getenv("FLASK_ENV") == "production":
-        app.debug = False
-    else:
-        app.debug = True
-    app.run()
-
 @app.route('/listingIndie')
 def listingIndie():
     return render_template('listings/listing_indie.html')
@@ -135,3 +133,10 @@ def listingIndie():
 @app.route('/newListing')
 def newListing():
     return render_template('listings/new_listing.html')
+
+if __name__ == '__main__':
+    if os.getenv("FLASK_ENV") == "production":
+        app.debug = False
+    else:
+        app.debug = True
+    app.run()

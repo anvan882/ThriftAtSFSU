@@ -801,6 +801,109 @@ body {
   }
 }
 
+
+/* ========== Auth Buttons ========== */
+.profile-buttons {
+  display: flex;
+  gap: 1rem;
+}
+
+.profile-buttons .btn {
+  padding: 0.5rem 1.25rem;
+  border-radius: 6px;
+  font-weight: 500;
+  text-decoration: none;
+  font-size: 0.95rem;
+  transition: var(--transition);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.profile-buttons .btn-outline {
+  background: transparent;
+  color: var(--accent-purple);
+  border: 2px solid var(--accent-purple);
+}
+
+.profile-buttons .btn-outline:hover {
+  background-color: var(--accent-purple);
+  color: white;
+  transform: translateY(-1px);
+}
+
+.profile-main-container {
+  max-width: 1200px;
+  margin: auto;
+  padding: 20px;
+}
+
+.profile-info {
+  width: 40%;
+}
+
+.profile-grouping {
+  display: flex;
+}
+
+.profile-main-section {
+  margin: 20px;
+  padding: 20px;
+  background-color: #ffffff;
+}
+
+.profile-side-section {
+  width: 350px;
+  margin: 20px;
+  padding: 20px;
+  background-color: #ffffff;
+}
+
+.profile-schedule {
+  display: flex;
+  margin: 20px;
+  padding: 20px;
+  background-color: #ffffff;
+}
+
+.profile-listing-row {
+  display: flex;
+  margin: 20px;
+  padding: 20px;
+  background-color: #ffffff;
+}
+
+.listing-card {
+  width: 20%;
+  margin: 20px;
+  padding: 20px;
+  background-color: #ffffff;
+  border: solid 2px #550a9e;
+  border-radius: 4px;
+}
+
+.listing-img {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  width: 50%;
+}
+
+.profile-review-row {
+  display: flex;
+  margin: 20px;
+  padding: 20px;
+  background-color: #ffffff;
+}
+
+.review-card {
+  width: 20%;
+  margin: 20px;
+  padding: 20px;
+  background-color: #ffffff;
+  border: solid 2px #550a9e;
+  border-radius: 4px;
+}
 /* Hide filters container when collapsed - applies globally */
 #filtersContainer.collapsed {
   display: none;
