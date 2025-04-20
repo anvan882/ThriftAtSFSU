@@ -126,6 +126,14 @@ def login():
 def signup():
     return render_template('auth/signup.html')
 
+@app.route('/listingIndie')
+def listingIndie():
+    return render_template('listings/listing_indie.html')
+
+@app.route('/newListing')
+def newListing():
+    return render_template('listings/new_listing.html')
+
 if __name__ == '__main__':
     if os.getenv("FLASK_ENV") == "production":
         app.debug = False

@@ -3,7 +3,7 @@
   --accent-purple-dark: #550a9e;
   --accent-purple-light: #f3e5f5;
   --accent-purple-medium: #9b4dca;
-  --bg-color: #f8f9fa;
+  --bg-color: #f2f2f2;
   --text-color: #2c3e50;
   --text-color-light: #6c757d;
   --light-border: #e9ecef;
@@ -26,10 +26,39 @@ body {
   line-height: 1.6;
 }
 
-.container {
-  max-width: 1200px;
-  margin: auto;
+
+.containerGrid {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  position: fixed;
+  top: 120px;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden; 
+}
+
+.containerFixed {
+  grid-column: 1;
+  display: flex;
+  flex-direction: column;  /* Arrange child elements vertically */
+  justify-content: flex-start;  /* Align items to the top */
+  background-color: #F5F7FA;
+  color: #2D2D2D;
+  height: 85vh;
   padding: 20px;
+  overflow: auto;
+  max-width: 400px;  /* Optional: restrict max width for better responsiveness */
+  width: 100%;  /* Take up full width of parent container */
+  box-sizing: border-box;  /* Ensure padding is included in width calculation */
+}
+
+.container {
+  grid-column: 2;
+  /* max-width: 1200px; */ /* Removed to allow full expansion */
+  /*margin: auto;*/
+  height: 85vh;
+  padding: 20px;
+  overflow-y: auto;
 }
 
 /* ========== Navbar Styles ========== */
@@ -51,6 +80,7 @@ body {
 .navbar-left {
   display: flex;
   align-items: center;
+  padding: 0;
 }
 
 .logo {
@@ -66,23 +96,34 @@ body {
   color: var(--accent-purple-dark);
 }
 
+.logoPurple{
+  color: #9b4dca;
+}
+
+.logoYellow{
+  color: rgb(226, 196, 23);
+}
+
 /* ========== Submenu Styles ========== */
 .submenu {
   background-color: #f3f3f3;
-  padding: 0.25rem 1rem;
-  position: relative;
+  /* padding: 0.25rem 1rem; */ /* Adjusted for full width ul */
+  padding: 0.25rem 2rem; /* Match navbar padding */
+  position: sticky;
+  top: 80px;
   z-index: 999;
   box-shadow: var(--card-shadow);
 }
 
 .submenu ul {
   display: flex;
+  justify-content: space-between;
+  align-items: center;
   gap: 1.5rem;
   list-style: none;
   padding: 0;
   margin: 0;
-  max-width: 1200px;
-  margin: 0 auto;
+  width: 100%;
 }
 
 .submenu ul li a {
@@ -238,6 +279,173 @@ body {
   background-color: var(--accent-purple-dark);
 }
 
+/* ========== Filters ========== */
+.filters h2 {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+/* Price Range section */
+.price-range {
+  display: flex;
+  align-items: center;
+  margin: 10px 0px;
+  padding-left: 20px;
+}
+
+.priceBox {
+  border-radius: 7px;
+}
+
+.price-range label {
+  margin-right: 10px;
+}
+
+.price-range input {
+  width: 90px; /* Control the width of the input fields */
+  padding: 5px;
+  margin: 0px 10px;
+}
+
+.price-range span {
+  margin: 0 10px;  /* Add space between min/max */
+}
+
+.condition {
+  padding-top: 10px;
+}
+
+/* Condition section */
+.condition label {
+  display: block;
+  margin: 0px;
+}
+
+.conditionButton {
+  padding-left: 20px;
+}
+
+.radio-buttons {
+  display: flex;
+  flex-direction: column;
+}
+
+.radio-buttons label {
+  
+}
+
+/* Seller Rating section */
+.seller-rating {
+  display: flex;
+  justify-content: left;
+  margin-top: 10px;
+}
+
+.seller-rating label {
+  display: block;
+  margin-bottom: 0px;
+}
+
+.stars {
+  display: flex;
+  position: relative;
+  justify-content: flex-start;
+  padding-bottom: 10px;
+  padding-left: 10px;
+}
+
+.star {
+  font-size: 30px;
+  color: gray;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.star.filled {
+  color: rgb(255, 242, 0);
+}
+
+.posted-since {
+  margin-top: 15px;
+  display: flex;
+  flex-direction: column;
+}
+
+.calendar-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 5px;
+}
+
+.calendar-button {
+  padding: 8px 12px;
+  background-color: var(--accent-purple);
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.calendar-button:hover {
+  background-color: #cc88fd
+}
+
+.hidden-date {
+  opacity: 0;
+  position: absolute;
+  pointer-events: none;
+  width: 0;
+  height: 0;
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+
+
+
+
+.apply-button {
+  margin-top: 25px; /* Pushes the button to the bottom in a flex column */
+  padding: 12px 20px;
+  font-size: 1rem;
+  background-color: var(--accent-purple); /* Green background */
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  width: 100%; /* Full width */
+  max-width: 300px; /* Optional max-width for better control */
+  align-self: center; /* Center the button horizontally */
+  transition: background-color 0.2s ease;
+}
+
+.apply-button:hover {
+  background-color: #cc88fd;
+}
+
+
+/* Make sure the elements are responsive */
+@media (max-width: 600px) {
+  /* On smaller screens, adapt the layout */
+  .containerFixed {
+    padding: 15px;
+  }
+
+  .price-range input {
+    width: 80px;  /* Smaller input fields for smaller screens */
+  }
+
+  .stars {
+    font-size: 25px;  /* Make the stars a bit smaller on mobile */
+  }
+
+  .filters h2 {
+    font-size: 1.2rem;  /* Adjust font size for smaller screens */
+  }
+}
+
 /* ========== Search Info / Results ========== */
 .search-info {
   background: #fff;
@@ -246,11 +454,21 @@ body {
   margin: 1.5rem 0;
   box-shadow: var(--card-shadow);
   color: var(--text-color-light);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .search-info strong {
   color: var(--text-color);
   font-weight: 600;
+}
+
+.new-listing-button{
+  background-color: #6a0dad;
+  color: white;
+  border-radius: 5px;
+  padding: 10px;
 }
 
 /* ========== Product List ========== */
@@ -319,6 +537,87 @@ body {
   background-color: #ffffff;
 }
 
+/* ========== Visually Hidden Utility ========== */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+
+/* ========== Collapsible Filters Button (Base Styles) ========== */
+.toggle-filters-btn {
+  display: inline-flex; /* Use flex to align text and icon */
+  align-items: center;
+  gap: 8px; /* Space between text and icon */
+  background-color: transparent;
+  color: var(--accent-purple);
+  border: none;
+  border-radius: 4px;
+  padding: 6px 12px; /* Adjusted padding */
+  /* font-size: 1.5rem; */  /* Removed (was for icon char) */
+  /* font-weight: bold; */ /* Removed */
+  font-size: 0.9rem; /* Match other submenu text */
+  font-weight: 500; /* Match other submenu text */
+  cursor: pointer;
+  height: auto;
+  /* line-height: 1; */ /* Removed */
+  line-height: normal;
+  transition: background-color 0.2s ease, color 0.2s ease;
+  overflow: hidden; /* Prevent layout shifts during animation */
+}
+
+.toggle-filters-btn .button-text {
+  /* Styles for text if needed */
+}
+
+.toggle-filters-btn .icon-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  width: 20px; /* Width of the icon */
+  height: 16px; /* Height of the icon */
+}
+
+.toggle-filters-btn .icon-bar {
+  display: block;
+  width: 100%;
+  height: 2px; /* Thickness of the bars */
+  background-color: var(--accent-purple);
+  border-radius: 1px;
+  transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+.toggle-filters-btn:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+  color: var(--accent-purple-dark);
+}
+
+.toggle-filters-btn:hover .icon-bar {
+  background-color: var(--accent-purple-dark);
+}
+
+/* Animation styles when active (filters shown) */
+.toggle-filters-btn.active .icon-bar:nth-child(1) {
+  transform: translateY(7px) rotate(45deg); /* Move down and rotate */
+}
+
+.toggle-filters-btn.active .icon-bar:nth-child(2) {
+  opacity: 0; /* Fade out middle bar */
+}
+
+.toggle-filters-btn.active .icon-bar:nth-child(3) {
+  transform: translateY(-7px) rotate(-45deg); /* Move up and rotate */
+}
+
+
+/* Style for when filters are open (optional, e.g., change icon) */
+/* .toggle-filters-btn.active { ... } */
+
 /* ========== Responsive Design ========== */
 @media (max-width: 768px) {
   .navbar {
@@ -340,17 +639,46 @@ body {
   .product-list {
     grid-template-columns: 1fr;
   }
-}
 
-.visually-hidden {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  border: 0;
+  /* Show toggle button on small screens */
+  .toggle-filters-btn {
+    display: block;
+  }
+
+  /* Adjust grid for collapsed state */
+  .containerGrid {
+    grid-template-columns: 100%; /* Single column layout */
+    top: 110px; /* Adjust if submenu height changes */
+  }
+
+  .containerFixed,
+  .container {
+    grid-column: 1 / -1; /* Span full width */
+    max-width: 100%; /* Allow full width */
+  }
+
+  /* Hide filters container when collapsed */
+  #filtersContainer.collapsed {
+    display: none;
+  }
+
+  /* Ensure filter container is displayed by default unless collapsed */
+  #filtersContainer {
+     /* Optional: Start collapsed on mobile */
+     /* display: none; */ /* Remove or comment this if you want it open initially */
+
+     /* Add some initial styles if needed */
+     position: relative; /* Or adjust as needed */
+     height: auto; /* Adjust height calculation if needed */
+     width: 100%;
+     max-width: none; /* Override desktop max-width */
+     order: -1; /* Place filters above results if needed */
+  }
+
+  /* Adjust main content container padding/margin if needed when filters are hidden */
+  .container {
+      height: calc(100vh - 110px); /* Adjust based on navbar/submenu height */
+  }
 }
 
 /* ========== About Page Styles ========== */
@@ -575,4 +903,314 @@ body {
   background-color: #ffffff;
   border: solid 2px #550a9e;
   border-radius: 4px;
+}
+/* Hide filters container when collapsed - applies globally */
+#filtersContainer.collapsed {
+  display: none;
+}
+
+/* ========== Price Range Slider (noUiSlider) Styles ========== */
+.price-slider-container {
+  padding: 10px 20px 20px 20px; /* Added horizontal padding */
+}
+
+#price-slider {
+  margin: 10px 0;
+}
+
+.price-slider-values {
+  text-align: center;
+  color: var(--text-color-light);
+  font-size: 0.9rem;
+  margin-top: 8px;
+}
+
+/* Base slider track */
+.noUi-target {
+  background: var(--light-border); /* Match site's border color */
+  border-radius: 4px;
+  border: 1px solid var(--light-border);
+  box-shadow: none; /* Remove shadow for cleaner look */
+  height: 4px; /* Thinner track */
+}
+
+/* Connecting bar between handles */
+.noUi-connect {
+  background: var(--accent-purple-medium); /* Match site's purple */
+  border-radius: 4px;
+  box-shadow: none;
+}
+
+/* Slider handles */
+.noUi-handle {
+  background: #fff;
+  border: 2px solid var(--accent-purple-medium); /* Match site's purple */
+  border-radius: 50%; /* Circular handles */
+  height: 14px; /* Smaller handles */
+  width: 14px; /* Smaller handles */
+  top: -6px; /* Adjust for new size */
+  right: -7px; /* Adjust for new size */
+  cursor: grab;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1); /* Subtle shadow */
+  transition: transform 0.2s ease, border-color 0.2s ease; /* Smooth transitions */
+}
+
+/* Handle hover and active states */
+.noUi-handle:hover {
+  transform: scale(1.1); /* Slightly enlarge on hover */
+  border-color: var(--accent-purple); /* Darker purple on hover */
+}
+
+.noUi-active {
+  transform: scale(1.15); /* Slightly larger when dragging */
+  border-color: var(--accent-purple); /* Darker purple when active */
+}
+
+.noUi-handle:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(155, 77, 202, 0.2); /* Match site's purple with transparency */
+}
+
+/* Remove the default lines inside the handles */
+.noUi-handle::before,
+.noUi-handle::after {
+  display: none;
+}
+
+/* Improve touch interaction on mobile */
+@media (max-width: 768px) {
+  .noUi-handle {
+    height: 16px; /* Slightly larger for touch */
+    width: 16px;
+    top: -7px;
+    right: -8px;
+  }
+}
+
+
+/* ================New Listing Form================= */
+.creationForm {
+  max-width: 700px;
+  margin: 2rem auto;
+  padding: 2rem;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: var(--hover-shadow);
+}
+
+.listing-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-group label {
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: var(--text-color);
+}
+
+.form-group input[type="text"],
+.form-group input[type="number"],
+.form-group select,
+.form-group textarea {
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--light-border);
+  border-radius: 8px;
+  font-size: 1rem;
+  background-color: #f9f9f9;
+  transition: var(--transition);
+}
+
+.form-group input[type="file"] {
+  padding: 0.5rem 0;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  border-color: var(--accent-purple);
+  background-color: #fff;
+  outline: none;
+}
+
+.btn-submit {
+  padding: 0.75rem 1.5rem;
+  background-color: var(--accent-purple);
+  color: white;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: var(--transition);
+  font-size: 1rem;
+}
+
+.btn-submit:hover {
+  background-color: var(--accent-purple-dark);
+}
+
+
+
+
+/* ================Listing Information================= */
+/* ========== Listing Info Section ========== */
+.listingInfo {
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 2rem auto;
+  background-color: #fff;
+  border-radius: 12px;
+  box-shadow: var(--card-shadow);
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.product-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2rem;
+  align-items: flex-start;
+}
+
+.product-image img {
+  max-width: 400px;
+  width: 100%;
+  border-radius: 12px;
+  object-fit: cover;
+  box-shadow: var(--hover-shadow);
+}
+
+.product-details {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.product-price {
+  font-size: 2rem;
+  color: var(--accent-purple);
+  margin-bottom: 0.5rem;
+}
+
+.product-condition {
+  font-weight: 500;
+  color: var(--text-color-light);
+  margin-bottom: 1rem;
+}
+
+.product-description {
+  font-size: 1rem;
+  color: var(--text-color);
+  line-height: 1.5;
+}
+
+.seller-profile {
+  margin-top: 2rem;
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.profile-pic img {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  object-fit: cover;
+  box-shadow: var(--card-shadow);
+}
+
+.profile-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.btn-purple {
+  background-color: var(--accent-purple);
+  color: white;
+  border: none;
+  padding: 0.5rem 1.25rem;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.btn-purple:hover {
+  background-color: var(--accent-purple-dark);
+}
+
+/* Styles the custom button label specifically */
+label.custom-upload-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--accent-purple); /* Assuming --accent-purple is defined or use a specific color */
+  color: white;
+  padding: 0.75rem 1.25rem;
+  font-size: 0.95rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: var(--transition); /* Assuming --transition is defined */
+  width: 100%;
+  margin-bottom: 0.5rem;
+  border: none; /* Ensure no default border */
+}
+
+label.custom-upload-btn:hover {
+  background-color: var(--accent-purple-dark); /* Assuming --accent-purple-dark is defined */
+}
+
+label.custom-upload-btn svg {
+  margin-right: 8px;
+  fill: white;
+  width: 20px;
+  height: 20px;
+}
+
+.file-name {
+  display: block; /* Ensure it takes its own line */
+  color: var(--text-color-light); /* Assuming --text-color-light is defined */
+  font-size: 0.9rem;
+  margin-top: 0.5rem;
+  text-align: left; /* Align text to the left */
+  width: 100%; /* Ensure it spans the width */
+}
+
+/* Ensure the image upload container aligns items appropriately */
+.image-upload {
+  display: flex;
+  flex-direction: column; /* Stack label, button, and text vertically */
+  align-items: flex-start; /* Align items to the start */
+}
+
+/* Hide the default file input visually but keep it accessible */
+.image-upload input[type="file"] {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap; /* added line */
+    border: 0;
+}
+
+/* Style the main label for the section */
+.image-upload > label:first-of-type {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: var(--text-color); /* Assuming --text-color is defined */
+  font-size: 0.95rem;
 }
