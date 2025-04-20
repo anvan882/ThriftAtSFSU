@@ -65,7 +65,14 @@
         <!-- Image Upload -->
         <div class="form-group image-upload">
           <label for="images">Upload Images</label>
-          <input type="file" id="images" name="images" accept="image/*" multiple>
+          <input type="file" id="images" name="images" accept="image/*" multiple hidden>
+          <label for="images" class="custom-upload-btn">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M19.35 10.04a7.49 7.49 0 00-14-2A5.994 5.994 0 000 14c0 3.31 2.69 6 6 6h13a5 5 0 00.35-9.96zM13 12v4h-2v-4H8l4-4 4 4h-3z" />
+            </svg>
+            Choose Images
+          </label>
+          <span id="file-names" class="file-name">No files chosen</span>
         </div>
       
         <!-- Title -->
@@ -117,6 +124,23 @@
       </form>
       
   </section>
+
+  <script>
+    // Display selected filenames for multiple files
+    document.getElementById('images').addEventListener('change', function() {
+      const files = this.files;
+      let fileNamesText = 'No files chosen';
+      if (files.length > 0) {
+        fileNamesText = files.length + (files.length === 1 ? ' file selected: ' : ' files selected: ');
+        let names = [];
+        for(let i = 0; i < files.length; i++) {
+          names.push(files[i].name);
+        }
+        fileNamesText += names.join(', ');
+      }
+      document.getElementById('file-names').textContent = fileNamesText;
+    });
+  </script>
 
 </body>
 

@@ -1045,3 +1045,69 @@ body {
 .btn-purple:hover {
   background-color: var(--accent-purple-dark);
 }
+
+/* Styles the custom button label specifically */
+label.custom-upload-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--accent-purple); /* Assuming --accent-purple is defined or use a specific color */
+  color: white;
+  padding: 0.75rem 1.25rem;
+  font-size: 0.95rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: var(--transition); /* Assuming --transition is defined */
+  width: 100%;
+  margin-bottom: 0.5rem;
+  border: none; /* Ensure no default border */
+}
+
+label.custom-upload-btn:hover {
+  background-color: var(--accent-purple-dark); /* Assuming --accent-purple-dark is defined */
+}
+
+label.custom-upload-btn svg {
+  margin-right: 8px;
+  fill: white;
+  width: 20px;
+  height: 20px;
+}
+
+.file-name {
+  display: block; /* Ensure it takes its own line */
+  color: var(--text-color-light); /* Assuming --text-color-light is defined */
+  font-size: 0.9rem;
+  margin-top: 0.5rem;
+  text-align: left; /* Align text to the left */
+  width: 100%; /* Ensure it spans the width */
+}
+
+/* Ensure the image upload container aligns items appropriately */
+.image-upload {
+  display: flex;
+  flex-direction: column; /* Stack label, button, and text vertically */
+  align-items: flex-start; /* Align items to the start */
+}
+
+/* Hide the default file input visually but keep it accessible */
+.image-upload input[type="file"] {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap; /* added line */
+    border: 0;
+}
+
+/* Style the main label for the section */
+.image-upload > label:first-of-type {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: var(--text-color); /* Assuming --text-color is defined */
+  font-size: 0.95rem;
+}

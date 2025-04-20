@@ -130,8 +130,8 @@ if __name__ == '__main__':
 
 @app.route('/listingIndie')
 def listingIndie():
-    return render_template('listingIndie.html')
+    return render_template('listings/listing_indie.html')
 
 @app.route('/newListing')
 def newListing():
-    return render_template('newListing.html')
+    return render_template('listings/new_listing.html')
