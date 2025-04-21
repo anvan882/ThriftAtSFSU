@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, Response
+from flask import Flask, render_template, request, Response, abort, url_for
 from dotenv import load_dotenv
 import mysql.connector
 from mysql.connector import pooling
@@ -21,19 +21,14 @@ cnxpool = pooling.MySQLConnectionPool(pool_name="mypool", pool_size=10, **dbconf
 @app.route("/", methods=["GET"])
 def home():
     """Combined Home Page + Search Page"""
-
-    # Retrieve possible filter values from the query parameters
     category = request.args.get('category', '')
-    keyword = request.args.get('keyword', '')
+    keyword  = request.args.get('keyword', '')
 
-    # Fetch all categories to populate the dropdown
     connection = cnxpool.get_connection()
     cursor = connection.cursor(dictionary=True)
     cursor.execute("SELECT name FROM Categories")
-    categories = [row['name'] for row in cursor.fetchall()]
+    categories = [r['name'] for r in cursor.fetchall()]
 
-    # If no category/keyword specified, it shows all products
-    # If category or keyword is specified, it filters accordingly
     query = """
         SELECT p.product_id, p.title, p.price, p.description, c.name AS category_name,
                IF(p.product_image IS NOT NULL, 1, 0) AS has_image
@@ -42,101 +37,102 @@ def home():
         WHERE (%s = '' OR c.name = %s)
           AND (p.title LIKE %s OR p.description LIKE %s)
     """
-    keyword_like = f"%{keyword}%"
-    cursor.execute(query, (category, category, keyword_like, keyword_like))
+    like_kw = f"%{keyword}%"
+    cursor.execute(query, (category, category, like_kw, like_kw))
     results = cursor.fetchall()
 
     cursor.close()
     connection.close()
 
-    # Pass categories, the filtered results, and the current search parameters
-    return render_template('index.html',
-                           categories=categories,
-                           items=results,
-                           keyword=keyword,
-                           category=category,
-                           count=len(results))
+    return render_template(
+        'pages/index.html',
+        categories=categories,
+        items=results,
+        keyword=keyword,
+        category=category,
+        count=len(results),
+        show_filters=True
+    )
 
 @app.route('/image/<int:product_id>')
 def serve_image(product_id):
     connection = cnxpool.get_connection()
     cursor = connection.cursor(dictionary=True)
     cursor.execute("SELECT product_image FROM Products WHERE product_id = %s", (product_id,))
-    result = cursor.fetchone()
+    row = cursor.fetchone()
     cursor.close()
     connection.close()
-    
-    if result and result.get('product_image'):
-        image_blob = result['product_image']
-        if image_blob.startswith(b'\x89PNG'):
+
+    if row and row.get('product_image'):
+        img = row['product_image']
+        if img.startswith(b'\x89PNG'):
             mime = 'image/png'
-        elif image_blob.startswith(b'\xff\xd8'):
+        elif img.startswith(b'\xff\xd8'):
             mime = 'image/jpeg'
         else:
             mime = 'application/octet-stream'
-        return Response(image_blob, mimetype=mime)
+        return Response(img, mimetype=mime)
     return Response(status=404)
 
-# Profile
+# === About Pages ===
+@app.route('/about/<username>')
+def about(username):
+    team_info = {
+        'joe': {
+            'name': 'Joseph Shur',        
+            'linkedin_url': 'https://linkedin.com/in/joeshur',
+            'github_url': 'https://github.com/joeshur'
+        },
+        'sid': {
+            'name': 'Sid Padmanabhuni',   
+            'linkedin_url': 'https://linkedin.com/in/sidpad',
+            'github_url': 'https://github.com/sidpad'
+        },
+        'hilary':  {
+            'name': 'Hilary Lui',         
+            'linkedin_url': 'https://linkedin.com/in/hilarylui',
+            'github_url': 'https://github.com/hilarylui'
+        },
+        'annison': {
+            'name': 'Annison Van',        
+            'linkedin_url': 'https://linkedin.com/in/annisonvan',
+            'github_url': 'https://github.com/annisonvan'
+        },
+        'joseph':  {
+            'name': 'Joseph Alhambra',    
+            'linkedin_url': 'https://linkedin.com/in/josephalhambra','github_url': 'https://github.com/josephalhambra'
+        },
+    }
+
+    info = team_info.get(username)
+    if not info:
+        abort(404)
+
+    # this will load templates/about_<username>.html
+    template_name = f'about_team/{username}.html'
+    return render_template(template_name, **info)
+
+# === Other Routes ===
 @app.route("/profile")
-def profile(): 
-        return render_template('profile.html')
-
-# About Me Pages
-@app.route("/joe")
-def joe():
-    return render_template('about_team/joe.html', 
-                          name="Joseph Shur",
-                          linkedin_url="https://www.linkedin.com/in/joeshur",
-                          github_url="https://github.com/joseph-shur")
-
-@app.route("/hilary")
-def hilary():
-    return render_template('about_team/hilary.html', 
-                          name="Hilary Lui",
-                          linkedin_url="https://www.linkedin.com/in/hilarylui17/",
-                          github_url="https://github.com/Hluii")
-
-@app.route("/joseph")
-def joseph():
-    return render_template('about_team/joseph.html', 
-                          name="Joseph Alhambra",
-                          linkedin_url="https://www.linkedin.com/in/joseph-alhambra-iii-5a439b353/",
-                          github_url="https://github.com/JosephCVA")
-
-@app.route("/annison")
-def annison():
-    return render_template('about_team/annison.html', 
-                          name="Annison Van",
-                          linkedin_url="https://www.linkedin.com/in/annisonvan",
-                          github_url="https://github.com/anvan882")
-
-@app.route("/sid")
-def sid():
-    return render_template('about_team/sid.html', 
-                          name="Sid Padmanabhuni",
-                          linkedin_url="https://www.linkedin.com/in/sidpad03",
-                          github_url="https://github.com/SidPad03")
+def profile():
+    return render_template('pages/profile.html')
 
 @app.route('/login')
 def login():
-    return render_template('auth/login.html')
+    return render_template('pages/auth/login.html')
 
 @app.route('/signup')
 def signup():
-    return render_template('auth/signup.html')
+    return render_template('pages/auth/signup.html')
 
 @app.route('/listingIndie')
 def listingIndie():
-    return render_template('listings/listing_indie.html')
+    return render_template('pages/listings/listing_indie.html')
 
 @app.route('/newListing')
 def newListing():
-    return render_template('listings/new_listing.html')
+    return render_template('pages/listings/new_listing.html')
 
 if __name__ == '__main__':
-    if os.getenv("FLASK_ENV") == "production":
-        app.debug = False
-    else:
-        app.debug = True
+    app.debug = os.getenv("FLASK_ENV") != "production"
     app.run()

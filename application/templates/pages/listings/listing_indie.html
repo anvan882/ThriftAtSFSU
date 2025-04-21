@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Listing Details – SFSU Thrift Market{% endblock %}
+
+{% block content %}
+<section class="listingInfo">
+  <div class="product-container">
+    <div class="product-image">
+      <img src="{{ url_for('static', filename='templatephotos/placeholder_img.png') }}" alt="Product Image">
+    </div>
+    <div class="product-details">
+      <h2 class="product-price">$xxx</h2>
+      <p class="product-condition">Condition: [Insert Condition Here]</p>
+      <p class="product-description">
+        This is a placeholder description for the listing. You can update this with actual product details.
+      </p>
+      <div class="seller-profile">
+        <div class="profile-pic">
+          <img src="{{ url_for('static', filename='pfp/silhouette.png') }}" alt="Seller Profile Picture">
+        </div>
+        <div class="profile-actions">
+          <button class="btn btn-purple">View Profile</button>
+          <button class="btn btn-purple">Contact Seller</button>
+          <button class="btn btn-purple">Ratings</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

@@ -1,11 +1,13 @@
-{% extends "about_page.html" %}
+{# templates/about_pages/joe.html #}
+{% extends "_about.html" %}
 
-{% block content %}
-    <img src="{{url_for('static', filename='pfp/joe.jpg')}}" width="200px">
-    <div>Joseph Shur is currently studying Computer Science at San Francisco State University. 
-        He plans on working with both front- and back-end for his career in CS, having learned 
-        languages such as Java, HTML, and CSS/Bootstrap, and working with other languages 
-        like NodeJS, Express. He is currently learning Python and C++, as well as how to utilize
-        other server technologies to further his capability for future projects. 
-    </div>
+{% block person_content %}
+<img src="{{ url_for('static', filename='pfp/joe.jpg') }}" alt="Joseph Shur" class="about-image">
+<p>
+  Joseph Shur is currently studying Computer Science at San Francisco State University.
+  He plans on working with both front‑ and back‑end for his career in CS, having learned
+  languages such as Java, HTML, and CSS/Bootstrap, and working with other languages
+  like Node.js and Express. He is currently learning Python and C++, as well as
+  how to utilize other server technologies to further his capability for future projects.
+</p>
 {% endblock %}

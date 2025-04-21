@@ -1,8 +1,9 @@
-{% extends "about_page.html" %}
+{# templates/about_pages/sid.html #}
+{% extends "_about.html" %}
 
-{% block content %}
-    <img src="{{url_for('static', filename='pfp/sid.png')}}" alt="Profile Photo" class="profile-photo"
-         style="height: 200px">
-    <p>Hi! I am Sid, and I am a backend developer for this project.</p>
+{% block person_content %}
+<img src="{{ url_for('static', filename='pfp/sid.png') }}" alt="Sid Padmanabhuni" class="about-image">
+<p>
+  Hi! I am Sid, and I am a back‑end developer for this project.
+</p>
 {% endblock %}
-
