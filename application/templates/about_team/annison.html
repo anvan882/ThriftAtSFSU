@@ -1,3 +1,11 @@
+{% extends "about_page.html" %}
+
+{% block content %}
+    <img src="{{url_for('static', filename='pfp/annison.jpg')}}" alt="silhouette of a person" height="300px">
+    <p>Student at San Francisco State University</p>
+    <a href="https://www.linkedin.com/in/annisonvan" target="_blank">Linkedin</a>
+    <a href="https://github.com/anvan882" target="_blank">GitHub</a>
+{% endblock %}
 {# templates/about_pages/annison.html #}
 {% extends "_about.html" %}
 

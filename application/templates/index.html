@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>Thrift at SFSU</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+  <!-- ========== Top Navbar with Search and Auth ========== -->
+  <nav class="navbar">
+    <div class="navbar-left">
+      <a href="{{ url_for('home') }}" class="logo">SFSU Thrift Market</a>
+    </div>
+
+    <form action="{{ url_for('home') }}" method="get" class="search-form">
+      <label for="category" class="visually-hidden">Category</label>
+      <select name="category">
+        <option value="">All</option>
+        {% for cat in categories %}
+        <option value="{{ cat }}" {% if cat==category %}selected{% endif %}>{{ cat }}</option>
+        {% endfor %}
+      </select>
+
+      <label for="keyword" class="visually-hidden">Keyword</label>
+      <input type="text" name="keyword" placeholder="Search products..." value="{{ keyword }}">
+
+      <button type="submit" aria-label="Search">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+      </button>
+    </form>
+
+    <div class="auth-buttons">
+      <a href="{{ url_for('login') }}" class="btn btn-outline">Login</a>
+    </div>
+  </nav>
+
+  <!-- ========== Submenu for About the Team ========== -->
+  <nav class="submenu">
+    <ul>
+      <li class="dropdown">
+        <a href="#">About the Team ▾</a>
+        <ul class="dropdown-menu">
+          <li><a href="{{ url_for('joe') }}">Joseph Shur</a></li>
+          <li><a href="{{ url_for('sid') }}">Sid Padmanabhuni</a></li>
+          <li><a href="{{ url_for('hilary') }}">Hilary Lui</a></li>
+          <li><a href="{{ url_for('annison') }}">Annison Van</a></li>
+          <li><a href="{{ url_for('joseph') }}">Joseph Alhambra</a></li>
+        </ul>
+      </li>
+    </ul>
+  </nav>
+
+  <!-- ========== Main Container ========== -->
+  <div class="container">
+
+    <!-- ========== Show Search Criteria / Results Info ========== -->
+    <div class="search-info">
+      <p>Showing <strong>{{ count }}</strong> result{{ 's' if count != 1 else '' }}
+        {% if category or keyword %}
+        for
+        {% if category %} Category: <strong>{{ category }}</strong>{% endif %}
+        {% if keyword %} Keyword: <strong>{{ keyword }}</strong>{% endif %}
+        {% else %}
+        (All Products)
+        {% endif %}
+      </p>
+    </div>
+
+    <!-- ========== Product Listing ========== -->
+    <div class="product-list">
+      {% for item in items %}
+      <div class="card product-card">
+        <h3 class="product-title">{{ item.title }} — ${{ item.price }}</h3>
+        <p class="product-description">{{ item.description }}</p>
+        {% if item.has_image %}
+        <img src="{{ url_for('serve_image', product_id=item.product_id) }}" alt="Product image" class="product-image">
+        {% else %}
+        <p><em>No image available</em></p>
+        {% endif %}
+      </div>
+      {% else %}
+      <p>No items found matching your search.</p>
+      {% endfor %}
+    </div>
+  </div>
+
+</body>
+
+</html>

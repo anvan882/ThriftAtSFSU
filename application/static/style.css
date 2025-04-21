@@ -1202,6 +1202,349 @@ footer.footer {
   bottom: 0;
   left: 0;
 }
+:root {
+  --accent-purple: #6a0dad;
+  --accent-purple-dark: #550a9e;
+  --bg-color: #f7f7f7;
+  --text-color: #333;
+  --light-border: #ccc;
+  --hover-bg: #efefef;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  line-height: 1.5;
+}
+
+.container {
+  max-width: 1200px;
+  margin: auto;
+  padding: 20px;
+}
+
+/* ========== Navbar Styles ========== */
+
+.navbar {
+  background: #fff;
+  border-bottom: 2px solid var(--accent-purple);
+  display: flex;
+  align-items: center;
+  padding: 20px;
+  gap: 20px;
+  flex-wrap: wrap;
+  justify-content: space-between;
+}
+
+.navbar-left {
+  display: flex;
+  align-items: center;
+}
+
+.logo {
+  font-size: 1.5em;
+  font-weight: bold;
+  color: var(--accent-purple);
+  text-decoration: none;
+}
+
+/* ========== Submenu Styles ========== */
+
+.submenu {
+  background-color: var(--accent-purple);
+  padding: 2px 16px;
+  position: relative;
+  z-index: 999;
+}
+
+.submenu ul {
+  display: flex;
+  gap: 20px;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.submenu ul li {
+  position: relative;
+}
+
+.submenu ul li a {
+  color: #fff;
+  font-weight: 500;
+  text-decoration: none;
+  transition: text-decoration 0.2s;
+  padding: 4px 8px;
+  display: inline-block;
+}
+
+.submenu ul li a:hover {
+  text-decoration: underline;
+}
+
+/* Dropdown menu container for submenu */
+.submenu .dropdown-menu {
+  display: none;
+  visibility: hidden;
+  opacity: 0;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background-color: #fff;
+  border: 1px solid var(--light-border);
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  min-width: 180px;
+  transition: opacity 0.2s ease;
+}
+
+.submenu .dropdown:hover .dropdown-menu {
+  display: block;
+  visibility: visible;
+  opacity: 1;
+}
+
+.submenu .dropdown-menu li {
+  padding: 0;
+  list-style: none;
+}
+
+.submenu .dropdown-menu li a {
+  display: block;
+  padding: 8px 16px;
+  color: var(--text-color);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.submenu .dropdown-menu li a:hover {
+  background-color: var(--hover-bg);
+  color: var(--accent-purple);
+}
+
+/* ========== Auth Buttons ========== */
+.auth-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.auth-buttons .btn {
+  padding: 8px 16px;
+  border-radius: 18px;
+  font-weight: 500;
+  text-decoration: none;
+  font-size: 0.95rem;
+  border: none;
+  background-color: var(--accent-purple);
+  color: white;
+  transition: background-color 0.3s ease;
+}
+
+.auth-buttons .btn:hover {
+  background-color: var(--accent-purple-dark);
+}
+
+.auth-buttons .btn-outline {
+  background: transparent;
+  color: var(--accent-purple);
+  border: 2px solid var(--accent-purple);
+}
+
+.auth-buttons .btn-outline:hover {
+  background-color: var(--accent-purple);
+  color: white;
+}
+
+/* ========== Nav Links (used elsewhere) ========== */
+.nav-links {
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 0;
+  margin: 0;
+}
+
+.nav-links li {
+  position: relative;
+}
+
+.nav-links li a {
+  text-decoration: none;
+  color: var(--text-color);
+  font-weight: 500;
+  padding: 8px 12px;
+  border-radius: 4px;
+  transition: background-color 0.3s, color 0.3s;
+}
+
+.nav-links li a:hover {
+  background-color: var(--hover-bg);
+}
+
+/* ========== Search Bar ========== */
+
+.search-form {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--light-border);
+  border-radius: 50px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+  max-width: 600px;
+  flex: 1;
+  background: #fff;
+  height: 48px;
+}
+
+.search-form select {
+  border: none;
+  outline: none;
+  background: #D3D3D3 url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http://www.w3.org/2000/svg%22%20width%3D%2210%22%20height%3D%227%22%20viewBox%3D%220%200%2010%207%22%3E%3Cpath%20fill%3D%22%23333%22%20d%3D%22M0%200l5%207%205-7z%22/%3E%3C/svg%3E") no-repeat right 8px center;
+  background-size: 10px 7px;
+  font-weight: 500;
+  font-size: 1rem;
+  height: 100%;
+  line-height: 48px;
+  padding: 0 28px 0 12px;
+  /* left padding + space for dropdown arrow */
+  appearance: none;
+  text-align-last: center;
+  width: auto;
+  min-width: fit-content;
+  flex: 0 0 auto;
+}
+
+.search-form input[type="text"] {
+  flex: 1;
+  padding: 0 15px;
+  border: none;
+  outline: none;
+  font-size: 1rem;
+  height: 100%;
+}
+
+.search-form button {
+  background-color: var(--accent-purple);
+  color: #fff;
+  padding: 0 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  height: 100%;
+  cursor: pointer;
+}
+
+.search-form button:hover {
+  background-color: var(--accent-purple-dark);
+}
+
+/* ========== Search Info / Results ========== */
+
+.search-info {
+  background: #fff;
+  border: 1px solid var(--light-border);
+  border-radius: 4px;
+  padding: 10px;
+  margin: 20px 0;
+}
+
+/* ========== Product Cards ========== */
+
+.product-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+.product-card {
+  background: #fff;
+  border: 1px solid var(--light-border);
+  border-radius: 10px;
+  padding: 15px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+}
+
+.product-title {
+  margin-bottom: 8px;
+}
+
+.product-description {
+  margin-bottom: 10px;
+  color: #555;
+}
+
+.product-image {
+  width: 100%;
+  height: auto;
+  max-height: 250px;
+  object-fit: cover;
+  display: block;
+}
+
+/* ========== Responsive ========== */
+
+@media (max-width: 768px) {
+  .navbar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .nav-links {
+    flex-direction: column;
+    align-items: flex-start;
+    width: 100%;
+  }
+
+  .search-form {
+    width: 100%;
+    margin-top: 10px;
+  }
+
+  .submenu ul {
+    flex-direction: column;
+    gap: 10px;
+  }
+}
+
+/* ========== Accessibility ========== */
+.visually-hidden {
+  position: absolute;
+  left: -9999px;
+  top: auto;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+/* Override for messaging page layout */
+.messaging-page .container {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: row;
+  max-width: 1200px;
+  width: 100%;
+  margin: auto;
+  padding: 0;
+  overflow: hidden;
+}
+
+body.messaging-page {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
 
 @media (max-width: 576px) {
   footer.footer {
