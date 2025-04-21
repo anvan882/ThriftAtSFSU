@@ -133,6 +133,98 @@ def listingIndie():
 def newListing():
     return render_template('pages/listings/new_listing.html')
 
+# Messages
+@app.route('/messages')
+def messages():
+    # Active conversation (highlighted in the sidebar)
+    active_user = {
+        "id": 1,
+        "name": "John Doe",
+        "avatar_url": "/static/avatars/john.png",
+        "online": True,
+        "last_message": "Hey, are you coming?"
+    }
+
+    # All of the “other” conversations, now with a direction flag
+    all_users = [
+        {
+            "id": 2,
+            "name": "Alice Smith",
+            "avatar_url": "/static/avatars/alice.png",
+            "online": False,
+            "last_message": "Thanks for the update!",
+            "direction": "incoming"
+        },
+        {
+            "id": 3,
+            "name": "Bob Johnson",
+            "avatar_url": "/static/avatars/bob.png",
+            "online": True,
+            "last_message": "Let's catch up soon.",
+            "direction": "outgoing"
+        },
+        {
+            "id": 4,
+            "name": "Carol Lee",
+            "avatar_url": "/static/avatars/carol.png",
+            "online": True,
+            "last_message": "Got it, thanks!",
+            "direction": "incoming"
+        }
+    ]
+
+    # Split into two lists
+    incoming_users = [u for u in all_users if u["direction"] == "incoming"]
+    outgoing_users = [u for u in all_users if u["direction"] == "outgoing"]
+
+    # The user whose chat is open on the right
+    chat_user = {
+        "name": active_user["name"],
+        "avatar_url": active_user["avatar_url"],
+        "online": active_user["online"],
+        "status_text": "Active now"
+    }
+
+    # Chat history messages
+    messages = [
+        {"text": "Hi there!",           "timestamp": "10:01 AM", "is_sent": False},
+        {"text": "Hello!",              "timestamp": "10:02 AM", "is_sent": True},
+        {"text": "How are you?",        "timestamp": "10:03 AM", "is_sent": False},
+        {"text": "I'm good—thanks!",    "timestamp": "10:04 AM", "is_sent": True},
+        {"text": "Want to grab lunch?", "timestamp": "10:05 AM", "is_sent": False}
+    ]
+
+    return render_template(
+        'pages/messaging.html',
+        active_user=active_user,
+        incoming_users=incoming_users,
+        outgoing_users=outgoing_users,
+        chat_user=chat_user,
+        messages=messages
+    )
+
+# Wishlist Page
+@app.route('/wishlist')
+def wishlist():
+    # Dummy data for testing
+    items = [
+        {
+            'product_id': 1,
+            'title': 'Vintage Hoodie',
+            'price': 20,
+            'description': 'Comfy and warm hoodie from the 90s',
+            'has_image': True
+        },
+        {
+            'product_id': 2,
+            'title': 'Retro Sneakers',
+            'price': 45,
+            'description': 'Classic 80s style shoes',
+            'has_image': False
+        }
+    ]
+    return render_template('pages/wishlist.html', items=items)
+
 if __name__ == '__main__':
     app.debug = os.getenv("FLASK_ENV") != "production"
     app.run()
