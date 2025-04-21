@@ -21,19 +21,14 @@ cnxpool = pooling.MySQLConnectionPool(pool_name="mypool", pool_size=10, **dbconf
 @app.route("/", methods=["GET"])
 def home():
     """Combined Home Page + Search Page"""
-
-    # Retrieve possible filter values from the query parameters
     category = request.args.get('category', '')
     keyword  = request.args.get('keyword', '')
 
-    # Fetch all categories to populate the dropdown
     connection = cnxpool.get_connection()
     cursor = connection.cursor(dictionary=True)
     cursor.execute("SELECT name FROM Categories")
-    categories = [row['name'] for row in cursor.fetchall()]
+    categories = [r['name'] for r in cursor.fetchall()]
 
-    # If no category/keyword specified, it shows all products
-    # If category or keyword is specified, it filters accordingly
     query = """
         SELECT p.product_id, p.title, p.price, p.description, c.name AS category_name,
                IF(p.product_image IS NOT NULL, 1, 0) AS has_image
@@ -103,7 +98,7 @@ def about(username):
             'linkedin_url': 'https://linkedin.com/in/annisonvan',
             'github_url': 'https://github.com/annisonvan'
         },
-        'about_team/joseph':  {
+        'joseph':  {
             'name': 'Joseph Alhambra',    
             'linkedin_url': 'https://linkedin.com/in/josephalhambra','github_url': 'https://github.com/josephalhambra'
         },
@@ -126,18 +121,89 @@ def profile():
 def login():
     return render_template('pages/auth/login.html')
 
-@app.route("/joseph")
-def joseph():
-    return render_template('joseph.html', name="Joseph Alhambra")
+@app.route('/signup')
+def signup():
+    return render_template('pages/auth/signup.html')
 
-@app.route("/annison")
-def annison():
-    return render_template('annison.html', name="Annison Van")
+@app.route('/listingIndie')
+def listingIndie():
+    return render_template('pages/listings/listing_indie.html')
 
-@app.route("/sid")
-def sid():
-    return render_template('sid.html', name="Sid Padmanabhuni")
+@app.route('/newListing')
+def newListing():
+    return render_template('pages/listings/new_listing.html')
 
+# Messages
+@app.route('/messages')
+def messages():
+    # Active conversation (highlighted in the sidebar)
+    active_user = {
+        "id": 1,
+        "name": "John Doe",
+        "avatar_url": "/static/avatars/john.png",
+        "online": True,
+        "last_message": "Hey, are you coming?"
+    }
+
+    # All of the “other” conversations, now with a direction flag
+    all_users = [
+        {
+            "id": 2,
+            "name": "Alice Smith",
+            "avatar_url": "/static/avatars/alice.png",
+            "online": False,
+            "last_message": "Thanks for the update!",
+            "direction": "incoming"
+        },
+        {
+            "id": 3,
+            "name": "Bob Johnson",
+            "avatar_url": "/static/avatars/bob.png",
+            "online": True,
+            "last_message": "Let's catch up soon.",
+            "direction": "outgoing"
+        },
+        {
+            "id": 4,
+            "name": "Carol Lee",
+            "avatar_url": "/static/avatars/carol.png",
+            "online": True,
+            "last_message": "Got it, thanks!",
+            "direction": "incoming"
+        }
+    ]
+
+    # Split into two lists
+    incoming_users = [u for u in all_users if u["direction"] == "incoming"]
+    outgoing_users = [u for u in all_users if u["direction"] == "outgoing"]
+
+    # The user whose chat is open on the right
+    chat_user = {
+        "name": active_user["name"],
+        "avatar_url": active_user["avatar_url"],
+        "online": active_user["online"],
+        "status_text": "Active now"
+    }
+
+    # Chat history messages
+    messages = [
+        {"text": "Hi there!",           "timestamp": "10:01 AM", "is_sent": False},
+        {"text": "Hello!",              "timestamp": "10:02 AM", "is_sent": True},
+        {"text": "How are you?",        "timestamp": "10:03 AM", "is_sent": False},
+        {"text": "I'm good—thanks!",    "timestamp": "10:04 AM", "is_sent": True},
+        {"text": "Want to grab lunch?", "timestamp": "10:05 AM", "is_sent": False}
+    ]
+
+    return render_template(
+        'pages/messaging.html',
+        active_user=active_user,
+        incoming_users=incoming_users,
+        outgoing_users=outgoing_users,
+        chat_user=chat_user,
+        messages=messages
+    )
+
+# Wishlist Page
 @app.route('/wishlist')
 def wishlist():
     # Dummy data for testing
@@ -157,7 +223,7 @@ def wishlist():
             'has_image': False
         }
     ]
-    return render_template('wishlist.html', items=items)
+    return render_template('pages/wishlist.html', items=items)
 
 if __name__ == '__main__':
     app.debug = os.getenv("FLASK_ENV") != "production"

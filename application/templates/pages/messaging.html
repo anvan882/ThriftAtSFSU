@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+
+{% block title %}Messages - SFSU Thrift Market{% endblock %}
+
+{% block head %}
+  {{ super() }}
+  <link rel="stylesheet" href="{{ url_for('static', filename='messaging.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="messaging-interface">
+
+  <!-- Sidebar / conversation list -->
+  <aside class="sidebar">
+
+    <!-- Search box -->
+    <input
+      type="text"
+      class="chat-search"
+      id="chat-search"
+      placeholder="Search conversations…"
+    />
+
+    <!-- Incoming messages section -->
+    <div class="section incoming">
+      <h4>Incoming Messages</h4>
+      <ul class="conversation-list incoming-list">
+        {% for user in incoming_users %}
+        <li class="{% if user.id == active_user.id %}active{% endif %}">
+          <div class="avatar">
+            <img src="{{ user.avatar_url }}" alt="{{ user.name }}">
+            <span class="status {{ 'online' if user.online else 'offline' }}"></span>
+          </div>
+          <div class="conversation-info">
+            <p class="name">{{ user.name }}</p>
+            <p class="snippet">{{ user.last_message }}</p>
+          </div>
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+
+    <!-- Outgoing messages section -->
+    <div class="section outgoing">
+      <h4>Outgoing Messages</h4>
+      <ul class="conversation-list outgoing-list">
+        {% for user in outgoing_users %}
+        <li>
+          <div class="avatar">
+            <img src="{{ user.avatar_url }}" alt="{{ user.name }}">
+            <span class="status {{ 'online' if user.online else 'offline' }}"></span>
+          </div>
+          <div class="conversation-info">
+            <p class="name">{{ user.name }}</p>
+            <p class="snippet">{{ user.last_message }}</p>
+          </div>
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+
+  </aside>
+
+
+  <!-- Chat area -->
+  <section class="chat-area">
+
+    <!-- Chat header -->
+    <header class="chat-header">
+      <div class="avatar">
+        <img src="{{ chat_user.avatar_url }}" alt="{{ chat_user.name }}">
+        <span class="status {{ 'online' if chat_user.online else 'offline' }}"></span>
+      </div>
+      <div class="contact-name">{{ chat_user.name }}</div>
+      <div class="contact-status">{{ chat_user.status_text }}</div>
+    </header>
+
+    <!-- Message history -->
+    <div class="chat-history">
+      {% for msg in messages %}
+      <div class="message {{ 'sent' if msg.is_sent else 'received' }}">
+        {{ msg.text }}
+        <span class="timestamp">{{ msg.timestamp }}</span>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- Input composer -->
+    <footer class="chat-input">
+      <button type="button" class="attach-btn" title="Attach file">📎</button>
+      <input
+        type="text"
+        placeholder="Type a message…"
+        aria-label="Type a message"
+      />
+      <button type="button" class="send-btn">Send</button>
+    </footer>
+
+  </section>
+</div>
+{% endblock %}
