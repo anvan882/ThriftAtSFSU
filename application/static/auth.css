@@ -1,0 +1,215 @@
+:root {
+  --accent-purple: #6a0dad;
+  --accent-purple-dark: #550a9e;
+  --accent-purple-light: #f3e5f5;
+  --bg-color: #f8f9fa;
+  --text-color: #2c3e50;
+  --text-color-light: #6c757d;
+  --light-border: #e9ecef;
+  --hover-bg: #f8f9fa;
+  --card-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  --hover-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  --transition: all 0.3s ease;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  line-height: 1.6;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  padding: 2rem;
+}
+
+.auth-container {
+  background: #fff;
+  padding: 2rem;
+  border-radius: 8px;
+  box-shadow: var(--hover-shadow);
+  width: 100%;
+  max-width: 450px;
+  transition: var(--transition);
+}
+
+.auth-container:hover {
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+}
+
+.auth-header {
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.auth-header h2 {
+  color: var(--accent-purple);
+  font-weight: 600;
+  font-size: 1.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.auth-header p {
+  color: var(--text-color-light);
+  font-size: 0.95rem;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-group {
+  margin-bottom: 1.25rem;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: var(--text-color);
+  font-size: 0.95rem;
+}
+
+.form-control {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  border: 1px solid var(--light-border);
+  font-size: 1rem;
+  transition: var(--transition);
+  background-color: #fff;
+}
+
+.form-control:focus {
+  outline: none;
+  border-color: var(--accent-purple);
+  box-shadow: 0 0 0 3px var(--accent-purple-light);
+}
+
+.form-control::placeholder {
+  color: #adb5bd;
+}
+
+.btn-primary {
+  background-color: var(--accent-purple);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--transition);
+  width: 100%;
+  margin-top: 0.5rem;
+}
+
+.btn-primary:hover {
+  background-color: var(--accent-purple-dark);
+  transform: translateY(-1px);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+.auth-footer {
+  text-align: center;
+  margin-top: 1.5rem;
+  font-size: 0.95rem;
+  color: var(--text-color-light);
+}
+
+.auth-footer a {
+  color: var(--accent-purple);
+  text-decoration: none;
+  font-weight: 500;
+  transition: var(--transition);
+}
+
+.auth-footer a:hover {
+  color: var(--accent-purple-dark);
+  text-decoration: underline;
+}
+
+/* Styles the custom button label specifically */
+label.custom-upload-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--accent-purple);
+  color: white;
+  /* Set text color to white */
+  padding: 0.75rem 1.25rem;
+  font-size: 0.95rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: var(--transition);
+  width: 100%;
+  margin-bottom: 0.5rem;
+}
+
+label.custom-upload-btn:hover {
+  background-color: var(--accent-purple-dark);
+}
+
+label.custom-upload-btn svg {
+  margin-right: 8px;
+  fill: white;
+  width: 20px;
+  height: 20px;
+}
+
+.file-name {
+  color: var(--text-color-light);
+  font-size: 0.9rem;
+  margin-top: 0.5rem;
+  text-align: center;
+}
+
+/* Responsive adjustments */
+@media (max-width: 576px) {
+  body {
+    padding: 1rem;
+  }
+
+  .auth-container {
+    padding: 1.5rem;
+  }
+}
+
+/* ========== Back Link Styles (Copied from style.css) ========== */
+.back-link {
+  /* Position absolutely in the top-left corner */
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  display: inline-flex;
+  align-items: center;
+  color: var(--accent-purple);
+  text-decoration: none;
+  font-weight: 500;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  transition: var(--transition);
+  border: 1px solid var(--accent-purple);
+}
+
+.back-link:hover {
+  background-color: var(--accent-purple);
+  color: white;
+}
+
+.back-link svg {
+  margin-right: 0.5rem;
+}
+
+/* Remove responsive absolute positioning override */

@@ -1,0 +1,26 @@
+<nav class="submenu">
+  <ul>
+    {% if show_filters %}
+    <li>
+      <button id="toggleFiltersBtn" class="toggle-filters-btn">
+        <span class="button-text">Filters</span>
+        <span class="icon-container">
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </span>
+      </button>
+    </li>
+    {% endif %}
+    <li class="dropdown">
+      <a href="#">About the Team ▾</a>
+      <ul class="dropdown-menu">
+        <li><a href="{{ url_for('about', username='joe') }}">Joseph Shur</a></li>
+        <li><a href="{{ url_for('about', username='sid') }}">Sid Padmanabhuni</a></li>
+        <li><a href="{{ url_for('about', username='hilary') }}">Hilary Lui</a></li>
+        <li><a href="{{ url_for('about', username='annison') }}">Annison Van</a></li>
+        <li><a href="{{ url_for('about', username='joseph') }}">Joseph Alhambra</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>

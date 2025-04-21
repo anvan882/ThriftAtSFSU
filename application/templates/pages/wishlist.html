@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block title %}Wishlist - SFSU Thrift Market{% endblock %}
+
+{% block content %}
+<section class="container">
+  <!-- Add item count display -->
+  <div class="search-info">
+    <p>Showing <strong>{{ items|length }}</strong> item{{ 's' if items|length != 1 else '' }} in your wishlist</p>
+  </div>
+
+  <div class="product-list">
+    {% for item in items %}
+    <div class="card product-card" data-product-id="{{ item.product_id }}">
+      <!-- TODO: Add image -->
+      <!-- {% if item.has_image %}
+      <img src="{{ url_for('serve_image', product_id=item.product_id) }}" alt="Product image" class="product-image">
+      {% else %} -->
+      <!-- <div class="product-placeholder product-image">No image</div> {# Added product-image class for consistent spacing #}
+      {% endif %} -->
+      <div class="product-placeholder product-image">No image</div>
+      <h3 class="product-title">{{ item.title }} — ${{ item.price }}</h3>
+      <p class="product-description">{{ item.description }}</p>
+
+      <!-- Dummy placeholder for remove form -->
+      {#
+      <form action="{{ url_for('remove_from_wishlist', product_id=item.product_id) }}" method="POST">
+        <button type="submit" class="wishlist-button active">
+          ❤️ Remove from Wishlist
+        </button>
+      </form>
+      #}
+    </div>
+    {% else %}
+    <p class="empty-state">You haven't wishlisted any items yet.</p>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

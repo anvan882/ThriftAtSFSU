@@ -1,0 +1,34 @@
+<nav class="navbar">
+  <div class="navbar-left">
+    <a href="{{ url_for('home') }}" class="logo">
+      <span class="logoPurple">Thrift</span><span class="logoYellow">@SFSU</span>
+    </a>
+  </div>
+
+  <form action="{{ url_for('home') }}" method="get" class="search-form">
+    <label for="category" class="visually-hidden">Category</label>
+    <select name="category">
+      <option value="">All</option>
+      {% for cat in categories %}
+      <option value="{{ cat }}" {% if cat==category %}selected{% endif %}>{{ cat }}</option>
+      {% endfor %}
+    </select>
+
+    <label for="keyword" class="visually-hidden">Keyword</label>
+    <input type="text" name="keyword" placeholder="Search products..." value="{{ keyword }}">
+
+    <button type="submit" aria-label="Search">
+      <!-- search icon SVG -->
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="8" />
+        <line x1="21" y1="21" x2="16.65" y2="16.65" />
+      </svg>
+    </button>
+  </form>
+
+  <div class="auth-buttons">
+    <a href="{{ url_for('profile') }}" class="btn btn-outline">Profile</a>
+    <a href="{{ url_for('login') }}" class="btn btn-outline">Login</a>
+  </div>
+</nav>
