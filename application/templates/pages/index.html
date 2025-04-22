@@ -82,7 +82,9 @@
           (All Products)
           {% endif %}
         </p>
-        <a href="{{ url_for('newListing') }}" class="btn btn-primary">Add New Listing</a>
+        {% if user_is_logged_in %}
+          <a href="{{ url_for('newListing') }}" class="btn btn-outline">Add New Listing</a>
+        {% endif %}
       </div>
 
       <div class="product-list">
@@ -110,6 +112,8 @@
 {% endblock %}
 
 {% block scripts %}
+{{ super() }} {# Include scripts from base.html (e.g., flash message hider) #}
+
 <!-- Filter toggle (submenu provides the button when show_filters=True) -->
 <script>
   const toggleBtn = document.getElementById('toggleFiltersBtn');

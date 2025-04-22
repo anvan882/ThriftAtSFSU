@@ -9,6 +9,18 @@
 </head>
 
 <body>
+    {# --- Flash Messages --- #}
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="flash-messages-container auth-flash-messages">
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }}">{{ message }}</div>
+        {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+    {# --- End Flash Messages --- #}
+
     <!-- Back to Home Link -->
     <a href="{{ url_for('home') }}" class="back-link">
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
@@ -26,37 +38,37 @@
 
         <form method="POST" action="{{ url_for('signup') }}" enctype="multipart/form-data" class="auth-form">
             <div class="form-group">
-                <label for="first_name">First Name</label>
+                <label for="first_name">First Name <span class="required">*</span></label>
                 <input type="text" id="first_name" name="first_name" class="form-control"
-                    placeholder="Enter your first name" required>
+                    placeholder="Enter your first name" required value="{{ form_data.get('first_name', '') }}">
             </div>
 
             <div class="form-group">
-                <label for="last_name">Last Name</label>
+                <label for="last_name">Last Name <span class="required">*</span></label>
                 <input type="text" id="last_name" name="last_name" class="form-control"
-                    placeholder="Enter your last name" required>
+                    placeholder="Enter your last name" required value="{{ form_data.get('last_name', '') }}">
             </div>
 
             <div class="form-group">
-                <label for="email">Email</label>
+                <label for="email">Email <span class="required">*</span></label>
                 <input type="email" id="email" name="email" class="form-control" placeholder="Enter your email"
-                    required>
+                    required value="{{ form_data.get('email', '') }}">
             </div>
 
             <div class="form-group">
-                <label for="password">Password</label>
+                <label for="password">Password <span class="required">*</span></label>
                 <input type="password" id="password" name="password" class="form-control"
                     placeholder="Create a password" required>
             </div>
 
             <div class="form-group">
-                <label for="phone_number">Phone Number</label>
+                <label for="phone_number">Phone Number <span class="required">*</span></label>
                 <input type="tel" id="phone_number" name="phone_number" class="form-control"
-                    placeholder="Enter your phone number" required>
+                    placeholder="Enter your phone number" required value="{{ form_data.get('phone_number', '') }}">
             </div>
 
             <div class="form-group">
-                <label for="profile_picture">Profile Picture</label>
+                <label for="profile_picture">Profile Picture <span class="required">*</span></label>
                 <input type="file" id="profile_picture" name="profile_picture" accept=".jpg, .jpeg, .png" hidden>
 
                 <label for="profile_picture" class="custom-upload-btn">
@@ -84,6 +96,80 @@
             const fileName = this.files[0] ? this.files[0].name : 'No file chosen';
             document.getElementById('file-name').textContent = fileName;
         });
+    </script>
+
+    <script>
+        // Auto-hide flash messages after 5 seconds
+        document.addEventListener('DOMContentLoaded', () => {
+          const flashContainers = document.querySelectorAll('.flash-messages-container.auth-flash-messages'); 
+          flashContainers.forEach(container => {
+            if (container) { // Check if the container exists
+              setTimeout(() => {
+                container.style.transition = 'opacity 0.5s ease-out';
+                container.style.opacity = '0';
+                // Wait for fade out to complete, then hide fully
+                setTimeout(() => {
+                  container.style.display = 'none';
+                }, 500); // Match transition duration
+              }, 5000); // 5 seconds
+            }
+          });
+        });
+    </script>
+
+    <script>
+      // Phone number auto-formatting
+      document.addEventListener('DOMContentLoaded', () => {
+        const phoneInput = document.getElementById('phone_number');
+
+        const formatPhoneNumber = (value) => {
+          if (!value) return value;
+          const phoneNumber = value.replace(/[^\d]/g, ''); // Remove non-digits
+          const phoneNumberLength = phoneNumber.length;
+
+          if (phoneNumberLength === 0) return ''; // Handle empty case
+          if (phoneNumberLength <= 3) return `(${phoneNumber}`;
+          if (phoneNumberLength <= 6) return `(${phoneNumber.slice(0, 3)}) ${phoneNumber.slice(3)}`;
+          return `(${phoneNumber.slice(0, 3)}) ${phoneNumber.slice(3, 6)}-${phoneNumber.slice(6, 10)}`;
+        };
+
+        phoneInput.addEventListener('input', (e) => {
+          const input = e.target;
+          const originalValue = input.value; 
+          const cursorPosition = input.selectionStart; 
+
+          // Figure out which digit the cursor was effectively after
+          let digitsBeforeCursor = 0;
+          for (let i = 0; i < cursorPosition; i++) {
+              if (/\d/.test(originalValue[i])) {
+                  digitsBeforeCursor++;
+              }
+          }
+
+          // Get raw digits and format
+          const rawDigits = originalValue.replace(/\D/g, '');
+          const formattedValue = formatPhoneNumber(rawDigits);
+          input.value = formattedValue; 
+
+          // Calculate the new cursor position
+          let newCursorPos = 0;
+          let digitsCounted = 0;
+          for (let i = 0; i < formattedValue.length; i++) {
+              newCursorPos = i + 1; // Tentative position *after* current character
+              if (/\d/.test(formattedValue[i])) {
+                  digitsCounted++;
+              }
+              if (digitsCounted >= digitsBeforeCursor) {
+                  break; // Stop once we've passed the target digit
+              }
+          }
+          // Ensure cursor doesn't go beyond the actual length
+          newCursorPos = Math.min(newCursorPos, formattedValue.length);
+
+          // Set the adjusted cursor position
+          input.setSelectionRange(newCursorPos, newCursorPos);
+        });
+      });
     </script>
 </body>
 

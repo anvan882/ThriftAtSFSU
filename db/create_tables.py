@@ -17,6 +17,7 @@ db = mysql.connector.connect(
 # Define table creation SQL
 TABLES = {}
 
+# Bio, calendar?
 TABLES['Users'] = (
     """
     CREATE TABLE IF NOT EXISTS Users (
