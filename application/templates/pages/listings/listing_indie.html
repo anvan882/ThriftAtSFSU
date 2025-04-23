@@ -1,29 +1,148 @@
 {% extends "base.html" %}
-{% block title %}Listing Details – SFSU Thrift Market{% endblock %}
+{% block title %}{{ product.title | default('Listing Details') }} – SFSU Thrift Market{% endblock %}
 
 {% block content %}
+{% if product %}
 <section class="listingInfo">
   <div class="product-container">
-    <div class="product-image">
-      <img src="{{ url_for('static', filename='templatephotos/placeholder_img.png') }}" alt="Product Image">
+    <div class="product-image image-carousel-container">
+      {% if image_ids %}
+        <div class="carousel-images">
+          {% for image_id in image_ids %}
+            <div class="carousel-slide {{ 'active' if loop.first }}">
+              <img src="{{ url_for('serve_image', image_id=image_id) }}" alt="{{ product.title }} - Image {{ loop.index }}">
+            </div>
+          {% endfor %}
+        </div>
+
+        {% if image_ids | length > 1 %}
+          {# <button class="carousel-arrow prev" aria-label="Previous image">&#10094;</button> #}
+          {# <button class="carousel-arrow next" aria-label="Next image">&#10095;</button> #}
+          <div class="carousel-dots">
+            {% for image_id in image_ids %}
+              <span class="dot {{ 'active' if loop.first }}" data-slide-index="{{ loop.index0 }}"></span>
+            {% endfor %}
+          </div>
+        {% endif %}
+
+      {% else %}
+        {# Display placeholder if no images #}
+        <div class="carousel-slide active">
+          <img src="{{ url_for('static', filename='templatephotos/placeholder_img.png') }}" alt="Placeholder Image">
+        </div>
+      {% endif %}
     </div>
     <div class="product-details">
-      <h2 class="product-price">$xxx</h2>
-      <p class="product-condition">Condition: [Insert Condition Here]</p>
+      <h1 class="product-title-large">{{ product.title }}</h1>
+      <h2 class="product-price">${{ "%.2f"|format(product.price) }}</h2>
+      {# Product Condition is not in DB schema, using placeholder or passed value #}
+      <p class="product-condition">Condition: {{ product.condition | default('Not specified') }}</p>
       <p class="product-description">
-        This is a placeholder description for the listing. You can update this with actual product details.
+        {{ product.description | default('No description provided.') }}
       </p>
+      <p class="product-category">Category: {{ product.category_name | default('Unknown') }}</p>
+      <p class="product-status">Status: {{ product.status | capitalize }}</p>
+      <p class="posted-date">Posted on: {{ product.created_at.strftime('%Y-%m-%d') if product.created_at else 'N/A' }}</p>
+      
       <div class="seller-profile">
         <div class="profile-pic">
-          <img src="{{ url_for('static', filename='pfp/silhouette.png') }}" alt="Seller Profile Picture">
+          {# Use the new route to show seller's profile picture #}
+          <img src="{{ url_for('serve_user_picture', user_id=product.seller_id) }}" alt="Seller Profile Picture">
+          <p>Sold by: {{ product.seller_username | default('Unknown Seller') }}</p>
         </div>
         <div class="profile-actions">
-          <button class="btn btn-purple">View Profile</button>
-          <button class="btn btn-purple">Contact Seller</button>
-          <button class="btn btn-purple">Ratings</button>
+          {# Link to seller profile page (if it exists) #}
+          {# <button class="btn btn-purple">View Profile</button> #} 
+          {# Link to contact seller (if messaging exists) #}
+          {# <button class="btn btn-purple">Contact Seller</button> #}
+          {# Link to ratings (if ratings exist) #}
+          {# <button class="btn btn-purple">Ratings</button> #}
+          {# Add to Wishlist button? #}
+          {# <button class="btn btn-outline-secondary">Add to Wishlist</button> #}
         </div>
       </div>
     </div>
+
   </div>
 </section>
+{% else %}
+  <div class="alert alert-warning" role="alert">
+    Product details could not be loaded or the product does not exist.
+  </div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+{# Add carousel JS only if there is more than one image #}
+{% if image_ids and image_ids | length > 1 %}
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const carousel = document.querySelector('.image-carousel-container');
+    if (!carousel) return; // Exit if carousel container not found
+
+    const slides = carousel.querySelectorAll('.carousel-slide');
+    const dotsContainer = carousel.querySelector('.carousel-dots');
+    const dots = dotsContainer ? dotsContainer.querySelectorAll('.dot') : [];
+    const prevButton = carousel.querySelector('.carousel-arrow.prev');
+    const nextButton = carousel.querySelector('.carousel-arrow.next');
+    let currentSlide = 0;
+    const totalSlides = slides.length;
+
+    function showSlide(index) {
+      // Ensure index is within bounds
+      if (index >= totalSlides) {
+        currentSlide = 0;
+      } else if (index < 0) {
+        currentSlide = totalSlides - 1;
+      } else {
+        currentSlide = index;
+      }
+
+      // Hide all slides
+      slides.forEach(slide => {
+        slide.classList.remove('active');
+      });
+
+      // Show the target slide
+      slides[currentSlide].classList.add('active');
+
+      // Update dots
+      if (dots.length > 0) {
+        dots.forEach(dot => {
+          dot.classList.remove('active');
+        });
+        dots[currentSlide].classList.add('active');
+      }
+    }
+
+    // Event Listeners for Arrows (Removed as buttons are commented out)
+    /*
+    if (prevButton) {
+        prevButton.addEventListener('click', function() {
+            showSlide(currentSlide - 1);
+        });
+    }
+    if (nextButton) {
+        nextButton.addEventListener('click', function() {
+            showSlide(currentSlide + 1);
+        });
+    }
+    */
+
+    // Event Listeners for Dots
+    if (dots.length > 0) {
+        dots.forEach(dot => {
+            dot.addEventListener('click', function() {
+                const slideIndex = parseInt(this.getAttribute('data-slide-index'));
+                showSlide(slideIndex);
+            });
+        });
+    }
+
+    // Initialize the first slide
+    showSlide(currentSlide);
+  });
+</script>
+{% endif %}
 {% endblock %}

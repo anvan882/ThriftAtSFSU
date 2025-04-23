@@ -1,10 +1,155 @@
 {% extends "base.html" %}
 
-{% block title %}Home - SFSU Thrift Market{% endblock %}
+{% block title %}Home - SFSU Thrift Market{% endblock %}
 
 {% block head %}
-<!-- noUiSlider CSS for price filter -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/15.7.1/nouislider.min.css">
+<!-- CSS for filter styling -->
+<style>
+/* Additional filter styling from newFilters.html */
+:root{
+  --purple: var(--accent-purple);
+  --gray-50: #f3f4f6;
+  --gray-200: #e5e7eb;
+  --gray-300: #d1d5db;
+  --gray-600: #4b5563;
+  --gray-900: #111827;
+  --accent-red: #e53e3e; /* Define red for wishlist */
+}
+
+/* Make filters container scrollable */
+.containerFixed {
+  overflow-y: auto !important; /* Override any existing styles */
+  max-height: calc(100vh - 150px) !important; /* Account for header space */
+}
+
+/* Price Range Slider */
+.slider-wrap{position:relative;height:36px;margin-top:15px;margin-bottom:15px;}
+.track,
+.fill{position:absolute;height:6px;top:14px;border-radius:3px}
+.track{width:100%;background:var(--gray-200)}
+.fill {background:var(--purple)}
+
+input[type=range]{
+  -webkit-appearance:none;
+  position:absolute;width:100%;top:14px;height:6px;
+  background:transparent;pointer-events:none;
+}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;
+  width:28px;height:22px;border-radius:6px;
+  border:2px solid var(--gray-200);background:#fff;
+  box-shadow:0 2px 5px rgba(0,0,0,.12);
+  cursor:pointer;pointer-events:auto;margin-top:-8px;
+}
+input[type=range]::-moz-range-track{background:transparent}
+input[type=range]::-moz-range-thumb{
+  width:28px;height:22px;border:2px solid var(--gray-200);
+  border-radius:6px;background:#fff;cursor:pointer;pointer-events:auto;
+}
+
+.values{display:flex;justify-content:space-between;font-weight:600;font-size:16px;margin-top:12px}
+
+/* Condition Radio */
+.radio-group{display:flex;flex-direction:column;gap:14px;margin-top:15px;}
+.radio-group label{display:flex;align-items:center;font-weight:500;font-size:16px;cursor:pointer}
+.radio-group input{
+  appearance:none;width:20px;height:20px;border:2px solid var(--gray-300);
+  border-radius:50%;margin-right:10px;position:relative;cursor:pointer
+}
+.radio-group input:checked{border-color:var(--purple)}
+.radio-group input:checked::after{
+  content:'';position:absolute;inset:4px;background:var(--purple);border-radius:50%
+}
+
+/* Stars Rating */
+.new-stars{
+  display:flex;
+  flex-direction:row-reverse;
+  gap:6px;
+  cursor:pointer;
+  justify-content:flex-start;
+  width:max-content;
+  margin-top:15px;
+}
+.new-stars input[type="radio"] {
+  display:none;
+}
+.new-stars label {
+  color: var(--gray-300);
+  font-size:24px;
+  cursor:pointer;
+}
+.new-stars input:checked ~ label,
+.new-stars label:hover, 
+.new-stars label:hover ~ label {
+  color: var(--purple);
+}
+
+/* Date Picker */
+input[type=date]{
+  width:100%;padding:12px 16px;font-weight:500;font-size:16px;
+  border:1px solid var(--gray-200);border-radius:8px;color:var(--gray-600);
+  margin-top:15px;
+}
+
+/* Filter Buttons */
+.filter-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 20px;
+  padding-bottom: 20px; /* Add bottom padding for better spacing when scrolling */
+}
+
+.apply-button{
+  padding:14px 0;background:var(--purple);color:#fff;
+  font-weight:600;font-size:16px;border:none;border-radius:8px;
+  cursor:pointer;width:100%;
+}
+
+.clear-button{
+  background:none;color:var(--gray-900);
+  font-weight:600;font-size:16px;
+  border:none;border-radius:8px;cursor:pointer;width:100%;
+}
+
+/* Wishlist Button Styling */
+.wishlist-button {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: rgba(255, 255, 255, 0.7); /* Semi-transparent background */
+  border: none;
+  border-radius: 50%;
+  width: 35px;
+  height: 35px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 1.2rem;
+  color: #ccc; /* Default empty heart color */
+  transition: color 0.2s ease-in-out, background-color 0.2s ease-in-out;
+  z-index: 10; /* Ensure it's above the image */
+}
+
+.wishlist-button:hover {
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.wishlist-button.active {
+  color: var(--accent-red); /* Filled heart color */
+}
+
+.product-card {
+  position: relative; /* Needed for absolute positioning of the button */
+}
+
+.product-card-link {
+  display: block; /* Ensure link takes up space for positioning */
+  position: relative;
+}
+</style>
 {% endblock %}
 
 {% block content %}
@@ -14,59 +159,47 @@
     <!-- Filters Sidebar -->
     <div class="containerFixed" id="filtersContainer">
       <div class="filters">
-        <h2>Filters</h2>
 
-        <p>Price Range</p>
-        <div class="price-slider-container">
-          <div id="price-slider"></div>
-          <div class="price-slider-values">
-            $<span id="slider-price-min">0</span> – $<span id="slider-price-max">2000</span>
-          </div>
+        <!-- Price Range -->
+        <h4>Price Range</h4>
+        <div class="slider-wrap">
+          <div class="track"></div>
+          <div class="fill" id="fill"></div>
+          <input type="range" id="min" min="{{ min_db_price }}" max="{{ max_db_price }}" step="1" value="{{ min_price }}">
+          <input type="range" id="max" min="{{ min_db_price }}" max="{{ max_db_price }}" step="1" value="{{ max_price }}">
+        </div>
+        <div class="values"><span id="vmin">$ {{ min_price }}</span><span id="vmax">$ {{ max_price }}</span></div>
+
+        <!-- Condition -->
+        <h4 style="margin-top:25px;">Condition</h4>
+        <div class="radio-group">
+          <label><input type="radio" name="condition" value="very-worn"><span>Very Worn</span></label>
+          <label><input type="radio" name="condition" value="used"><span>Used</span></label>
+          <label><input type="radio" name="condition" value="fairly-used"><span>Fairly Used</span></label>
+          <label><input type="radio" name="condition" value="good-condition"><span>Good Condition</span></label>
+          <label><input type="radio" name="condition" value="great-condition"><span>Great Condition</span></label>
         </div>
 
-        <div class="condition">
-          <label>Condition</label>
-          <div class="radio-buttons">
-            <label class="conditionButton">
-              <input type="radio" name="condition" value="very-worn"> Very Worn
-            </label>
-            <label class="conditionButton">
-              <input type="radio" name="condition" value="used"> Used
-            </label>
-            <label class="conditionButton">
-              <input type="radio" name="condition" value="fairly-used"> Fairly Used
-            </label>
-            <label class="conditionButton">
-              <input type="radio" name="condition" value="good-condition"> Good Condition
-            </label>
-            <label class="conditionButton">
-              <input type="radio" name="condition" value="great-condition"> Great Condition
-            </label>
-          </div>
+        <!-- Seller Rating -->
+        <h4 style="margin-top:25px;">Seller Rating</h4>
+        <div class="new-stars">
+          <input type="radio" id="s5" name="rating" value="5"><label for="s5">&#9733;</label>
+          <input type="radio" id="s4" name="rating" value="4"><label for="s4">&#9733;</label>
+          <input type="radio" id="s3" name="rating" value="3"><label for="s3">&#9733;</label>
+          <input type="radio" id="s2" name="rating" value="2"><label for="s2">&#9733;</label>
+          <input type="radio" id="s1" name="rating" value="1"><label for="s1">&#9733;</label>
         </div>
 
-        <div class="seller-rating">
-          <p>Seller Rating:</p>
-          <div class="stars">
-            {% for i in range(1,6) %}
-            <span class="star" data-value="{{ i }}">&#10029;</span>
-            {% endfor %}
-          </div>
-        </div>
-      </div>
+        <!-- Posted Since -->
+        <h4 style="margin-top:25px;">Posted After</h4>
+        <input type="date" id="postedDate">
 
-      <div class="posted-since">
-        <label id="selectedDateDisplay" for="postedDate">Posted Since:</label>
-        <div class="calendar-wrapper">
-          <button type="button" class="calendar-button" onclick="document.getElementById('postedDate').showPicker()">
-            📅 Pick a Date
-          </button>
-          <input type="date" id="postedDate" class="hidden-date"
-            onchange="document.getElementById('selectedDateDisplay').textContent = 'Posted Since: ' + this.value;">
+        <!-- Filter Buttons -->
+        <div class="filter-buttons">
+          <button class="apply-button" id="applyFilters">Apply</button>
+          <button class="clear-button" id="clearFilters">Clear all</button>
         </div>
       </div>
-
-      <button class="apply-button">Apply</button>
     </div>
 
     <!-- Search Results -->
@@ -90,16 +223,31 @@
       <div class="product-list">
         {% for item in items %}
         <div class="product-card">
-          <a href="{{ url_for('listingIndie') }}">
-            <h3 class="product-title">{{ item.title }} — ${{ item.price }}</h3>
-            <p class="product-description">{{ item.description }}</p>
-            {% if item.has_image %}
-            <img src="{{ url_for('serve_image', product_id=item.product_id) }}" alt="Product image"
-              class="product-image">
-            {% else %}
-            <p><em>No image available</em></p>
+            {# Add Wishlist button only if user is logged in #}
+            {% if user_is_logged_in %}
+                {# Check if item.product_id is in the wishlisted_ids set passed from backend #}
+                {% set is_wishlisted = item.product_id in wishlisted_ids %}
+                <button 
+                    class="wishlist-button {{ 'active' if is_wishlisted else '' }}"
+                    data-product-id="{{ item.product_id }}"
+                    aria-label="{{ 'Remove from Wishlist' if is_wishlisted else 'Add to Wishlist' }}"
+                    title="{{ 'Remove from Wishlist' if is_wishlisted else 'Add to Wishlist' }}"
+                >
+                    {# Use a heart symbol. Could also use an icon font like Font Awesome #}
+                    &#x2665; 
+                </button>
             {% endif %}
-          </a>
+            <a href="{{ url_for('product_detail', product_id=item.product_id) }}" class="product-card-link">
+                <h3 class="product-title">{{ item.title }} — ${{ "%.2f"|format(item.price) }}</h3>
+                {# Check if first_image_id exists and is not None #}
+                {% if item.first_image_id %}
+                <img src="{{ url_for('serve_image', image_id=item.first_image_id) }}" alt="{{ item.title }}"
+                    class="product-image">
+                {% else %}
+                {# Show placeholder if no image ID exists #}
+                <img src="{{ url_for('static', filename='templatephotos/placeholder_img.png') }}" alt="Placeholder Image" class="product-image placeholder">
+                {% endif %}
+            </a>
         </div>
         {% else %}
         <p>No items found matching your search.</p>
@@ -147,37 +295,209 @@
   });
 </script>
 
-<!-- noUiSlider JS and initialization -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/15.7.1/nouislider.min.js"></script>
+<!-- Price range slider script from newFilters.html -->
 <script>
-  const slider = document.getElementById('price-slider');
-  if (slider) {
-    const minDisp = document.getElementById('slider-price-min');
-    const maxDisp = document.getElementById('slider-price-max');
-    noUiSlider.create(slider, {
-      start: [0, 2000],
-      connect: true,
-      range: { min: 0, max: 2000 },
-      step: 10,
-      format: {
-        to: v => Math.round(v),
-        from: v => Number(v)
-      }
-    });
-    slider.noUiSlider.on('update', (values) => {
-      minDisp.textContent = values[0];
-      maxDisp.textContent = values[1];
-    });
+  /* -------- price slider -------- */
+  const minR = document.getElementById('min'),
+        maxR = document.getElementById('max'),
+        fill  = document.getElementById('fill'),
+        vMin  = document.getElementById('vmin'),
+        vMax  = document.getElementById('vmax'),
+        STEP  = +minR.step || 0;
+
+  // Initialize slider values from URL parameters or backend values
+  const urlParams = new URLSearchParams(window.location.search);
+  minR.value = urlParams.get('min_price') || '{{ min_price }}';
+  maxR.value = urlParams.get('max_price') || '{{ max_price }}';
+
+  function update(){
+    /* keep thumbs at least one step apart */
+    if(+minR.value > +maxR.value-STEP) minR.value = +maxR.value-STEP;
+    if(+maxR.value < +minR.value+STEP) maxR.value = +minR.value+STEP;
+
+    const rng = +maxR.max - +maxR.min;
+    const minPct = (+minR.value - minR.min)/rng*100;
+    const maxPct = (+maxR.value - maxR.min)/rng*100;
+    fill.style.left  = minPct + '%';
+    fill.style.width = (maxPct-minPct) + '%';
+
+    vMin.textContent = `$ ${minR.value}`;
+    vMax.textContent = `$ ${maxR.value}`;
+  }
+  [minR,maxR].forEach(i => i.addEventListener('input',update));
+  update();
+
+  // Set condition radio button based on URL parameter
+  const conditionParam = urlParams.get('condition') || '{{ condition|default("") }}';
+  if (conditionParam) {
+    const conditionRadio = document.querySelector(`input[name="condition"][value="${conditionParam}"]`);
+    if (conditionRadio) conditionRadio.checked = true;
   }
 
-  // Star‐rating click handler
-  document.querySelectorAll('.star').forEach(star => {
-    star.addEventListener('click', () => {
-      const val = star.getAttribute('data-value');
-      document.querySelectorAll('.star').forEach(s => {
-        s.classList.toggle('filled', s.getAttribute('data-value') <= val);
-      });
-    });
+  // Set rating stars based on URL parameter
+  const ratingParam = urlParams.get('rating') || '{{ rating|default("") }}';
+  if (ratingParam) {
+    const ratingRadio = document.querySelector(`input[name="rating"][value="${ratingParam}"]`);
+    if (ratingRadio) ratingRadio.checked = true;
+  }
+
+  // Set date input based on URL parameter
+  const dateParam = urlParams.get('posted_after') || '{{ posted_after|default("") }}';
+  if (dateParam) {
+    document.getElementById('postedDate').value = dateParam;
+  }
+
+  /* -------- clear all button -------- */
+  document.getElementById('clearFilters').addEventListener('click', () => {
+    /* reset slider to DB min/max */
+    minR.value = minR.min;
+    maxR.value = maxR.max;
+    update(); // Visually update slider
+
+    /* uncheck condition radios */
+    document.querySelectorAll('input[name="condition"]').forEach(r=>r.checked=false);
+    
+    /* uncheck rating stars */
+    document.querySelectorAll('input[name="rating"]').forEach(r=>r.checked=false);
+
+    /* clear date */
+    document.getElementById('postedDate').value = '';
+    
+    // Remove all filter query parameters and redirect to the base path
+    const baseUrl = window.location.pathname;
+    // Keep existing category and keyword if present, remove others
+    let currentParams = new URLSearchParams(window.location.search);
+    let preservedParams = new URLSearchParams();
+    if (currentParams.has('category')) {
+      preservedParams.set('category', currentParams.get('category'));
+    }
+    if (currentParams.has('keyword')) {
+      preservedParams.set('keyword', currentParams.get('keyword'));
+    }
+    
+    // Redirect to base path potentially with category/keyword preserved
+    window.location.href = baseUrl + (preservedParams.toString() ? '?' + preservedParams.toString() : '');
   });
+  
+  /* -------- apply filters button -------- */
+  document.getElementById('applyFilters').addEventListener('click', () => {
+    // Get values from filters
+    const minPrice = minR.value;
+    const maxPrice = maxR.value;
+    
+    // Get selected condition
+    let condition = '';
+    document.querySelectorAll('input[name="condition"]').forEach(r => {
+      if (r.checked) condition = r.value;
+    });
+    
+    // Get selected rating
+    let rating = '';
+    document.querySelectorAll('input[name="rating"]').forEach(r => {
+      if (r.checked) rating = r.value;
+    });
+    
+    // Get selected date
+    const postedAfter = document.getElementById('postedDate').value;
+    
+    // Create query string with filter parameters
+    let queryParams = new URLSearchParams(window.location.search);
+    
+    // Only set price if it's different from the default DB range
+    if (minPrice !== minR.min) queryParams.set('min_price', minPrice);
+    else queryParams.delete('min_price');
+    
+    if (maxPrice !== maxR.max) queryParams.set('max_price', maxPrice);
+    else queryParams.delete('max_price');
+    
+    if (condition) queryParams.set('condition', condition);
+    else queryParams.delete('condition');
+    
+    if (rating) queryParams.set('rating', rating);
+    else queryParams.delete('rating');
+    
+    if (postedAfter) queryParams.set('posted_after', postedAfter);
+    else queryParams.delete('posted_after');
+    
+    // Preserve category and keyword parameters (already in queryParams)
+    
+    // Redirect with filter parameters
+    window.location.href = window.location.pathname + '?' + queryParams.toString();
+  });
+</script>
+
+<!-- Wishlist Interaction Script -->
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const wishlistButtons = document.querySelectorAll('.wishlist-button');
+
+    wishlistButtons.forEach(button => {
+        button.addEventListener('click', async (event) => {
+            event.preventDefault(); // Prevent link navigation if button is inside <a>
+            event.stopPropagation(); // Stop event bubbling up
+
+            // --- Optimization: Disable button on click ---
+            button.disabled = true;
+            // Optional: Add a loading visual state
+            // button.classList.add('wishlist-button--loading'); 
+
+            const productId = button.dataset.productId;
+            const isWishlisted = button.classList.contains('active');
+            const url = isWishlisted 
+                ? `/remove_from_wishlist/${productId}` 
+                : `/add_to_wishlist/${productId}`;
+
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        // Optional: Add CSRF token if needed
+                        'Content-Type': 'application/json', // Important for Flask jsonify
+                        'Accept': 'application/json'      // Expect JSON response
+                    }
+                });
+
+                // Check if response is JSON before parsing
+                const contentType = response.headers.get("content-type");
+                let data;
+                if (contentType && contentType.indexOf("application/json") !== -1) {
+                    data = await response.json();
+                } else {
+                    // Handle non-JSON response (e.g., error page HTML)
+                    throw new Error('Received non-JSON response from server.');
+                }
+
+                if (response.ok && data.success) {
+                    // Toggle button state visually ONLY on success
+                    button.classList.toggle('active');
+                    // Update tooltip/aria-label
+                    const newAction = isWishlisted ? 'Add' : 'Remove';
+                    button.setAttribute('aria-label', `${newAction} from Wishlist`);
+                    button.setAttribute('title', `${newAction} from Wishlist`);
+                    
+                    console.log(data.message);
+                    // showFlashMessage(data.message, 'success'); // Example call
+                } else {
+                    // Handle backend errors (e.g., show a flash message)
+                    console.error('Wishlist error:', data.message || `Server responded with status ${response.status}`);
+                    // Revert visual state if the backend failed but UI was toggled optimistically (we moved toggle to success block, so no revert needed)
+                    // showFlashMessage(data.message || 'Could not update wishlist.', 'error'); // Example call
+                } 
+            } catch (error) {
+                // Handle network errors or non-JSON responses
+                console.error('Wishlist interaction failed:', error);
+                // showFlashMessage('Could not reach server. Please try again.', 'error'); // Example call
+            } finally {
+                // --- Optimization: Re-enable button regardless of outcome ---
+                button.disabled = false;
+                // Optional: Remove loading visual state
+                // button.classList.remove('wishlist-button--loading');
+            }
+        });
+    });
+    
+    // Example function to show flash messages dynamically (requires a target element)
+    // function showFlashMessage(message, category) { ... }
+});
 </script>
 {% endblock %}

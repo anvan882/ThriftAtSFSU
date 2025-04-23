@@ -1,10 +1,27 @@
 {% extends "base.html" %}
 {% block title %}Create Listing – SFSU Thrift Market{% endblock %}
 
+{% block head %}
+{{ super() }}
+<style>
+  .char-counter {
+    text-align: right;
+    font-size: 0.8rem;
+    color: #6c757d;
+    margin-top: 5px;
+  }
+  
+  .approaching-limit {
+    color: #dc3545;
+    font-weight: bold;
+  }
+</style>
+{% endblock %}
+
 {% block content %}
 <!-- ========== Create Listing Form Container ========== -->
 <section class="creationForm">
-  <form class="listing-form">
+  <form class="listing-form" method="POST" action="{{ url_for('newListing') }}" enctype="multipart/form-data">
     <!-- Image Upload -->
     <div class="form-group image-upload">
       <label for="images">Upload Images JPG or PNG</label>
@@ -22,13 +39,13 @@
     <!-- Title -->
     <div class="form-group">
       <label for="title">Title</label>
-      <input type="text" id="title" name="title" required>
+      <input type="text" id="title" name="title" value="{{ form_data.title or '' }}" required>
     </div>
 
     <!-- Price -->
     <div class="form-group">
       <label for="price">Price ($)</label>
-      <input type="number" id="price" name="price" min="0" step="0.01" required>
+      <input type="number" id="price" name="price" min="0" step="0.01" value="{{ form_data.price or '' }}" required>
     </div>
 
     <!-- Category -->
@@ -36,9 +53,9 @@
       <label for="category">Category</label>
       <select id="category" name="category" required>
         <option value="">--Select a category--</option>
-        <option value="Electronics">Electronics</option>
-        <option value="Books">Books</option>
-        <option value="Clothing">Clothing</option>
+        {% for category in categories %}
+          <option value="{{ category }}" {% if form_data.category == category %}selected{% endif %}>{{ category }}</option>
+        {% endfor %}
       </select>
     </div>
 
@@ -47,18 +64,21 @@
       <label for="condition">Condition</label>
       <select id="condition" name="condition" required>
         <option value="">--Select condition--</option>
-        <option value="Very Worn">Very Worn</option>
-        <option value="Used">Used</option>
-        <option value="Fairly Used">Fairly Used</option>
-        <option value="Good Condition">Good Condition</option>
-        <option value="Great Condition">Great Condition</option>
+        <option value="Very Worn" {% if form_data.condition == "Very Worn" %}selected{% endif %}>Very Worn</option>
+        <option value="Used" {% if form_data.condition == "Used" %}selected{% endif %}>Used</option>
+        <option value="Fairly Used" {% if form_data.condition == "Fairly Used" %}selected{% endif %}>Fairly Used</option>
+        <option value="Good Condition" {% if form_data.condition == "Good Condition" %}selected{% endif %}>Good Condition</option>
+        <option value="Great Condition" {% if form_data.condition == "Great Condition" %}selected{% endif %}>Great Condition</option>
       </select>
     </div>
 
     <!-- Description -->
     <div class="form-group">
       <label for="description">Description</label>
-      <textarea id="description" name="description" rows="5" required></textarea>
+      <textarea id="description" name="description" rows="5" maxlength="500" required>{{ form_data.description or '' }}</textarea>
+      <div class="char-counter">
+        <span id="char-count">0</span>/500 characters
+      </div>
     </div>
 
     <!-- Submit Button -->
@@ -83,6 +103,109 @@
       fileNamesText += names.join(', ');
     }
     document.getElementById('file-names').textContent = fileNamesText;
+  });
+
+  // Character counter for description
+  const descriptionField = document.getElementById('description');
+  const charCounter = document.getElementById('char-count');
+  
+  // Initialize counter with current text length
+  charCounter.textContent = descriptionField.value.length;
+  
+  descriptionField.addEventListener('input', function() {
+    const currentLength = this.value.length;
+    charCounter.textContent = currentLength;
+    
+    // Visual feedback when approaching limit
+    if (currentLength >= 450) {
+      charCounter.classList.add('approaching-limit');
+    } else {
+      charCounter.classList.remove('approaching-limit');
+    }
+  });
+
+  // Price field validation - ensure only numbers and decimal point
+  const priceField = document.getElementById('price');
+  
+  // Block non-numeric keypresses completely
+  priceField.addEventListener('keypress', function(e) {
+    // Allow only numbers, decimal point, and control keys
+    const key = e.key;
+    const isNumber = /[0-9]/.test(key);
+    const isDecimal = key === '.';
+    const isAllowedControl = ['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab'].includes(key);
+    
+    // If the key is not a number or decimal point or allowed control key, prevent it
+    if (!(isNumber || isDecimal || isAllowedControl)) {
+      e.preventDefault();
+      return false;
+    }
+    
+    // Only allow one decimal point
+    if (isDecimal && this.value.includes('.')) {
+      e.preventDefault();
+      return false;
+    }
+  });
+  
+  // Clean up any invalid characters that might get through
+  priceField.addEventListener('input', function() {
+    const originalValue = this.value;
+    // Keep only numbers and at most one decimal point
+    const cleanValue = originalValue
+      .replace(/[^\d.]/g, '') // Remove anything that's not a digit or decimal
+      .replace(/^(\d*\.?\d*).*$/, '$1') // Keep only the first decimal if multiple exist
+      .replace(/^\./, '0.'); // Add leading zero if value starts with decimal
+      
+    if (originalValue !== cleanValue) {
+      this.value = cleanValue;
+    }
+  });
+  
+  // Prevent invalid paste
+  priceField.addEventListener('paste', function(e) {
+    e.preventDefault();
+    
+    // Get pasted text
+    const pastedText = (e.clipboardData || window.clipboardData).getData('text');
+    
+    // Clean the pasted text - only allow numbers and one decimal
+    const cleanPaste = pastedText
+      .replace(/[^\d.]/g, '')
+      .replace(/^(\d*\.?\d*).*$/, '$1')
+      .replace(/^\./, '0.');
+      
+    // Insert at cursor position
+    const start = this.selectionStart;
+    const end = this.selectionEnd;
+    
+    const beforeText = this.value.substring(0, start);
+    const afterText = this.value.substring(end);
+    
+    // Combine and ensure only one decimal in the final result
+    const newValue = (beforeText + cleanPaste + afterText)
+      .replace(/^(\d*\.?\d*).*$/, '$1');
+      
+    this.value = newValue;
+    
+    // Set cursor position after pasted content
+    this.selectionStart = this.selectionEnd = start + cleanPaste.length;
+  });
+  
+  // Filter on blur to ensure final value is valid
+  priceField.addEventListener('blur', function() {
+    // Format to 2 decimal places if there's a decimal
+    if (this.value.includes('.')) {
+      const parts = this.value.split('.');
+      if (parts[1].length > 2) {
+        this.value = parseFloat(this.value).toFixed(2);
+      }
+    }
+    
+    // Remove price if it's just a decimal point or empty
+    if (this.value === '.' || this.value === '') {
+      this.value = '';
+    }
   });
 </script>
 {% endblock %}
