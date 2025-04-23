@@ -46,9 +46,15 @@
       
       <div class="seller-profile">
         <div class="profile-pic">
-          {# Use the new route to show seller's profile picture #}
-          <img src="{{ url_for('serve_user_picture', user_id=product.seller_id) }}" alt="Seller Profile Picture">
-          <p>Sold by: {{ product.seller_username | default('Unknown Seller') }}</p>
+          {# Link to the dynamic profile page #}
+          <a href="{{ url_for('view_profile', profile_user_id=product.seller_id) }}">
+            <img src="{{ url_for('serve_user_picture', user_id=product.seller_id) }}" alt="{{ product.seller_username }}'s Profile Picture" class="rounded-circle me-2" width="40" height="40">
+          </a>
+          <span>Sold by:
+            <a href="{{ url_for('view_profile', profile_user_id=product.seller_id) }}" class="text-decoration-none">
+              {{ product.seller_username | default('Unknown Seller') }}
+            </a>
+          </span>
         </div>
         <div class="profile-actions">
           {# Link to seller profile page (if it exists) #}

@@ -1,82 +1,466 @@
 {% extends "base.html" %}
-{% block title %}Profile – SFSU Thrift Market{% endblock %}
+{% block title %}{{ profile_user.full_name | default('User Profile') }} – SFSU Thrift Market{% endblock %}
 
 {% block content %}
+{% if profile_user %}
 <!-- ========== Main Container ========== -->
-<div class="profile-main-container">
-  <div class="profile-grouping">
-    <div class="profile-main-section profile-info">
-      <h1>John Doe</h1>
-      <img src="../static/templatephotos/stock-happy-man.jpg" width=100%>
-      <p>joined Apr 15, 2024</p>
-      <p>Average Rating: 4.6/5</p>
-      <p>13 listings</p>
-      <div class="profile-buttons">
-        <a href="" class="btn btn-outline">Contact</a>
-      </div>
-    </div>
-    <div class="profile-main-section">
-      <h2>Bio</h2>
-      <p>Hey there! My name is John Doe, and I'm a third-year student at SF State.
-        I like to join the SFSU Campus Rec events and I enjoy playing video games and
-        hanging out with friends. Looking to sell some old clothes, if you're interested
-        hmu!
-      </p>
-    </div>
-  </div>
+<div class="profile-main-container container mt-4">
+  <div class="row">
+    <!-- Left Column: Profile Info & Bio -->
+    <div class="col-md-4">
+      <div class="profile-main-section profile-info card mb-4">
+        <div class="card-body text-center">
+          <img src="{{ url_for('serve_user_picture', user_id=profile_user.user_id) }}" alt="{{ profile_user.full_name }}'s Profile Picture" class="rounded-circle img-thumbnail mb-3" width="150">
+          <h1 class="card-title h4">{{ profile_user.full_name }}</h1>
+          <p class="text-muted">Joined: {{ profile_user.created_at.strftime('%b %d, %Y') if profile_user.created_at else 'N/A' }}</p>
+          <p>
+            Average Rating:
+            {% if avg_rating is not none %}
+              {{ "%.1f"|format(avg_rating) }}/5 ({{ review_count }} review{{ 's' if review_count != 1 else '' }})
+            {% else %}
+              No ratings yet
+            {% endif %}
+          </p>
+          {# <p>XX listings</p> #} {# Consider adding a count from the backend if needed #}
 
-  <div class="profile-schedule">
-    <div>
-      <h2>Availability</h2>
-    </div>
-    <img src="../static/templatephotos/google-agenda.jpg" width="100%">
-  </div>
+          <div class="profile-buttons mt-3">
+            {% if is_own_profile %}
+              <a href="{{ url_for('edit_profile') }}" class="btn btn-primary">Edit Profile</a>
+            {% else %}
+              {# Assuming messaging page exists, link to it #}
+              <a href="{{ url_for('messages') }}" class="btn btn-outline-primary">Contact</a>
+            {% endif %}
+          </div>
+        </div>
+      </div>
 
-  <div class="profile-listing-row">
-    <div>
-      <h2>Listings</h2>
-    </div>
-    <div class="listing-card">
-      <img src="../static/templatephotos/compression-shirt.png" class="listing-img">
-      <h3>Compression shirt, black</h3>
-      <div class="auth-buttons">
-        <a class="btn btn-outline">Buy Now</a>
+      <div class="profile-main-section card mb-4">
+        <div class="card-header">
+          <h2>Bio</h2>
+        </div>
+        <div class="card-body">
+          <p>{{ profile_user.bio | default('No bio provided.', true) }}</p>
+        </div>
       </div>
-    </div>
-    <div class="listing-card">
-      <img src="../static/templatephotos/shorts.jpeg" class="listing-img">
-      <h3>Gray shorts</h3>
-      <div class="auth-buttons">
-        <a class="btn btn-outline">Buy Now</a>
-      </div>
-    </div>
-    <div class="listing-card">
-      <img src="../static/templatephotos/sweater.jpg" class="listing-img">
-      <h3>Sweater</h3>
-      <div class="auth-buttons">
-        <a class="btn btn-outline">Buy Now</a>
-      </div>
-    </div>
-  </div>
 
-  <div class="profile-review-row">
-    <h2>Reviews</h2>
-    <div class="review-card">
-      <h3>Sabrina L.</h3>
-      <p>My boyfriend loves this compression shirt! Fits perfect!</p>
+      {# Optional: Availability section - currently static #}
+      {#
+      <div class="profile-schedule card mb-4">
+        <div class="card-header">
+          <h2>Availability</h2>
+        </div>
+        <div class="card-body">
+          <img src="{{ url_for('static', filename='templatephotos/google-agenda.jpg') }}" width="100%" alt="Sample Availability Schedule">
+        </div>
+      </div>
+      #}
     </div>
-    <div class="review-card">
-      <h3>Danny P.</h3>
-      <p>The shorts were needed after my last ones ripped. Thanks, John!</p>
-    </div>
-    <div class="review-card">
-      <h3>Chris B.</h3>
-      <p>Practically not even used. The shoes are a bit loose but the quality is great for being worn for so long.</p>
-    </div>
-    <div class="review-card">
-      <h3>Lenny J.</h3>
-      <p>Awesome t-shirts. Thanks, John</p>
-    </div>
+
+    <!-- Right Column: Listings & Reviews -->
+    <div class="col-md-8">
+      <!-- Listings Section -->
+      <div class="profile-listing-section card mb-4">
+        <div class="card-header">
+          <h2>Listings by {{ profile_user.first_name }}</h2>
+        </div>
+        <div class="card-body">
+          {% if listings %}
+            {# Use product-list grid from style.css #}
+            <div class="product-list profile-listings-grid"> 
+              {% for item in listings %}
+              {# Apply product-card structure #}
+              <div class="product-card">
+                <a href="{{ url_for('product_detail', product_id=item.product_id) }}" class="product-card-link">
+                  <img src="{{ url_for('serve_image', image_id=item.first_image_id) if item.first_image_id else url_for('static', filename='templatephotos/placeholder_img.png') }}" 
+                       alt="{{ item.title }}" 
+                       class="product-image">
+                  <h3 class="product-title">{{ item.title }} — ${{ "%.2f"|format(item.price) }}</h3>
+                </a>
+              </div>
+              {% endfor %}
+            </div>
+          {% else %}
+            <p>{{ profile_user.first_name }} has no active listings.</p>
+          {% endif %}
+          {# Optional: Add link to view ALL listings if paginated later #}
+        </div>
+      </div>
+
+      <!-- Reviews Section -->
+      <div class="profile-review-section card mb-4">
+        <div class="card-header">
+          <h2>Reviews for {{ profile_user.first_name }}</h2>
+        </div>
+        <div class="card-body">
+          <!-- Add Review Form (Only show if viewing someone else's profile) -->
+          {% if not is_own_profile %}
+            {% if not has_reviewed %}
+            <!-- Show review form when user hasn't reviewed yet -->
+            <div class="review-form-container">
+              <h4>Leave a Review</h4>
+              <form method="POST" action="{{ url_for('add_review', reviewed_user_id=profile_user.user_id) }}" class="review-form">
+                <div class="form-group">
+                  <label for="rating">Rating</label>
+                  <div class="rating-stars-wrapper">
+                    <input type="radio" id="star5" name="rating" value="5" required>
+                    <label for="star5">★</label>
+                    <input type="radio" id="star4" name="rating" value="4" required>
+                    <label for="star4">★</label>
+                    <input type="radio" id="star3" name="rating" value="3" required>
+                    <label for="star3">★</label>
+                    <input type="radio" id="star2" name="rating" value="2" required>
+                    <label for="star2">★</label>
+                    <input type="radio" id="star1" name="rating" value="1" required>
+                    <label for="star1">★</label>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="comment">Comment</label>
+                  <textarea id="comment" name="comment" rows="3" maxlength="500" required></textarea>
+                  <div class="char-counter">
+                    <span id="review-char-count">0</span>/500 characters
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <button type="submit" class="btn-submit">Submit Review</button>
+                </div>
+              </form>
+            </div>
+            {% else %}
+            <!-- Show message when user has already reviewed -->
+            <div class="review-form-container">
+              <div class="alert alert-info" role="alert">
+                You have already submitted a review for {{ profile_user.first_name }}. Thank you for your feedback!
+              </div>
+            </div>
+            {% endif %}
+          {% endif %}
+
+          <!-- Display Existing Reviews -->
+          <div class="existing-reviews">
+            {% if reviews %}
+              {# Use a grid for reviews similar to listings #}
+              <div class="review-list"> 
+                {% for review in reviews %}
+                {# Apply card styling to each review #}
+                <div class="review-card card">
+                  <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                      <h5 class="card-title mb-0 review-reviewer-name">
+                        {{ review.reviewer_first_name }} {{ review.reviewer_last_name[0] }}.
+                      </h5>
+                      {# Use inline CSS variable --rating to control star colors #}
+                      <span class="review-rating" style="--rating: {{ review.rating }};">
+                        {# Generate 5 star characters #}
+                        <span>&#9733;</span><span>&#9733;</span><span>&#9733;</span><span>&#9733;</span><span>&#9733;</span>
+                      </span>
+                    </div>
+                    <p class="card-text review-comment">{{ review.comment }}</p>
+                  </div>
+                </div>
+                {% endfor %}
+              </div>
+            {% else %}
+              <p>No reviews yet for {{ profile_user.first_name }}.</p>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div> <!-- End Right Column -->
+  </div> <!-- End Row -->
+</div> <!-- End Main Container -->
+
+{% else %}
+  <div class="alert alert-danger" role="alert">
+    Could not load user profile.
   </div>
-</div>
+{% endif %}
+{% endblock %}
+
+{% block styles %}
+{{ super() }}
+<style>
+/* Product List/Card Styling (keep existing) */
+.profile-listings-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); 
+  gap: 1rem;
+}
+
+.product-card {
+  background: #fff;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+  display: flex; 
+  flex-direction: column; 
+  position: relative; 
+}
+
+.product-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.product-card-link {
+  text-decoration: none;
+  color: inherit;
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+}
+
+.product-card .product-image {
+  width: 100%;
+  height: 150px;
+  object-fit: cover;
+  display: block;
+  border-top: 1px solid #e9ecef;
+  order: -1;
+}
+
+.product-card .product-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #2c3e50;
+  padding: 0.75rem 1rem 0.5rem;
+  margin: 0;
+  line-height: 1.3;
+  text-align: center;
+}
+
+/* Review Grid Styling (keep existing) */
+.review-list {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+
+.review-card {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+}
+
+.review-card:hover {
+   box-shadow: 0 3px 6px rgba(0, 0, 0, 0.08);
+}
+
+.review-card .card-body {
+    padding: 1rem 1.25rem;
+}
+
+.review-reviewer-name {
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+/* Style for displayed stars based on --rating variable */
+.review-rating {
+    --rating: 0; /* Default rating */
+    line-height: 1; /* Prevent extra space */
+    font-size: 1.1rem;
+}
+.review-rating span {
+    color: #ced4da; /* Default color (gray) */
+    display: inline-block;
+    padding: 0 1px; /* Small spacing between stars */
+}
+/* Color stars up to the rating */
+.review-rating span:nth-child(-n + var(--rating)) {
+     color: #ffc107; /* Gold color */
+}
+
+.review-comment {
+    font-size: 0.95rem;
+    color: #495057;
+    margin-top: 0.5rem;
+}
+
+/* New Review Form Styling - Match new_listing.html */
+.review-form-container {
+  margin-bottom: 2rem;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  padding: 1.5rem;
+}
+
+.review-form-container h4 {
+  margin-top: 0;
+  margin-bottom: 1.5rem;
+  font-size: 1.25rem;
+  color: #2c3e50;
+}
+
+.review-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.review-form .form-group {
+  margin-bottom: 1.25rem;
+}
+
+.review-form .form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: #2c3e50;
+}
+
+.review-form .form-group textarea {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  transition: border-color 0.3s;
+  font-family: inherit;
+  resize: vertical;
+}
+
+.review-form .form-group textarea:focus {
+  border-color: #6a0dad;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(106, 13, 173, 0.1);
+}
+
+/* Stars Rating - Fixed to match index.html */
+.new-stars,
+.profile-rating-stars {
+  display: flex !important;
+  flex-direction: row-reverse !important;
+  gap: 6px !important;
+  cursor: pointer !important;
+  justify-content: flex-start !important;
+  width: max-content !important;
+  margin-top: 15px !important;
+}
+
+.new-stars input[type="radio"],
+.profile-rating-stars input[type="radio"] {
+  display: none !important;
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  opacity: 0 !important;
+  position: absolute !important;
+  visibility: hidden !important;
+}
+
+.new-stars label,
+.profile-rating-stars label {
+  color: #d1d5db !important; 
+  font-size: 24px !important;
+  cursor: pointer !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  display: inline-block !important;
+  background: transparent !important;
+  border: none !important;
+}
+
+.new-stars input:checked ~ label,
+.new-stars label:hover,
+.new-stars label:hover ~ label,
+.profile-rating-stars input:checked ~ label,
+.profile-rating-stars label:hover,
+.profile-rating-stars label:hover ~ label {
+  color: #6a0dad !important;
+}
+
+/* New clean rating implementation */
+.rating-stars-wrapper {
+  display: flex;
+  flex-direction: row-reverse;
+  gap: 6px;
+  justify-content: flex-start;
+  margin-top: 15px;
+}
+
+.rating-stars-wrapper input[type="radio"] {
+  position: absolute;
+  left: -9999px;
+  opacity: 0;
+  visibility: hidden;
+}
+
+.rating-stars-wrapper label {
+  color: #d1d5db;
+  font-size: 28px;
+  cursor: pointer;
+  transition: color 0.2s;
+  line-height: 1;
+}
+
+.rating-stars-wrapper input:checked ~ label,
+.rating-stars-wrapper label:hover,
+.rating-stars-wrapper label:hover ~ label {
+  color: #6a0dad;
+}
+
+/* Character Counter */
+.char-counter {
+  text-align: right;
+  font-size: 0.8rem;
+  color: #6c757d;
+  margin-top: 5px;
+}
+
+.approaching-limit {
+  color: #dc3545;
+  font-weight: bold;
+}
+
+/* Submit Button */
+.btn-submit {
+  padding: 0.75rem 1.5rem;
+  background-color: #6a0dad;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-align: center;
+  align-self: flex-start;
+  min-width: 120px;
+}
+
+.btn-submit:hover {
+  background-color: #550a9e;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+</style>
+
+<script>
+  // Character counter for review comment
+  document.addEventListener('DOMContentLoaded', function() {
+    const commentField = document.getElementById('comment');
+    const charCounter = document.getElementById('review-char-count');
+    
+    if (commentField && charCounter) {
+      // Initialize counter with current text length
+      charCounter.textContent = commentField.value.length;
+      
+      commentField.addEventListener('input', function() {
+        const currentLength = this.value.length;
+        charCounter.textContent = currentLength;
+        
+        // Visual feedback when approaching limit
+        if (currentLength >= 450) {
+          charCounter.classList.add('approaching-limit');
+        } else {
+          charCounter.classList.remove('approaching-limit');
+        }
+      });
+    }
+  });
+</script>
 {% endblock %}

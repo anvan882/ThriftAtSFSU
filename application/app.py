@@ -8,6 +8,7 @@ import os
 from datetime import datetime, timedelta
 import base64 # Added for image encoding
 import json   # Added for parsing AI response
+from decimal import Decimal # Import Decimal for accurate price handling
 from openai import OpenAI # Added for OpenAI API call
 
 load_dotenv()
@@ -467,6 +468,259 @@ def about(username):
     # this will load templates/about_<username>.html
     template_name = f'about_team/{username}.html'
     return render_template(template_name, **info)
+
+# === Profile Routes ===
+
+@app.route("/profile/<int:profile_user_id>")
+@login_required # User must be logged in to view any profile
+def view_profile(profile_user_id):
+    viewer_user_id = session.get('user_id')
+    is_own_profile = (viewer_user_id == profile_user_id)
+
+    connection = None
+    cursor = None
+    profile_user = None
+    listings = []
+    reviews = []
+    avg_rating = None
+    review_count = 0
+    has_reviewed = False  # Flag to track if viewer has already reviewed this user
+
+    try:
+        connection = cnxpool.get_connection()
+        cursor = connection.cursor(dictionary=True, buffered=True) # Use buffered cursor for multiple queries
+
+        # Fetch profile user details
+        cursor.execute("""
+            SELECT user_id, first_name, last_name, email, phone_number, bio, created_at
+            FROM Users WHERE user_id = %s
+        """, (profile_user_id,))
+        profile_user = cursor.fetchone()
+
+        if not profile_user:
+            flash('User profile not found.', 'error')
+            abort(404)
+
+        # Fetch user's listings
+        cursor.execute("""
+            SELECT p.product_id, p.title, p.price, pi.image_id AS first_image_id
+            FROM Products p
+            LEFT JOIN ProductImages pi ON p.product_id = pi.product_id AND pi.image_order = 0
+            WHERE p.seller_id = %s AND p.status = 'available'
+            ORDER BY p.created_at DESC
+            LIMIT 10 -- Limit number of listings shown initially
+        """, (profile_user_id,))
+        listings = cursor.fetchall()
+
+        # Fetch reviews about the user
+        cursor.execute("""
+            SELECT r.review_id, r.rating, r.comment, 
+                   u.user_id as reviewer_id, u.first_name as reviewer_first_name, u.last_name as reviewer_last_name
+            FROM Reviews r
+            JOIN Users u ON r.reviewer_id = u.user_id
+            WHERE r.reviewed_user_id = %s
+            ORDER BY r.review_id DESC
+        """, (profile_user_id,))
+        reviews = cursor.fetchall()
+
+        # Calculate average rating
+        if reviews:
+            review_count = len(reviews)
+            total_rating = sum(r['rating'] for r in reviews)
+            avg_rating = round(total_rating / review_count, 1) if review_count > 0 else None
+            
+        # Check if the current user has already reviewed this profile
+        if not is_own_profile:  # No need to check if viewing own profile
+            cursor.execute("""
+                SELECT review_id FROM Reviews 
+                WHERE reviewer_id = %s AND reviewed_user_id = %s
+            """, (viewer_user_id, profile_user_id))
+            has_reviewed = cursor.fetchone() is not None
+
+
+    except Error as db_err:
+        print(f"Database error fetching profile for user {profile_user_id}: {db_err}")
+        flash("Could not load profile due to a database error.", "error")
+        # Redirect or show generic error? Redirect home for now.
+        return redirect(url_for('home'))
+    except Exception as e:
+        print(f"Unexpected error fetching profile for user {profile_user_id}: {e}")
+        flash("An unexpected error occurred while loading the profile.", "error")
+        return redirect(url_for('home'))
+    finally:
+        if cursor: cursor.close()
+        if connection and connection.is_connected(): connection.close()
+
+    # Combine first and last name for display
+    profile_user['full_name'] = f"{profile_user['first_name']} {profile_user['last_name']}"
+
+    return render_template(
+        'pages/profile.html',
+        profile_user=profile_user,
+        listings=listings,
+        reviews=reviews,
+        avg_rating=avg_rating,
+        review_count=review_count,
+        is_own_profile=is_own_profile,
+        viewer_user_id=viewer_user_id, # Pass viewer ID for review form action
+        has_reviewed=has_reviewed  # Pass the flag to indicate if user has already reviewed
+    )
+
+@app.route('/profile/edit', methods=['GET', 'POST'])
+@login_required
+def edit_profile():
+    user_id = session['user_id']
+    connection = None
+    cursor = None
+
+    if request.method == 'POST':
+        bio = request.form.get('bio', '').strip()
+        # Add other fields later if needed (e.g., phone, picture)
+        profile_picture = request.files.get('profile_picture')
+
+        # --- Validation ---
+        # Optional: Add validation for bio length, etc.
+        if len(bio) > 1000: # Example limit
+            flash('Bio cannot exceed 1000 characters.', 'error')
+            # Need to refetch user data to render the form again
+            # This is simplified, ideally you'd repopulate form without another DB hit
+            return redirect(url_for('edit_profile'))
+
+        picture_blob = None
+        if profile_picture and profile_picture.filename != '':
+            # Check file type
+            allowed_extensions = {'png', 'jpg', 'jpeg'}
+            if '.' not in profile_picture.filename or \
+               profile_picture.filename.rsplit('.', 1)[1].lower() not in allowed_extensions:
+                flash('Invalid file type for profile picture. Please use PNG, JPG, or JPEG.', 'error')
+                return redirect(url_for('edit_profile'))
+            picture_blob = profile_picture.read()
+            # Optional: Add size validation
+        # --- End Validation ---
+
+        try:
+            connection = cnxpool.get_connection()
+            cursor = connection.cursor()
+
+            if picture_blob:
+                # Update bio and picture
+                cursor.execute("UPDATE Users SET bio = %s, profile_picture = %s WHERE user_id = %s",
+                               (bio, picture_blob, user_id))
+            else:
+                # Update only bio
+                cursor.execute("UPDATE Users SET bio = %s WHERE user_id = %s", (bio, user_id))
+
+            connection.commit()
+            flash('Profile updated successfully!', 'success')
+            return redirect(url_for('view_profile', profile_user_id=user_id))
+
+        except Error as db_err:
+            print(f"Database error updating profile for user {user_id}: {db_err}")
+            flash('Failed to update profile due to a database error.', 'error')
+            if connection: connection.rollback()
+        except Exception as e:
+            print(f"Unexpected error updating profile for user {user_id}: {e}")
+            flash('An unexpected error occurred while updating profile.', 'error')
+            if connection: connection.rollback()
+        finally:
+            if cursor: cursor.close()
+            if connection and connection.is_connected(): connection.close()
+
+        # Redirect back to edit page on error
+        return redirect(url_for('edit_profile'))
+
+    else: # GET Request
+        try:
+            connection = cnxpool.get_connection()
+            cursor = connection.cursor(dictionary=True)
+            cursor.execute("SELECT bio FROM Users WHERE user_id = %s", (user_id,))
+            user_data = cursor.fetchone()
+            if not user_data:
+                flash('User not found.', 'error')
+                return redirect(url_for('home')) # Or handle appropriately
+
+            # Create edit_profile.html template for the form
+            return render_template('pages/edit_profile.html', current_bio=user_data.get('bio', ''))
+
+        except Error as db_err:
+            print(f"Database error fetching profile for edit: {db_err}")
+            flash('Could not load profile for editing.', 'error')
+            return redirect(url_for('view_profile', profile_user_id=user_id))
+        except Exception as e:
+            print(f"Unexpected error fetching profile for edit: {e}")
+            flash('An unexpected error occurred.', 'error')
+            return redirect(url_for('view_profile', profile_user_id=user_id))
+        finally:
+            if cursor: cursor.close()
+            if connection and connection.is_connected(): connection.close()
+
+
+@app.route('/profile/<int:reviewed_user_id>/add_review', methods=['POST'])
+@login_required
+def add_review(reviewed_user_id):
+    reviewer_user_id = session['user_id']
+
+    # Prevent self-review
+    if reviewer_user_id == reviewed_user_id:
+        flash("You cannot review yourself.", 'warning')
+        return redirect(url_for('view_profile', profile_user_id=reviewed_user_id))
+
+    rating_str = request.form.get('rating')
+    comment = request.form.get('comment', '').strip()
+
+    # --- Validation ---
+    if not rating_str or not comment:
+        flash("Rating and comment are required to submit a review.", 'error')
+        return redirect(url_for('view_profile', profile_user_id=reviewed_user_id))
+
+    try:
+        rating = int(rating_str)
+        if not 1 <= rating <= 5:
+            raise ValueError("Rating out of range")
+    except (ValueError, TypeError):
+        flash("Invalid rating value. Please select 1-5 stars.", 'error')
+        return redirect(url_for('view_profile', profile_user_id=reviewed_user_id))
+
+    if len(comment) > 500: # Example limit
+        flash("Review comment cannot exceed 500 characters.", 'error')
+        return redirect(url_for('view_profile', profile_user_id=reviewed_user_id))
+    # --- End Validation ---
+
+    connection = None
+    cursor = None
+    try:
+        connection = cnxpool.get_connection()
+        cursor = connection.cursor()
+
+        # Check if user has already reviewed this user (optional, decide business logic)
+        # cursor.execute("SELECT review_id FROM Reviews WHERE reviewer_id = %s AND reviewed_user_id = %s", (reviewer_user_id, reviewed_user_id))
+        # if cursor.fetchone():
+        #     flash("You have already reviewed this user.", 'warning')
+        #     return redirect(url_for('view_profile', profile_user_id=reviewed_user_id))
+
+        # Insert the review
+        insert_query = """
+        INSERT INTO Reviews (reviewer_id, reviewed_user_id, rating, comment)
+        VALUES (%s, %s, %s, %s)
+        """
+        cursor.execute(insert_query, (reviewer_user_id, reviewed_user_id, rating, comment))
+        connection.commit()
+        flash("Review submitted successfully!", 'success')
+
+    except Error as db_err:
+        print(f"Database error adding review from {reviewer_user_id} to {reviewed_user_id}: {db_err}")
+        flash("Failed to submit review due to a database error.", 'error')
+        if connection: connection.rollback()
+    except Exception as e:
+        print(f"Unexpected error adding review: {e}")
+        flash("An unexpected error occurred while submitting the review.", 'error')
+        if connection: connection.rollback()
+    finally:
+        if cursor: cursor.close()
+        if connection and connection.is_connected(): connection.close()
+
+    return redirect(url_for('view_profile', profile_user_id=reviewed_user_id))
+
 
 # === Other Routes ===
 @app.route("/profile")
@@ -1101,17 +1355,17 @@ def product_detail(product_id):
     connection = None
     cursor = None
     product = None
-    image_ids = [] # Initialize empty list for image IDs
+    image_ids = []
     try:
         connection = cnxpool.get_connection()
         cursor = connection.cursor(dictionary=True)
-        
-        # Step 1: Fetch base product details (without image data)
+
+        # Fetch product details including seller info and condition
         query_product = """
-            SELECT 
-                p.product_id, p.title, p.description, p.price, p.status, 
+            SELECT
+                p.product_id, p.title, p.description, p.price, p.status,
                 p.created_at, p.`condition`,
-                CONCAT(u.first_name, ' ', u.last_name) AS seller_username, u.user_id AS seller_id,
+                u.user_id AS seller_id, CONCAT(u.first_name, ' ', u.last_name) AS seller_username,
                 c.name AS category_name
             FROM Products p
             JOIN Users u ON p.seller_id = u.user_id
@@ -1121,39 +1375,36 @@ def product_detail(product_id):
         cursor.execute(query_product, (product_id,))
         product = cursor.fetchone()
 
-        # Debug: Print to check if condition is in the returned data
-        # if product:
-        #     print(f"DEBUG - Product data: {product}")
-        #     print(f"DEBUG - Condition: {product.get('condition')}")
-            
-        # Step 2: If product found, fetch its image IDs
         if product:
+             # Fetch image IDs
             query_images = """
-                SELECT image_id 
-                FROM ProductImages 
-                WHERE product_id = %s 
+                SELECT image_id
+                FROM ProductImages
+                WHERE product_id = %s
                 ORDER BY image_order ASC
             """
             cursor.execute(query_images, (product_id,))
-            # Store just the IDs in a list
             image_ids = [row['image_id'] for row in cursor.fetchall()]
+
+            # Convert price to Decimal for accurate formatting if needed, though Jinja handles it well
+            if product.get('price') is not None:
+                 product['price'] = Decimal(product['price'])
+
 
     except Error as db_err:
         print(f"Database error fetching product {product_id}: {db_err}")
         flash("Could not load product details due to a database error.", "error")
-        abort(500) 
+        abort(500)
     except Exception as e:
         print(f"Error fetching product {product_id}: {e}")
         flash("An unexpected error occurred while loading product details.", "error")
-        abort(500) 
+        abort(500)
     finally:
-        if cursor:
-            cursor.close()
-        if connection and connection.is_connected():
-            connection.close()
-            
+        if cursor: cursor.close()
+        if connection and connection.is_connected(): connection.close()
+
     if product:
-        # Pass both product details and the list of image IDs to the template
+        # Pass the necessary data to the template
         return render_template('pages/listings/listing_indie.html', product=product, image_ids=image_ids)
     else:
         abort(404) # Product not found

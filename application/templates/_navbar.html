@@ -33,7 +33,7 @@
       <div class="profile-dropdown">
         <img src="{{ profile_pic_url }}" alt="My Profile" class="navbar-profile-pic">
         <div class="dropdown-menu profile-dropdown-menu">
-          <a href="{{ url_for('profile') }}">My Profile</a>
+          <a href="{{ url_for('view_profile', profile_user_id=session['user_id']) }}">My Profile</a>
           <a href="{{ url_for('messages') }}">Messages</a>
           <a href="{{ url_for('wishlist') }}">Wishlist</a>
           <hr> {# Optional separator #}
