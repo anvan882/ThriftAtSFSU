@@ -6,8 +6,22 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
 import os
 from datetime import datetime, timedelta
+import base64 # Added for image encoding
+import json   # Added for parsing AI response
+from openai import OpenAI # Added for OpenAI API call
 
 load_dotenv()
+
+# === Configure OpenAI Client ===
+try:
+    client = OpenAI() # Reads OPENAI_API_KEY from environment automatically
+except Exception as e:
+    print(f"Error initializing OpenAI client: {e}")
+    # Consider how to handle this - maybe disable the autofill feature?
+    client = None
+
+# Define allowed conditions centrally
+ALLOWED_CONDITIONS = ["Very Worn", "Used", "Fairly Used", "Good Condition", "Great Condition"]
 
 app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_SECRET_KEY") # Needed for flash messages
@@ -737,6 +751,150 @@ def newListing():
     
     # For GET requests
     return render_template('pages/listings/new_listing.html', form_data={})
+
+# === Autofill Listing Endpoint (Real AI) ===
+@app.route('/autofill_listing', methods=['POST'])
+@login_required
+def autofill_listing():
+    if not client:
+        return jsonify({'success': False, 'message': 'Autofill feature is currently unavailable (config error).'}), 503 # 503 Service Unavailable
+
+    if 'image' not in request.files:
+        return jsonify({'success': False, 'message': 'No image file provided.'}), 400
+
+    image_file = request.files['image']
+    image_filename = image_file.filename
+
+    # Basic check if file seems like an image (based on filename)
+    allowed_extensions = {'png', 'jpg', 'jpeg'}
+    if '.' not in image_filename or \
+       image_filename.rsplit('.', 1)[1].lower() not in allowed_extensions:
+        return jsonify({'success': False, 'message': 'Invalid file type. Please use PNG, JPG, or JPEG.'}), 400
+
+    try:
+        # 1. Read and encode the image
+        image_data = image_file.read()
+        base64_image = base64.b64encode(image_data).decode('utf-8')
+        mime_type = image_file.mimetype # Get MIME type from Flask file object
+
+        # Fetch categories dynamically from DB
+        possible_categories = []
+        connection = None
+        cursor = None
+        try:
+            connection = cnxpool.get_connection()
+            cursor = connection.cursor(dictionary=True)
+            cursor.execute("SELECT name FROM Categories")
+            possible_categories = [r['name'] for r in cursor.fetchall()]
+        except Error as db_err:
+            print(f"Database error fetching categories for autofill: {db_err}")
+            # Proceed with empty list, AI might guess, or return error?
+            # Returning error seems safer if categories are crucial.
+            return jsonify({'success': False, 'message': 'Could not fetch categories for autofill.'}), 500
+        finally:
+            if cursor: cursor.close()
+            if connection and connection.is_connected(): connection.close()
+
+        if not possible_categories:
+             print("Warning: No categories found in the database for autofill prompt.")
+             # Handle this case - maybe default to a basic list or error out?
+             possible_categories = ["Other"] # Default if DB fetch fails but we don't error out
+
+        # Use centrally defined conditions
+        possible_conditions = ALLOWED_CONDITIONS
+
+        # 2. Construct the prompt for OpenAI Vision API
+        prompt = f"""
+Analyze the provided image of an item for sale and generate a JSON object containing suggested values for the following fields: 'title', 'price', 'category', 'condition', and 'description'.
+
+Constraints and Guidelines:
+- **title**: A concise and descriptive title for the item (e.g., "Used Blue SFSU Hoodie Size L").
+- **price**: Estimate a reasonable price in USD as a floating-point number (e.g., 25.00). Do not include the '$' sign. If unsure, provide 0.0.
+- **category**: Choose the most appropriate category from the following list: {', '.join(possible_categories)}. If none seem correct, use "Other".
+- **condition**: Assess the item's condition and choose the best fit from this list: {', '.join(possible_conditions)}.
+- **description**: Write a brief description (max 500 characters) highlighting key features or visible condition details. Start with "Based on the image, this appears to be..."
+
+Return ONLY the JSON object, nothing else.
+
+Example JSON format:
+{{
+  "title": "Example Title",
+  "price": 15.50,
+  "category": "Clothing",
+  "condition": "Good Condition",
+  "description": "Based on the image, this appears to be a well-maintained item..."
+}}
+"""
+
+        # 3. Make the API call
+        response = client.chat.completions.create(
+            model="gpt-4o", # Or use "gpt-4o" if available and preferred
+            messages=[
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": prompt},
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": f"data:{mime_type};base64,{base64_image}"
+                            }
+                        },
+                    ],
+                }
+            ],
+            max_tokens=300 # Adjust as needed
+        )
+
+        # 4. Parse the response
+        ai_response_content = response.choices[0].message.content.strip()
+        print(f"AI response content: {ai_response_content}")
+
+        # Clean potential markdown code block fences
+        if ai_response_content.startswith("```json"):
+            ai_response_content = ai_response_content[7:]
+        if ai_response_content.endswith("```"):
+            ai_response_content = ai_response_content[:-3]
+        ai_response_content = ai_response_content.strip()
+
+
+        try:
+            extracted_data = json.loads(ai_response_content)
+            # Basic validation of expected keys
+            required_keys = {"title", "price", "category", "condition", "description"}
+            if not required_keys.issubset(extracted_data.keys()):
+                 print(f"AI response missing keys. Got: {extracted_data}")
+                 raise ValueError("AI response missing required keys.")
+            # Ensure price is a number, convert if string
+            if isinstance(extracted_data.get('price'), str):
+                try:
+                    extracted_data['price'] = float(extracted_data['price'])
+                except ValueError:
+                    extracted_data['price'] = 0.0 # Default to 0 if conversion fails
+
+            return jsonify({'success': True, 'data': extracted_data})
+
+        except json.JSONDecodeError as json_err:
+            print(f"Error decoding JSON from AI response: {json_err}")
+            print(f"Raw AI response content: {ai_response_content}")
+            return jsonify({'success': False, 'message': 'Could not parse AI response (invalid JSON).'}), 500
+        except ValueError as val_err:
+             print(f"Error validating AI response: {val_err}")
+             print(f"Raw AI response content: {ai_response_content}")
+             return jsonify({'success': False, 'message': f'AI response validation failed: {val_err}'}), 500
+
+
+    except Exception as e:
+        # Catch potential errors during file processing or API call
+        print(f"Error during autofill API call: {e}")
+        # Check if it's an OpenAI API error
+        if hasattr(e, 'status_code'):
+            error_message = f"OpenAI API error ({e.status_code}): {getattr(e, 'message', str(e))}"
+            status_code = e.status_code
+        else:
+            error_message = 'Failed to process image for autofill.'
+            status_code = 500
+        return jsonify({'success': False, 'message': error_message}), status_code
 
 # Messages
 @app.route('/messages')

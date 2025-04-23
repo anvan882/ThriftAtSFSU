@@ -36,6 +36,13 @@
       <span id="file-names" class="file-name">No files chosen</span>
     </div>
 
+    <!-- Autofill Button -->
+    <div class="form-group">
+      <button type="button" id="autofill-btn" class="btn btn-secondary" style="text-align: center;">Autofill Form Using LLM</button>
+      <div id="autofill-status" style="margin-top: 5px; font-size: 0.9em; color: #6c757d;"></div>
+      <span style="font-size: 0.8em; color: #888;">Powered by OpenAI</span>
+    </div>
+
     <!-- Title -->
     <div class="form-group">
       <label for="title">Title</label>
@@ -207,5 +214,126 @@
       this.value = '';
     }
   });
+</script>
+
+<script>
+  // Autofill functionality
+  const autofillBtn = document.getElementById('autofill-btn');
+  const autofillStatus = document.getElementById('autofill-status');
+  const imagesInput = document.getElementById('images');
+  const titleInput = document.getElementById('title');
+  const priceInput = document.getElementById('price');
+  const categorySelect = document.getElementById('category');
+  const conditionSelect = document.getElementById('condition');
+  const descriptionTextarea = document.getElementById('description');
+  const charCounterSpan = document.getElementById('char-count'); // For updating char count
+
+  const COOLDOWN_PERIOD = 5 * 60 * 1000; // 5 minutes in milliseconds
+  const LAST_AUTOFILL_TIME_KEY = 'lastAutofillTime';
+
+  function checkCooldown() {
+    const lastAutofillTime = localStorage.getItem(LAST_AUTOFILL_TIME_KEY);
+    if (lastAutofillTime) {
+      const timePassed = Date.now() - parseInt(lastAutofillTime, 10);
+      if (timePassed < COOLDOWN_PERIOD) {
+        const timeLeft = Math.ceil((COOLDOWN_PERIOD - timePassed) / 1000);
+        autofillStatus.textContent = `Please wait ${timeLeft} seconds before trying again.`;
+        autofillBtn.disabled = true;
+        // Re-enable button after cooldown
+        setTimeout(() => {
+          autofillBtn.disabled = false;
+          autofillStatus.textContent = '';
+          checkCooldown(); // Recheck in case user waits exactly till timeout
+        }, COOLDOWN_PERIOD - timePassed);
+        return true; // Still in cooldown
+      }
+    }
+    autofillBtn.disabled = false; // Ensure button is enabled if cooldown passed
+    autofillStatus.textContent = ''; // Clear status if cooldown passed
+    return false; // Not in cooldown
+  }
+
+  autofillBtn.addEventListener('click', async () => {
+    if (checkCooldown()) {
+      return; // Exit if still in cooldown
+    }
+
+    if (imagesInput.files.length === 0) {
+      autofillStatus.textContent = 'Please select an image first.';
+      return;
+    }
+
+    const firstImage = imagesInput.files[0];
+    const formData = new FormData();
+    formData.append('image', firstImage);
+
+    // Disable button, set cooldown, show processing message
+    autofillBtn.disabled = true;
+    autofillStatus.textContent = 'Processing image... Please wait.';
+    localStorage.setItem(LAST_AUTOFILL_TIME_KEY, Date.now().toString());
+    setTimeout(() => {
+        autofillBtn.disabled = false; // Re-enable after 5 mins regardless of outcome
+        if (autofillStatus.textContent === 'Processing image... Please wait.') {
+             autofillStatus.textContent = ''; // Clear processing message if still there
+        }
+        checkCooldown(); // Re-check and update status if needed
+    }, COOLDOWN_PERIOD);
+
+
+    try {
+      const response = await fetch("{{ url_for('autofill_listing') }}", {
+        method: 'POST',
+        body: formData,
+        // Add headers if needed, e.g., CSRF token
+      });
+
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        const data = result.data;
+        // Populate fields
+        titleInput.value = data.title || '';
+        priceInput.value = data.price || '';
+        
+        // Select category option if it exists
+        const categoryOption = Array.from(categorySelect.options).find(opt => opt.value.toLowerCase() === (data.category || '').toLowerCase());
+        if (categoryOption) {
+          categorySelect.value = categoryOption.value;
+        } else {
+          categorySelect.value = ''; // Reset if no match
+          console.warn(`Suggested category "${data.category}" not found in dropdown.`);
+        }
+
+        // Select condition option if it exists
+        const conditionOption = Array.from(conditionSelect.options).find(opt => opt.value.toLowerCase() === (data.condition || '').toLowerCase());
+         if (conditionOption) {
+          conditionSelect.value = conditionOption.value;
+        } else {
+          conditionSelect.value = ''; // Reset if no match
+           console.warn(`Suggested condition "${data.condition}" not found in dropdown.`);
+        }
+        
+        descriptionTextarea.value = data.description || '';
+        // Trigger input event to update character counter
+        descriptionTextarea.dispatchEvent(new Event('input', { bubbles: true })); 
+
+        autofillStatus.textContent = 'Form autofilled successfully! Please review.';
+        // Keep button disabled for the full cooldown period (handled by the setTimeout above)
+
+      } else {
+        autofillStatus.textContent = `Error: ${result.message || 'Could not autofill form.'}`;
+        // Keep button disabled for the full cooldown period
+      }
+    } catch (error) {
+      console.error('Autofill fetch error:', error);
+      autofillStatus.textContent = 'Error connecting to the server for autofill.';
+      // Keep button disabled for the full cooldown period
+    }
+    // Don't re-enable button here, rely on the initial 5-min timeout
+  });
+
+  // Initial check when page loads
+  checkCooldown();
+
 </script>
 {% endblock %}
