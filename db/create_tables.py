@@ -2,16 +2,18 @@ import mysql.connector
 from mysql.connector import errorcode
 import time
 import os
+from dotenv import load_dotenv
+
+load_dotenv() # Load environment variables from .env file
 
 db_name = input("Enter the name of the database to connect to: ").strip()
 
-# Database connection config
 db = mysql.connector.connect(
-    user="ubuntu",
-    host="127.0.0.1",
-    password="921652677",
+    user=os.getenv("DB_USER"),
+    host=os.getenv("DB_HOST"),
+    password=os.getenv("DB_PASSWORD"),
     database=db_name,
-    port=3306,
+    port=os.getenv("DB_PORT"),
 )
 
 # Define table creation SQL
@@ -27,6 +29,7 @@ TABLES['Users'] = (
         password VARCHAR(255),
         phone_number VARCHAR(20),
         profile_picture LONGBLOB,
+        bio TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         is_admin BOOLEAN DEFAULT FALSE
     );
@@ -52,9 +55,9 @@ TABLES['Products'] = (
         description TEXT,
         price DECIMAL(10,2),
         category_id INT,
+        `condition` VARCHAR(50),
         status ENUM('available', 'sold') DEFAULT 'available',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        product_image LONGBLOB,
         FOREIGN KEY (seller_id) REFERENCES Users(user_id),
         FOREIGN KEY (category_id) REFERENCES Categories(category_id)
     );
@@ -109,6 +112,19 @@ TABLES['Transactions'] = (
     """
 )
 
+TABLES['ProductImages'] = (
+    """
+    CREATE TABLE IF NOT EXISTS ProductImages (
+        image_id INT AUTO_INCREMENT PRIMARY KEY,
+        product_id INT,
+        image_data LONGBLOB,
+        uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        image_order INT DEFAULT 0, -- To maintain image order if needed
+        FOREIGN KEY (product_id) REFERENCES Products(product_id) ON DELETE CASCADE
+    );
+    """
+)
+
 TABLES['Wishlist'] = (
     """
     CREATE TABLE IF NOT EXISTS Wishlist (
@@ -122,9 +138,26 @@ TABLES['Wishlist'] = (
     """
 )
 
+TABLES['UserAvailability'] = (
+    """
+    CREATE TABLE IF NOT EXISTS UserAvailability (
+        availability_id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NOT NULL,
+        day_of_week ENUM('Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday') NOT NULL,
+        time_slot VARCHAR(10) NOT NULL, -- Format like '6:00', '6:30', etc.
+        is_available BOOLEAN DEFAULT TRUE,
+        last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES Users(user_id) ON DELETE CASCADE,
+        UNIQUE KEY unique_time_slot (user_id, day_of_week, time_slot)
+    );
+    """
+)
+
 # Table drop order (reverse of dependency)
 DROP_ORDER = [
+    "UserAvailability",
     "Wishlist",
+    "ProductImages",
     "Transactions",
     "Reviews",
     "Messages",
