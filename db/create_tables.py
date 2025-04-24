@@ -138,8 +138,24 @@ TABLES['Wishlist'] = (
     """
 )
 
+TABLES['UserAvailability'] = (
+    """
+    CREATE TABLE IF NOT EXISTS UserAvailability (
+        availability_id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NOT NULL,
+        day_of_week ENUM('Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday') NOT NULL,
+        time_slot VARCHAR(10) NOT NULL, -- Format like '6:00', '6:30', etc.
+        is_available BOOLEAN DEFAULT TRUE,
+        last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES Users(user_id) ON DELETE CASCADE,
+        UNIQUE KEY unique_time_slot (user_id, day_of_week, time_slot)
+    );
+    """
+)
+
 # Table drop order (reverse of dependency)
 DROP_ORDER = [
+    "UserAvailability",
     "Wishlist",
     "ProductImages",
     "Transactions",

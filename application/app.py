@@ -566,94 +566,39 @@ def view_profile(profile_user_id):
         has_reviewed=has_reviewed  # Pass the flag to indicate if user has already reviewed
     )
 
-@app.route('/profile/edit', methods=['GET', 'POST'])
+@app.route('/profile/update_bio', methods=['POST'])
 @login_required
-def edit_profile():
+def update_bio():
     user_id = session['user_id']
+    bio = request.form.get('bio', '').strip()
+    
+    # Validation
+    if len(bio) > 1000:  # Example limit
+        return jsonify({'success': False, 'message': 'Bio cannot exceed 1000 characters.'}), 400
+    
     connection = None
     cursor = None
-
-    if request.method == 'POST':
-        bio = request.form.get('bio', '').strip()
-        # Add other fields later if needed (e.g., phone, picture)
-        profile_picture = request.files.get('profile_picture')
-
-        # --- Validation ---
-        # Optional: Add validation for bio length, etc.
-        if len(bio) > 1000: # Example limit
-            flash('Bio cannot exceed 1000 characters.', 'error')
-            # Need to refetch user data to render the form again
-            # This is simplified, ideally you'd repopulate form without another DB hit
-            return redirect(url_for('edit_profile'))
-
-        picture_blob = None
-        if profile_picture and profile_picture.filename != '':
-            # Check file type
-            allowed_extensions = {'png', 'jpg', 'jpeg'}
-            if '.' not in profile_picture.filename or \
-               profile_picture.filename.rsplit('.', 1)[1].lower() not in allowed_extensions:
-                flash('Invalid file type for profile picture. Please use PNG, JPG, or JPEG.', 'error')
-                return redirect(url_for('edit_profile'))
-            picture_blob = profile_picture.read()
-            # Optional: Add size validation
-        # --- End Validation ---
-
-        try:
-            connection = cnxpool.get_connection()
-            cursor = connection.cursor()
-
-            if picture_blob:
-                # Update bio and picture
-                cursor.execute("UPDATE Users SET bio = %s, profile_picture = %s WHERE user_id = %s",
-                               (bio, picture_blob, user_id))
-            else:
-                # Update only bio
-                cursor.execute("UPDATE Users SET bio = %s WHERE user_id = %s", (bio, user_id))
-
-            connection.commit()
-            flash('Profile updated successfully!', 'success')
-            return redirect(url_for('view_profile', profile_user_id=user_id))
-
-        except Error as db_err:
-            print(f"Database error updating profile for user {user_id}: {db_err}")
-            flash('Failed to update profile due to a database error.', 'error')
-            if connection: connection.rollback()
-        except Exception as e:
-            print(f"Unexpected error updating profile for user {user_id}: {e}")
-            flash('An unexpected error occurred while updating profile.', 'error')
-            if connection: connection.rollback()
-        finally:
-            if cursor: cursor.close()
-            if connection and connection.is_connected(): connection.close()
-
-        # Redirect back to edit page on error
-        return redirect(url_for('edit_profile'))
-
-    else: # GET Request
-        try:
-            connection = cnxpool.get_connection()
-            cursor = connection.cursor(dictionary=True)
-            cursor.execute("SELECT bio FROM Users WHERE user_id = %s", (user_id,))
-            user_data = cursor.fetchone()
-            if not user_data:
-                flash('User not found.', 'error')
-                return redirect(url_for('home')) # Or handle appropriately
-
-            # Create edit_profile.html template for the form
-            return render_template('pages/edit_profile.html', current_bio=user_data.get('bio', ''))
-
-        except Error as db_err:
-            print(f"Database error fetching profile for edit: {db_err}")
-            flash('Could not load profile for editing.', 'error')
-            return redirect(url_for('view_profile', profile_user_id=user_id))
-        except Exception as e:
-            print(f"Unexpected error fetching profile for edit: {e}")
-            flash('An unexpected error occurred.', 'error')
-            return redirect(url_for('view_profile', profile_user_id=user_id))
-        finally:
-            if cursor: cursor.close()
-            if connection and connection.is_connected(): connection.close()
-
+    try:
+        connection = cnxpool.get_connection()
+        cursor = connection.cursor()
+        
+        # Update only bio
+        cursor.execute("UPDATE Users SET bio = %s WHERE user_id = %s", (bio, user_id))
+        connection.commit()
+        
+        return jsonify({'success': True, 'message': 'Bio updated successfully!'})
+        
+    except Error as db_err:
+        print(f"Database error updating bio for user {user_id}: {db_err}")
+        if connection: connection.rollback()
+        return jsonify({'success': False, 'message': 'Database error updating bio.'}), 500
+    except Exception as e:
+        print(f"Unexpected error updating bio for user {user_id}: {e}")
+        if connection: connection.rollback()
+        return jsonify({'success': False, 'message': 'An unexpected error occurred.'}), 500
+    finally:
+        if cursor: cursor.close()
+        if connection and connection.is_connected(): connection.close()
 
 @app.route('/profile/<int:reviewed_user_id>/add_review', methods=['POST'])
 @login_required
@@ -1350,6 +1295,59 @@ def logout():
     flash('You have been logged out successfully.', 'success')
     return redirect(url_for('home'))
 
+@app.route('/product/<int:product_id>/delete', methods=['POST'])
+@login_required
+def delete_product(product_id):
+    connection = None
+    cursor = None
+    try:
+        connection = cnxpool.get_connection()
+        cursor = connection.cursor(dictionary=True)
+        
+        # First check if the product exists and belongs to the current user
+        query = """
+            SELECT seller_id FROM Products 
+            WHERE product_id = %s
+        """
+        cursor.execute(query, (product_id,))
+        product = cursor.fetchone()
+        
+        if not product:
+            flash("Product not found.", "error")
+            return redirect(url_for('home'))
+            
+        # Verify ownership
+        if product['seller_id'] != session['user_id']:
+            flash("You can only delete your own listings.", "error")
+            return redirect(url_for('product_detail', product_id=product_id))
+        
+        # Delete related images first (due to foreign key constraints)
+        cursor.execute("DELETE FROM ProductImages WHERE product_id = %s", (product_id,))
+        
+        # Remove from any wishlists
+        cursor.execute("DELETE FROM Wishlist WHERE product_id = %s", (product_id,))
+        
+        # Delete the product
+        cursor.execute("DELETE FROM Products WHERE product_id = %s", (product_id,))
+        
+        connection.commit()
+        flash("Listing successfully deleted.", "success")
+        return redirect(url_for('home'))
+        
+    except Error as db_err:
+        print(f"Database error deleting product {product_id}: {db_err}")
+        flash("Could not delete listing due to a database error.", "error")
+        if connection: connection.rollback()
+        return redirect(url_for('product_detail', product_id=product_id))
+    except Exception as e:
+        print(f"Error deleting product {product_id}: {e}")
+        flash("An unexpected error occurred while deleting the listing.", "error")
+        if connection: connection.rollback()
+        return redirect(url_for('product_detail', product_id=product_id))
+    finally:
+        if cursor: cursor.close()
+        if connection and connection.is_connected(): connection.close()
+
 @app.route('/product/<int:product_id>')
 def product_detail(product_id):
     connection = None
@@ -1404,10 +1402,176 @@ def product_detail(product_id):
         if connection and connection.is_connected(): connection.close()
 
     if product:
+        # Check if the current user is the owner of the listing
+        current_user_id = session.get('user_id')
+        is_owner = current_user_id and current_user_id == product['seller_id']
+        
         # Pass the necessary data to the template
-        return render_template('pages/listings/listing_indie.html', product=product, image_ids=image_ids)
+        return render_template('pages/listings/listing_indie.html', 
+                              product=product, 
+                              image_ids=image_ids, 
+                              is_owner=is_owner)
     else:
         abort(404) # Product not found
+
+# === Availability Routes ===
+@app.route('/get_availability/<int:user_id>')
+def get_availability(user_id):
+    connection = None
+    cursor = None
+    availability = {}
+    
+    try:
+        connection = cnxpool.get_connection()
+        cursor = connection.cursor(dictionary=True)
+        
+        # Fetch all availability time slots for the user
+        query = """
+            SELECT day_of_week, time_slot
+            FROM UserAvailability
+            WHERE user_id = %s AND is_available = TRUE
+        """
+        cursor.execute(query, (user_id,))
+        results = cursor.fetchall()
+        
+        # Format the results into a dictionary for easier handling in JavaScript
+        for row in results:
+            day = row['day_of_week']
+            time_slot = row['time_slot']
+            
+            if day not in availability:
+                availability[day] = []
+            
+            availability[day].append(time_slot)
+            
+        return jsonify({'success': True, 'availability': availability})
+        
+    except Error as db_err:
+        print(f"Database error fetching availability: {db_err}")
+        return jsonify({'success': False, 'message': 'Failed to retrieve availability data.'}), 500
+    except Exception as e:
+        print(f"Error fetching availability: {e}")
+        return jsonify({'success': False, 'message': 'An unexpected error occurred.'}), 500
+    finally:
+        if cursor: cursor.close()
+        if connection and connection.is_connected(): connection.close()
+
+@app.route('/update_availability/<int:user_id>', methods=['POST'])
+@login_required
+def update_availability(user_id):
+    # Verify user is updating their own availability
+    if session.get('user_id') != user_id:
+        return jsonify({'success': False, 'message': 'You can only update your own availability.'}), 403
+    
+    try:
+        # Get the availability data from the request
+        data = request.json
+        if not data or 'availability' not in data:
+            return jsonify({'success': False, 'message': 'No availability data provided.'}), 400
+        
+        availability_data = data['availability']
+        # Format should be: {day: [time_slots], day: [time_slots], ...}
+        
+        connection = None
+        cursor = None
+        
+        try:
+            connection = cnxpool.get_connection()
+            cursor = connection.cursor()
+            
+            # First, delete all existing availability for this user
+            cursor.execute("DELETE FROM UserAvailability WHERE user_id = %s", (user_id,))
+            
+            # Insert new availability data
+            insert_query = """
+                INSERT INTO UserAvailability (user_id, day_of_week, time_slot, is_available)
+                VALUES (%s, %s, %s, TRUE)
+            """
+            
+            # Prepare the insert data
+            insert_data = []
+            for day, time_slots in availability_data.items():
+                for time_slot in time_slots:
+                    insert_data.append((user_id, day, time_slot))
+            
+            # Execute the insert query for all records
+            if insert_data:
+                cursor.executemany(insert_query, insert_data)
+            
+            connection.commit()
+            return jsonify({'success': True, 'message': 'Availability updated successfully.'})
+            
+        except Error as db_err:
+            print(f"Database error updating availability: {db_err}")
+            if connection: connection.rollback()
+            return jsonify({'success': False, 'message': 'Failed to update availability data.'}), 500
+        finally:
+            if cursor: cursor.close()
+            if connection and connection.is_connected(): connection.close()
+            
+    except Exception as e:
+        print(f"Error updating availability: {e}")
+        return jsonify({'success': False, 'message': 'An unexpected error occurred.'}), 500
+
+@app.route('/update_product_description', methods=['POST'])
+def update_product_description():
+    """Update a product's description via AJAX"""
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'message': 'You must be logged in to perform this action'}), 401
+    
+    user_id = session['user_id']
+    description = request.form.get('description', '').strip()
+    product_id = request.form.get('product_id')
+    
+    if not product_id:
+        return jsonify({'success': False, 'message': 'Product ID is required'}), 400
+    
+    try:
+        product_id = int(product_id)
+    except ValueError:
+        return jsonify({'success': False, 'message': 'Invalid product ID'}), 400
+    
+    connection = None
+    cursor = None
+    
+    try:
+        connection = cnxpool.get_connection()
+        cursor = connection.cursor(dictionary=True)
+        
+        # First check if the current user is the owner of the product
+        cursor.execute(
+            "SELECT seller_id FROM Products WHERE product_id = %s",
+            (product_id,)
+        )
+        product = cursor.fetchone()
+        
+        if not product:
+            return jsonify({'success': False, 'message': 'Product not found'}), 404
+        
+        if product['seller_id'] != user_id:
+            return jsonify({'success': False, 'message': 'You do not have permission to edit this product'}), 403
+        
+        # Update the product description
+        cursor.execute(
+            "UPDATE Products SET description = %s WHERE product_id = %s",
+            (description, product_id)
+        )
+        
+        connection.commit()
+        
+        return jsonify({'success': True, 'message': 'Description updated successfully'})
+        
+    except Error as db_err:
+        print(f"Database error updating product description: {db_err}")
+        return jsonify({'success': False, 'message': 'Database error occurred'}), 500
+    except Exception as e:
+        print(f"Error updating product description: {e}")
+        return jsonify({'success': False, 'message': 'An unexpected error occurred'}), 500
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
 
 if __name__ == '__main__':
     app.debug = os.getenv("FLASK_ENV") != "production"

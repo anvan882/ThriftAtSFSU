@@ -53,32 +53,55 @@
   </script>
 
   <script>
-    // Profile Dropdown Toggle on Click
-    document.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener('DOMContentLoaded', function() {
+      // ===== Profile Dropdown Toggle =====
       const profileDropdowns = document.querySelectorAll('.profile-dropdown');
-
+      
       profileDropdowns.forEach(dropdown => {
         const profilePic = dropdown.querySelector('.navbar-profile-pic');
-        const menu = dropdown.querySelector('.profile-dropdown-menu');
-
+        const menu = dropdown.querySelector('.dropdown-menu');
+        
         if (profilePic && menu) {
-          profilePic.addEventListener('click', (event) => {
+          profilePic.addEventListener('click', function(event) {
             event.stopPropagation(); // Prevent click from immediately closing the menu
             menu.classList.toggle('show');
           });
         }
       });
-
+      
       // Close dropdown if clicked outside
-      window.addEventListener('click', (event) => {
+      document.addEventListener('click', function(event) {
         profileDropdowns.forEach(dropdown => {
-          const menu = dropdown.querySelector('.profile-dropdown-menu');
+          const menu = dropdown.querySelector('.dropdown-menu');
           // Check if the menu exists, is shown, and the click was outside the dropdown container
           if (menu && menu.classList.contains('show') && !dropdown.contains(event.target)) {
-             menu.classList.remove('show');
+            menu.classList.remove('show');
           }
         });
       });
+      
+      // ===== Dynamic Category Selector Width =====
+      const categorySelector = document.getElementById('category-selector');
+      if (categorySelector) {
+        // Function to adjust width based on selected option
+        function adjustSelectWidth() {
+          const selectedOption = categorySelector.options[categorySelector.selectedIndex];
+          const textLength = selectedOption.textContent.length;
+          
+          // Calculate width based on text length (approximate)
+          // Min width of 80px, with adjusted padding for dropdown arrow
+          const width = Math.max(80, textLength * 10 - 20);
+          
+          // Apply width with limit
+          categorySelector.style.width = Math.min(width, 200) + 'px';
+        }
+        
+        // Run on page load
+        adjustSelectWidth();
+        
+        // Run when selection changes
+        categorySelector.addEventListener('change', adjustSelectWidth);
+      }
     });
   </script>
   {% endblock %}

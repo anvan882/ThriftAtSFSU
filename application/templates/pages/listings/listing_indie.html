@@ -37,9 +37,33 @@
       <h2 class="product-price">${{ "%.2f"|format(product.price) }}</h2>
       {# Product Condition is not in DB schema, using placeholder or passed value #}
       <p class="product-condition">Condition: {{ product.condition | default('Not specified') }}</p>
-      <p class="product-description">
-        {{ product.description | default('No description provided.') }}
-      </p>
+      
+      <h3 class="product-description-title">Description
+        {% if is_owner %}
+          <button id="edit-description-btn" class="edit-btn">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+            </svg>
+          </button>
+        {% endif %}
+      </h3>
+      
+      <!-- View Mode -->
+      <p id="description-text" class="product-description">{{ product.description | default('No description provided.') }}</p>
+      
+      <!-- Edit Mode (initially hidden) -->
+      {% if is_owner %}
+      <div id="description-edit-container" style="display: none;">
+        <textarea id="description-textarea" maxlength="1000" rows="5" style="width:100%">{{ product.description or '' }}</textarea>
+        <div class="char-count"><span id="description-char-count">0</span>/1000</div>
+        <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+          <button id="save-description-btn" class="btn btn-sm">Save</button>
+          <button id="cancel-description-btn" class="btn-outline btn-sm">Cancel</button>
+        </div>
+      </div>
+      {% endif %}
+      
       <p class="product-category">Category: {{ product.category_name | default('Unknown') }}</p>
       <p class="product-status">Status: {{ product.status | capitalize }}</p>
       <p class="posted-date">Posted on: {{ product.created_at.strftime('%Y-%m-%d') if product.created_at else 'N/A' }}</p>
@@ -69,6 +93,13 @@
       </div>
     </div>
 
+    {% if is_owner %}
+    <div class="owner-actions">
+      <form action="{{ url_for('delete_product', product_id=product.product_id) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this listing? This action cannot be undone.')">
+        <button type="submit" class="btn-delete">Delete Listing</button>
+      </form>
+    </div>
+    {% endif %}
   </div>
 </section>
 {% else %}
@@ -149,6 +180,101 @@
     // Initialize the first slide
     showSlide(currentSlide);
   });
+</script>
+{% endif %}
+
+{% if is_owner %}
+<script>
+  // Description editing functionality
+  const editDescriptionBtn = document.getElementById('edit-description-btn');
+  const descriptionText = document.getElementById('description-text');
+  const descriptionEditContainer = document.getElementById('description-edit-container');
+  const descriptionTextarea = document.getElementById('description-textarea');
+  const descriptionCharCount = document.getElementById('description-char-count');
+  const saveDescriptionBtn = document.getElementById('save-description-btn');
+  const cancelDescriptionBtn = document.getElementById('cancel-description-btn');
+
+  if (editDescriptionBtn) {
+    // Update char count initially
+    descriptionCharCount.textContent = descriptionTextarea.value.length;
+    
+    // Toggle edit mode
+    editDescriptionBtn.addEventListener('click', function() {
+      descriptionText.style.display = 'none';
+      descriptionEditContainer.style.display = 'block';
+      descriptionTextarea.focus();
+    });
+    
+    // Character count
+    descriptionTextarea.addEventListener('input', function() {
+      descriptionCharCount.textContent = descriptionTextarea.value.length;
+    });
+    
+    // Cancel editing
+    cancelDescriptionBtn.addEventListener('click', function() {
+      descriptionText.style.display = 'block';
+      descriptionEditContainer.style.display = 'none';
+      // Reset textarea to original value
+      descriptionTextarea.value = descriptionText.textContent === 'No description provided.' ? '' : descriptionText.textContent;
+      descriptionCharCount.textContent = descriptionTextarea.value.length;
+    });
+    
+    // Save description changes
+    saveDescriptionBtn.addEventListener('click', function() {
+      const newDescription = descriptionTextarea.value.trim();
+      
+      // Create form data for the request
+      const formData = new FormData();
+      formData.append('description', newDescription);
+      formData.append('product_id', '{{ product.product_id }}');
+      
+      // Show saving state
+      saveDescriptionBtn.textContent = 'Saving...';
+      saveDescriptionBtn.disabled = true;
+      
+      // Send AJAX request
+      fetch('{{ url_for("update_product_description") }}', {
+        method: 'POST',
+        body: formData,
+        credentials: 'same-origin'
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          // Update displayed description
+          descriptionText.textContent = newDescription || 'No description provided.';
+          
+          // Return to view mode
+          descriptionText.style.display = 'block';
+          descriptionEditContainer.style.display = 'none';
+          
+          // Show a temporary success message
+          const successMsg = document.createElement('div');
+          successMsg.textContent = 'Description updated!';
+          successMsg.style.color = 'green';
+          successMsg.style.fontSize = '0.9rem';
+          successMsg.style.marginTop = '0.5rem';
+          descriptionText.parentNode.insertBefore(successMsg, descriptionText.nextSibling);
+          
+          // Remove message after 3 seconds
+          setTimeout(() => {
+            successMsg.remove();
+          }, 3000);
+        } else {
+          alert('Error: ' + (data.message || 'Failed to update description'));
+        }
+      })
+      .catch(error => {
+        console.error('Error updating description:', error);
+        alert('An error occurred while updating your product description');
+      })
+      .finally(() => {
+        // Reset button
+        saveDescriptionBtn.textContent = 'Save';
+        saveDescriptionBtn.disabled = false;
+      });
+    });
+  }
 </script>
 {% endif %}
 {% endblock %}

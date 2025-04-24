@@ -24,6 +24,7 @@ body {
   background-color: var(--bg-color);
   color: var(--text-color);
   line-height: 1.6;
+  padding-bottom: 60px; /* Space for the fixed footer */
 }
 
 
@@ -247,16 +248,27 @@ body {
   appearance: none;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236a0dad' d='M6 8.825L1.175 4 2.238 2.938 6 6.7l3.763-3.762L10.825 4z'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
-  background-position: right 0.75rem center;
+  background-position: right 0.3rem center;
   background-size: 10px;
   cursor: pointer;
   border-right: 1px solid var(--light-border);
-  min-width: 120px;
+  width: auto;
+  min-width: 80px;
+  max-width: 200px;
   text-align: left;
+  transition: width 0.3s ease;
 }
 
 .search-form select:focus {
   background-color: #fff;
+}
+
+/* Style for dynamic select that will resize based on content */
+.dynamic-select {
+  /* Uses the same styles as .search-form select but with dynamic width calculation */
+  width: auto;
+  box-sizing: content-box; /* Make width calculation include padding */
+  padding-right: 1.2rem; /* Reduced space for the dropdown arrow */
 }
 
 .search-form input[type="text"] {
@@ -520,14 +532,15 @@ body {
 }
 
 .product-description {
-  font-size: 1.1rem;
-  color: var(--text-color);
+  font-size: 1rem;
+  color: var(--text-color-light);
   line-height: 1.6;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
   overflow-wrap: break-word;
   white-space: normal;
   min-height: 0;
-  border-bottom: 1px solid #eee;
+  border-bottom: none;
 }
 
 .product-category, 
@@ -1171,10 +1184,40 @@ body {
 .listingInfo {
   padding: 2rem;
   max-width: 1200px;
-  margin: 2rem auto;
+  margin: 2rem auto 5rem auto; /* Increased bottom margin to 5rem */
   background-color: #fff;
   border-radius: 12px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+/* Delete Button Styling */
+.btn-delete {
+  padding: 0.6rem 1.2rem;
+  background-color: #dc3545; /* Red color for delete action */
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.9rem;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.btn-delete:hover {
+  background-color: #c82333;
+  transform: translateY(-1px);
+}
+
+.btn-delete:active {
+  transform: translateY(0);
+}
+
+.owner-actions {
+  position: absolute;
+  bottom: 2rem;
+  left: 2rem;
+  z-index: 5;
+  margin-bottom: 1rem; /* Add space below the button */
 }
 
 .product-container {
@@ -1182,6 +1225,7 @@ body {
   grid-template-columns: minmax(300px, 45%) 1fr;
   gap: 3rem;
   align-items: flex-start;
+  position: relative; /* Added to support absolute positioning of child elements */
 }
 
 .product-details {
@@ -1207,13 +1251,15 @@ body {
 }
 
 .product-description {
-  font-size: 1.1rem;
-  color: var(--text-color);
+  font-size: 1rem;
+  color: var(--text-color-dark);
   line-height: 1.6;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
   overflow-wrap: break-word;
   white-space: normal;
   min-height: 0;
+  border-bottom: none;
+  padding-bottom: 2rem;
   border-bottom: 1px solid #eee;
 }
 
@@ -1288,6 +1334,7 @@ footer.footer {
   padding: 0.4rem 0;
   font-size: 0.85rem;
   border-top: 1px solid var(--light-border);
+  z-index: 1000; /* Higher z-index to appear above all content */
 }
 
 footer.footer {
@@ -1341,8 +1388,8 @@ footer.footer {
 }
 
 .navbar-profile-pic {
-  width: 40px; /* Adjust size as needed */
-  height: 40px;
+  width: 48px; /* Increased from 40px */
+  height: 48px; /* Increased from 40px */
   border-radius: 50%; /* Make it circular */
   cursor: pointer;
   object-fit: cover; /* Ensure image covers the area */
@@ -1451,4 +1498,52 @@ label.custom-upload-btn svg {
   margin-top: 0.5rem;
   text-align: left;
   width: 100%;
+}
+
+/* Edit button styling */
+.edit-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px;
+  margin-left: 5px;
+  vertical-align: middle;
+  color: var(--accent-purple);
+  transition: color 0.2s;
+}
+
+.edit-btn:hover {
+  color: var(--accent-purple-dark);
+}
+
+.btn-sm {
+  padding: 0.4rem 1rem;
+  font-size: 0.9rem;
+  background-color: var(--accent-purple);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.btn-outline.btn-sm {
+  background: white;
+  border: 1px solid var(--accent-purple);
+  color: var(--accent-purple);
+  padding: 0.4rem 1rem;
+  font-size: 0.9rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btn-outline.btn-sm:hover {
+  background: var(--accent-purple-light);
+}
+
+.char-count {
+  font-size: 0.85rem;
+  color: var(--text-color-light);
+  margin: 0.35rem 0 1rem;
 }

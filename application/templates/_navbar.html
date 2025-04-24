@@ -7,7 +7,7 @@
 
   <form action="{{ url_for('home') }}" method="get" class="search-form">
     <label for="category" class="visually-hidden">Category</label>
-    <select name="category">
+    <select name="category" id="category-selector" class="dynamic-select">
       <option value="">All</option>
       {% for cat in categories %}
       <option value="{{ cat }}" {% if cat==category %}selected{% endif %}>{{ cat }}</option>
@@ -32,7 +32,7 @@
       {# Show profile dropdown for logged-in users #}
       <div class="profile-dropdown">
         <img src="{{ profile_pic_url }}" alt="My Profile" class="navbar-profile-pic">
-        <div class="dropdown-menu profile-dropdown-menu">
+        <div class="dropdown-menu">
           <a href="{{ url_for('view_profile', profile_user_id=session['user_id']) }}">My Profile</a>
           <a href="{{ url_for('messages') }}">Messages</a>
           <a href="{{ url_for('wishlist') }}">Wishlist</a>

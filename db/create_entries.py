@@ -34,7 +34,23 @@ sample_users = [
 sample_categories = [
     ('Electronics', 'Devices and gadgets'),
     ('Books', 'All kinds of books'),
-    ('Clothing', 'Men and women apparel')
+    ('Clothing', 'Men and women apparel'),
+    ('Textbooks', 'Course materials and academic books'),
+    ('Furniture', 'Dorm and apartment furniture'),
+    ('School Supplies', 'Notebooks, stationery, and study materials'),
+    ('Computer Accessories', 'Keyboards, mice, cables, and peripherals'),
+    ('Sports & Fitness', 'Exercise equipment and sports gear'),
+    ('Home Decor', 'Decorative items and small furnishings'),
+    ('Kitchen & Dining', 'Cookware, utensils, and small appliances'),
+    ('Musical Instruments', 'Instruments, equipment, and accessories'),
+    ('Video Games', 'Games, consoles, and gaming accessories'),
+    ('Art & Craft Supplies', 'Materials for creative projects'),
+    ('Bicycles & Transportation', 'Bikes, skateboards, and scooters'),
+    ('Collectibles', 'Trading cards, figures, and memorabilia'),
+    ('Dorm Essentials', 'Storage, organizers, and dorm necessities'),
+    ('Beauty & Personal Care', 'Unused cosmetics and personal items'),
+    ('Tickets & Events', 'Campus and local event tickets'),
+    ('Handmade Crafts', 'Student-made items and crafts')
 ]
 
 # Product sample data with condition field added
