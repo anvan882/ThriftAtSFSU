@@ -27,6 +27,11 @@ body {
   padding-bottom: 60px; /* Space for the fixed footer */
 }
 
+/* Special class for pages without footer */
+main.no-padding-bottom {
+  padding-bottom: 0;
+  margin-bottom: 0;
+}
 
 .containerGrid {
   display: grid;

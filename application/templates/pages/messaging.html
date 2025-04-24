@@ -5,6 +5,13 @@
 {% block head %}
   {{ super() }}
   <link rel="stylesheet" href="{{ url_for('static', filename='messaging.css') }}">
+  <style>
+    body {
+      overflow: hidden;
+      padding-bottom: 0 !important;
+    }
+  </style>
+  <script src="https://cdn.socket.io/4.6.0/socket.io.min.js"></script>
 {% endblock %}
 
 {% block content %}
@@ -13,46 +20,18 @@
   <!-- Sidebar / conversation list -->
   <aside class="sidebar">
 
-    <!-- Search box -->
-    <input
-      type="text"
-      class="chat-search"
-      id="chat-search"
-      placeholder="Search conversations…"
-    />
-
-    <!-- Incoming messages section -->
-    <div class="section incoming">
-      <h4>Incoming Messages</h4>
-      <ul class="conversation-list incoming-list">
-        {% for user in incoming_users %}
-        <li class="{% if user.id == active_user.id %}active{% endif %}">
+    <!-- Conversations section -->
+    <div class="section conversations">
+      <h4>Messages</h4>
+      <ul class="conversation-list" id="conversations">
+        {% for convo in conversations %}
+        <li class="{% if convo.id == active_user_id %}active{% endif %}" data-user-id="{{ convo.id }}">
           <div class="avatar">
-            <img src="{{ user.avatar_url }}" alt="{{ user.name }}">
-            <span class="status {{ 'online' if user.online else 'offline' }}"></span>
+            <img src="{{ convo.avatar_url }}" alt="{{ convo.name }}">
           </div>
           <div class="conversation-info">
-            <p class="name">{{ user.name }}</p>
-            <p class="snippet">{{ user.last_message }}</p>
-          </div>
-        </li>
-        {% endfor %}
-      </ul>
-    </div>
-
-    <!-- Outgoing messages section -->
-    <div class="section outgoing">
-      <h4>Outgoing Messages</h4>
-      <ul class="conversation-list outgoing-list">
-        {% for user in outgoing_users %}
-        <li>
-          <div class="avatar">
-            <img src="{{ user.avatar_url }}" alt="{{ user.name }}">
-            <span class="status {{ 'online' if user.online else 'offline' }}"></span>
-          </div>
-          <div class="conversation-info">
-            <p class="name">{{ user.name }}</p>
-            <p class="snippet">{{ user.last_message }}</p>
+            <p class="name">{{ convo.name }}</p>
+            <p class="snippet">{{ convo.last_message }}</p>
           </div>
         </li>
         {% endfor %}
@@ -67,35 +46,334 @@
 
     <!-- Chat header -->
     <header class="chat-header">
+      {% if chat_user %}
       <div class="avatar">
         <img src="{{ chat_user.avatar_url }}" alt="{{ chat_user.name }}">
-        <span class="status {{ 'online' if chat_user.online else 'offline' }}"></span>
       </div>
       <div class="contact-name">{{ chat_user.name }}</div>
-      <div class="contact-status">{{ chat_user.status_text }}</div>
+      {% endif %}
     </header>
 
     <!-- Message history -->
-    <div class="chat-history">
-      {% for msg in messages %}
-      <div class="message {{ 'sent' if msg.is_sent else 'received' }}">
-        {{ msg.text }}
-        <span class="timestamp">{{ msg.timestamp }}</span>
-      </div>
-      {% endfor %}
+    <div class="chat-history" id="message-container">
+      {% if messages %}
+        {% for msg in messages %}
+        <div class="message {{ 'sent' if msg.is_sent else 'received' }}">
+          {{ msg.text }}
+          <span class="timestamp">{{ msg.timestamp }}</span>
+        </div>
+        {% endfor %}
+      {% elif chat_user %}
+        <div class="no-messages">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+          </svg>
+          <h3>No messages yet</h3>
+          <p>Start the conversation by sending a message below</p>
+        </div>
+      {% else %}
+        <div class="no-messages">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
+          </svg>
+          <h3>No conversations yet</h3>
+          <p>You can start a conversation by visiting a product listing and clicking "Contact Seller" or visiting a user's profile.</p>
+          <p>Or <a href="/" style="color: #6a0dad; text-decoration: underline;">browse products</a> to find something you're interested in.</p>
+        </div>
+      {% endif %}
     </div>
 
     <!-- Input composer -->
     <footer class="chat-input">
-      <button type="button" class="attach-btn" title="Attach file">📎</button>
       <input
         type="text"
-        placeholder="Type a message…"
+        id="message-input"
+        placeholder="{% if chat_user %}Type a message…{% else %}Select a conversation first{% endif %}"
         aria-label="Type a message"
+        {% if not chat_user %}disabled{% endif %}
       />
-      <button type="button" class="send-btn">Send</button>
+      <button 
+        type="button" 
+        class="send-btn" 
+        id="send-button"
+        {% if not chat_user %}disabled{% endif %}
+      >Send</button>
     </footer>
+    
+    <!-- Debug panel (initially hidden) -->
+    <div id="debug-panel" style="display: none; position: fixed; bottom: 0; left: 0; background: rgba(0,0,0,0.7); color: white; padding: 10px; font-size: 12px; max-width: 400px; max-height: 200px; overflow: auto;">
+      <div><strong>Socket Status:</strong> <span id="socket-status">Disconnected</span></div>
+      <div><strong>Socket ID:</strong> <span id="socket-id">None</span></div>
+      <div><strong>Active User:</strong> <span id="debug-active-user">None</span></div>
+      <div><strong>Log:</strong></div>
+      <div id="debug-log" style="font-family: monospace;"></div>
+      <button id="toggle-debug" style="position: absolute; top: 5px; right: 5px;">Hide</button>
+    </div>
+    
+    <!-- Debug toggle button -->
+    <button id="show-debug" style="position: fixed; bottom: 5px; left: 5px; z-index: 1000; background: #6a0dad; color: white; border: none; border-radius: 4px; padding: 5px 10px; cursor: pointer;">Debug</button>
 
   </section>
 </div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Debug elements
+    const debugPanel = document.getElementById('debug-panel');
+    const debugLog = document.getElementById('debug-log');
+    const socketStatus = document.getElementById('socket-status');
+    const socketId = document.getElementById('socket-id');
+    const debugActiveUser = document.getElementById('debug-active-user');
+    const showDebugBtn = document.getElementById('show-debug');
+    const toggleDebugBtn = document.getElementById('toggle-debug');
+    
+    // Debug functions
+    function log(message) {
+      console.log(message);
+      if (debugLog) {
+        const logLine = document.createElement('div');
+        logLine.textContent = `${new Date().toLocaleTimeString()}: ${message}`;
+        debugLog.appendChild(logLine);
+        debugLog.scrollTop = debugLog.scrollHeight;
+      }
+    }
+    
+    // Debug panel toggle
+    if (showDebugBtn) {
+      showDebugBtn.addEventListener('click', function() {
+        debugPanel.style.display = 'block';
+        showDebugBtn.style.display = 'none';
+      });
+    }
+    
+    if (toggleDebugBtn) {
+      toggleDebugBtn.addEventListener('click', function() {
+        debugPanel.style.display = 'none';
+        showDebugBtn.style.display = 'block';
+      });
+    }
+    
+    // Socket.io connection
+    const socket = io({
+      reconnectionAttempts: 3,
+      timeout: 10000
+    });
+    log('Socket.io initialized');
+    
+    // Debug socket connection status
+    socket.on('connect', function() {
+      log('Socket connected successfully: ' + socket.id);
+      socketStatus.textContent = 'Connected';
+      socketId.textContent = socket.id;
+    });
+    
+    socket.on('connect_error', function(error) {
+      log('Socket connection error: ' + error);
+      socketStatus.textContent = 'Error: ' + error;
+    });
+    
+    socket.on('disconnect', function(reason) {
+      log('Socket disconnected: ' + reason);
+      socketStatus.textContent = 'Disconnected: ' + reason;
+    });
+    
+    // Get active user ID from the active conversation or URL
+    let activeUserId = null;
+    
+    // First check URL - if URL has format /messages/{user_id}
+    const pathParts = window.location.pathname.split('/');
+    if (pathParts.length > 2 && pathParts[1] === 'messages' && !isNaN(pathParts[2])) {
+      activeUserId = pathParts[2];
+      log('Got active user ID from URL: ' + activeUserId);
+    }
+    
+    // Then check active conversation item if we didn't get it from URL
+    if (!activeUserId) {
+      const activeItem = document.querySelector('.conversation-list li.active');
+      if (activeItem) {
+        activeUserId = activeItem.getAttribute('data-user-id');
+        log('Got active user ID from active conversation item: ' + activeUserId);
+      }
+    }
+    
+    // Check if we have a chat_user from server (for initial state)
+    const hasChatUser = document.querySelector('.chat-header .contact-name') !== null;
+    if (hasChatUser) {
+      log('Found chat user in the header');
+    }
+    
+    // Update debug panel
+    if (debugActiveUser) {
+      debugActiveUser.textContent = activeUserId || 'None';
+    }
+    
+    // DOM elements
+    const messageInput = document.getElementById('message-input');
+    const sendButton = document.getElementById('send-button');
+    const messageContainer = document.getElementById('message-container');
+    const conversationsList = document.getElementById('conversations');
+    
+    // Check if we have an active user and toggle input state
+    function updateInputState() {
+      // If we have a chat_user (from server) OR activeUserId (from client)
+      if (hasChatUser || activeUserId) {
+        messageInput.disabled = false;
+        sendButton.disabled = false;
+        messageInput.placeholder = "Type a message…";
+        log('Input enabled: We have a conversation partner');
+      } else {
+        messageInput.disabled = true;
+        sendButton.disabled = true;
+        messageInput.placeholder = "Select a conversation first";
+        log('Input disabled: No conversation partner');
+      }
+    }
+    
+    // Initial update of input state
+    updateInputState();
+    
+    // Update conversation list with new message
+    function updateOrCreateConversation(userId, text, senderName, msgData) {
+      userId = parseInt(userId);
+      const list = conversationsList;
+      
+      if (!list) return;
+      
+      // Try to find existing conversation item
+      let existingItem = null;
+      const items = list.querySelectorAll('li');
+      items.forEach(item => {
+        const itemUserId = parseInt(item.getAttribute('data-user-id'));
+        if (itemUserId === userId) {
+          existingItem = item;
+        }
+      });
+      
+      // If conversation exists, update it
+      if (existingItem) {
+        // Update message preview
+        const snippet = existingItem.querySelector('.snippet');
+        if (snippet) {
+          snippet.textContent = text;
+        }
+        
+        // Move to top of list if not already
+        if (existingItem !== list.firstChild) {
+          list.insertBefore(existingItem, list.firstChild);
+        }
+      } 
+      // If it's a new conversation, create it
+      else if (senderName) {
+        // Create new conversation item
+        const newItem = document.createElement('li');
+        newItem.setAttribute('data-user-id', userId);
+        newItem.innerHTML = `
+          <div class="avatar">
+            <img src="/user_picture/${userId}" alt="${senderName}">
+          </div>
+          <div class="conversation-info">
+            <p class="name">${senderName}</p>
+            <p class="snippet">${text}</p>
+          </div>
+        `;
+        
+        // Add click handler
+        newItem.addEventListener('click', function() {
+          window.location.href = `/messages/${userId}`;
+        });
+        
+        // Add to list (at top)
+        list.insertBefore(newItem, list.firstChild);
+      }
+    }
+    
+    // Make conversation items clickable
+    function setupConversationClicks(list) {
+      if (!list) return;
+      
+      const items = list.querySelectorAll('li');
+      items.forEach(item => {
+        item.addEventListener('click', function() {
+          const userId = this.getAttribute('data-user-id');
+          window.location.href = `/messages/${userId}`;
+        });
+      });
+    }
+    
+    // Set up click handlers for the conversation list
+    setupConversationClicks(conversationsList);
+    
+    // Scroll to bottom of chat on load
+    messageContainer.scrollTop = messageContainer.scrollHeight;
+
+    // Send button and Enter key
+    if (sendButton && messageInput) {
+      // Function to send message
+      function sendMessage() {
+        const message = messageInput.value.trim();
+        if (!message || !activeUserId) return;
+        
+        log(`Sending message to user ${activeUserId}: ${message}`);
+        
+        socket.emit('send_message', {
+          receiver_id: activeUserId,
+          message: message
+        });
+        
+        // Clear input
+        messageInput.value = '';
+      }
+      
+      // Send on button click
+      sendButton.addEventListener('click', sendMessage);
+      
+      // Send on Enter (but not with Shift+Enter)
+      messageInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          sendMessage();
+        }
+      });
+    }
+    
+    // Socket event handlers
+    socket.on('new_message', function(data) {
+      log(`Received message event: ${JSON.stringify(data)}`);
+      
+      const isSent = data.sender_id === parseInt("{{ session.user_id if session.user_id else 'null' }}");
+      const otherUserId = isSent ? data.receiver_id : data.sender_id;
+      
+      // If this message is for the active conversation, append to chat
+      if (activeUserId && parseInt(activeUserId) === otherUserId) {
+        // Create message element
+        const messageElement = document.createElement('div');
+        messageElement.className = `message ${isSent ? 'sent' : 'received'}`;
+        messageElement.innerHTML = data.text +
+          '<span class="timestamp">' + data.timestamp + '</span>';
+        
+        // Append to chat
+        messageContainer.appendChild(messageElement);
+        
+        // Scroll to bottom
+        messageContainer.scrollTop = messageContainer.scrollHeight;
+      }
+      
+      // Update conversation list
+      updateOrCreateConversation(
+        otherUserId, 
+        data.text, 
+        data.sender_name, 
+        data
+      );
+    });
+    
+    socket.on('message_error', function(data) {
+      log(`Error sending message: ${data.error}`);
+      alert(`Error sending message: ${data.error}`);
+    });
+    
+    // Initial state
+    updateInputState();
+  });
+</script>
 {% endblock %}

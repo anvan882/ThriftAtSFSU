@@ -10,6 +10,7 @@ import base64 # Added for image encoding
 import json   # Added for parsing AI response
 from decimal import Decimal # Import Decimal for accurate price handling
 from openai import OpenAI # Added for OpenAI API call
+from flask_socketio import SocketIO, emit, join_room, leave_room
 
 load_dotenv()
 
@@ -29,6 +30,9 @@ app.secret_key = os.getenv("FLASK_SECRET_KEY") # Needed for flash messages
 if not app.secret_key:
     print("Warning: FLASK_SECRET_KEY is not set. Flashing will not work.")
     raise ValueError("No FLASK_SECRET_KEY set for Flask application")
+
+# Initialize SocketIO
+socketio = SocketIO(app, cors_allowed_origins="*")
 
 # === Decorators ===
 def login_required(f):
@@ -1097,74 +1101,324 @@ Example JSON format:
 
 # Messages
 @app.route('/messages')
+@app.route('/messages/<int:user_id>')
 @login_required
-def messages():
-    # Active conversation (highlighted in the sidebar)
-    active_user = {
-        "id": 1,
-        "name": "John Doe",
-        "avatar_url": "/static/avatars/john.png",
-        "online": True,
-        "last_message": "Hey, are you coming?"
-    }
-
-    # All of the "other" conversations, now with a direction flag
-    all_users = [
-        {
-            "id": 2,
-            "name": "Alice Smith",
-            "avatar_url": "/static/avatars/alice.png",
+def messages(user_id=None):
+    current_user_id = session.get('user_id')
+    
+    connection = None
+    cursor = None
+    conversations = []
+    chat_user = None
+    messages = []
+    
+    try:
+        connection = cnxpool.get_connection()
+        cursor = connection.cursor(dictionary=True)
+        
+        # Get all conversations, regardless of who initiated them
+        conversations_query = """
+        SELECT 
+            u.user_id, u.first_name, u.last_name,
+            m.content as last_message,
+            m.timestamp as last_message_timestamp
+        FROM (
+            SELECT 
+                CASE 
+                    WHEN sender_id = %s THEN receiver_id
+                    ELSE sender_id
+                END as other_user_id,
+                MAX(timestamp) as latest_timestamp
+            FROM Messages
+            WHERE sender_id = %s OR receiver_id = %s
+            GROUP BY other_user_id
+        ) AS latest_msgs
+        JOIN Users u ON u.user_id = latest_msgs.other_user_id
+        JOIN Messages m ON (
+            (m.sender_id = %s AND m.receiver_id = u.user_id) OR
+            (m.sender_id = u.user_id AND m.receiver_id = %s)
+        ) AND m.timestamp = latest_msgs.latest_timestamp
+        ORDER BY latest_msgs.latest_timestamp DESC
+        """
+        cursor.execute(conversations_query, (current_user_id, current_user_id, current_user_id, current_user_id, current_user_id))
+        conversations_raw = cursor.fetchall()
+        
+        # Process conversations
+        for convo in conversations_raw:
+            conversations.append({
+                "id": convo['user_id'],
+                "name": f"{convo['first_name']} {convo['last_name']}",
+                "avatar_url": url_for('serve_user_picture', user_id=convo['user_id']),
+                "online": False,
+                "last_message": convo['last_message']
+            })
+        
+        # Get active user (user we're chatting with)
+        active_user_id = user_id
+        
+        # Log for debugging
+        print(f"Initial active_user_id from URL: {active_user_id}")
+        
+        # If no specific user is provided in URL, use the first available user
+        if not active_user_id and conversations:
+            active_user_id = conversations[0]['id']
+            print(f"Using first conversation user: {active_user_id}")
+            
+        print(f"Final active_user_id: {active_user_id}")
+        
+        # If we have an active user, get their details and messages
+        if active_user_id:
+            # Get user details
+            cursor.execute("""
+                SELECT user_id, first_name, last_name
+                FROM Users WHERE user_id = %s
+            """, (active_user_id,))
+            active_user_data = cursor.fetchone()
+            
+            if active_user_data:
+                chat_user = {
+                    "name": f"{active_user_data['first_name']} {active_user_data['last_name']}",
+                    "avatar_url": url_for('serve_user_picture', user_id=active_user_data['user_id']),
+                    "online": False,
+                    "status_text": ""
+                }
+                
+                # Get messages between current user and active user
+                cursor.execute("""
+                    SELECT sender_id, content, timestamp
+                    FROM Messages
+                    WHERE (sender_id = %s AND receiver_id = %s)
+                    OR (sender_id = %s AND receiver_id = %s)
+                    ORDER BY timestamp ASC
+                """, (current_user_id, active_user_id, active_user_id, current_user_id))
+                
+                message_data = cursor.fetchall()
+                
+                for msg in message_data:
+                    messages.append({
+                        "text": msg['content'],
+                        "timestamp": msg['timestamp'].strftime("%I:%M %p"),
+                        "is_sent": msg['sender_id'] == current_user_id
+                    })
+            
+            # Set active status in conversations list
+            for convo in conversations:
+                if convo['id'] == active_user_id:
+                    convo['active'] = True
+                    break
+        else:
+            # Explicitly handle no active user
+            active_user_id = None
+            print("No active user ID set")
+        
+    except Error as db_err:
+        print(f"Database error in messages route: {db_err}")
+        flash("Could not load messages due to a database error.", "error")
+    except Exception as e:
+        print(f"Unexpected error in messages route: {e}")
+        flash("An unexpected error occurred while loading messages.", "error")
+    finally:
+        if cursor:
+            cursor.close()
+        if connection and connection.is_connected():
+            connection.close()
+    
+    # If no chat_user is set but we have conversations, use the first one
+    if not chat_user and conversations:
+        # Use the first user as default
+        first_user = conversations[0]
+        chat_user = {
+            "name": first_user['name'],
+            "avatar_url": first_user['avatar_url'],
             "online": False,
-            "last_message": "Thanks for the update!",
-            "direction": "incoming"
-        },
-        {
-            "id": 3,
-            "name": "Bob Johnson",
-            "avatar_url": "/static/avatars/bob.png",
-            "online": True,
-            "last_message": "Let's catch up soon.",
-            "direction": "outgoing"
-        },
-        {
-            "id": 4,
-            "name": "Carol Lee",
-            "avatar_url": "/static/avatars/carol.png",
-            "online": True,
-            "last_message": "Got it, thanks!",
-            "direction": "incoming"
+            "status_text": ""
         }
-    ]
-
-    # Split into two lists
-    incoming_users = [u for u in all_users if u["direction"] == "incoming"]
-    outgoing_users = [u for u in all_users if u["direction"] == "outgoing"]
-
-    # The user whose chat is open on the right
-    chat_user = {
-        "name": active_user["name"],
-        "avatar_url": active_user["avatar_url"],
-        "online": active_user["online"],
-        "status_text": "Active now"
-    }
-
-    # Chat history messages
-    messages = [
-        {"text": "Hi there!",           "timestamp": "10:01 AM", "is_sent": False},
-        {"text": "Hello!",              "timestamp": "10:02 AM", "is_sent": True},
-        {"text": "How are you?",        "timestamp": "10:03 AM", "is_sent": False},
-        {"text": "I'm good—thanks!",    "timestamp": "10:04 AM", "is_sent": True},
-        {"text": "Want to grab lunch?", "timestamp": "10:05 AM", "is_sent": False}
-    ]
-
+        if not active_user_id:
+            active_user_id = first_user['id']
+            print(f"Setting active_user_id to first user: {active_user_id}")
+    
+    print(f"Rendering template with active_user_id: {active_user_id}")
     return render_template(
         'pages/messaging.html',
-        active_user=active_user,
-        incoming_users=incoming_users,
-        outgoing_users=outgoing_users,
+        active_user_id=active_user_id,
+        conversations=conversations,
         chat_user=chat_user,
-        messages=messages
+        messages=messages,
+        hide_footer=True
     )
+
+@app.route('/start_conversation/<int:user_id>')
+@app.route('/start_conversation/<int:user_id>/product/<int:product_id>')
+@login_required
+def start_conversation(user_id, product_id=None):
+    # If product_id is provided, we'll send an initial message about the product
+    if product_id is not None:
+        connection = None
+        cursor = None
+        try:
+            connection = cnxpool.get_connection()
+            cursor = connection.cursor(dictionary=True)
+            
+            # Get product details
+            cursor.execute("""
+                SELECT title, price FROM Products WHERE product_id = %s
+            """, (product_id,))
+            product_data = cursor.fetchone()
+            
+            if product_data:
+                # Create initial message about the product
+                sender_id = session.get('user_id')
+                message_content = f"I'm interested in your listing: {product_data['title']} (${product_data['price']})"
+                
+                # Insert message into database
+                cursor.execute("""
+                    INSERT INTO Messages (sender_id, receiver_id, product_id, content)
+                    VALUES (%s, %s, %s, %s)
+                """, (sender_id, user_id, product_id, message_content))
+                connection.commit()
+                
+        except Error as db_err:
+            print(f"Database error starting product conversation: {db_err}")
+            flash("Could not start conversation due to a database error.", "error")
+        except Exception as e:
+            print(f"Unexpected error starting product conversation: {e}")
+            flash("An unexpected error occurred while starting the conversation.", "error")
+        finally:
+            if cursor:
+                cursor.close()
+            if connection and connection.is_connected():
+                connection.close()
+    
+    return redirect(url_for('messages', user_id=user_id))
+
+# Socket.IO event handlers
+@socketio.on('connect')
+def handle_connect():
+    print(f"Socket connection attempt. Session data: {session}")
+    if 'user_id' in session:
+        user_id = session['user_id']
+        # Add user to their own room (user_id as room name)
+        join_room(str(user_id))
+        # Access socket ID properly
+        from flask import request
+        socket_id = request.sid if hasattr(request, 'sid') else 'unknown'
+        print(f"User {user_id} connected to socket with SID: {socket_id}")
+    else:
+        print("Socket connection without authenticated user session")
+
+@socketio.on('disconnect')
+def handle_disconnect():
+    print(f"Socket disconnect event. Session data: {session}")
+    if 'user_id' in session:
+        user_id = session['user_id']
+        leave_room(str(user_id))
+        print(f"User {user_id} disconnected from socket")
+    else:
+        print("Socket disconnection without authenticated user session")
+
+@socketio.on('send_message')
+def handle_send_message(data):
+    print(f"Received send_message event with data: {data}")
+    
+    if 'user_id' not in session:
+        print("No user_id in session, ignoring message")
+        return
+    
+    try:
+        sender_id = session['user_id']
+        receiver_id = int(data['receiver_id'])  # Ensure it's an integer
+        content = data['message']
+        product_id = data.get('product_id')  # Optional product reference
+        
+        print(f"Processing message from user {sender_id} to user {receiver_id}: {content}")
+        
+        connection = None
+        cursor = None
+        try:
+            connection = cnxpool.get_connection()
+            cursor = connection.cursor()
+            
+            # Insert message into database
+            insert_query = """
+            INSERT INTO Messages (sender_id, receiver_id, product_id, content)
+            VALUES (%s, %s, %s, %s)
+            """
+            cursor.execute(insert_query, (sender_id, receiver_id, product_id, content))
+            connection.commit()
+            
+            # Get message timestamp and ID
+            cursor.execute("SELECT LAST_INSERT_ID() as message_id")
+            message_id = cursor.fetchone()[0]
+            
+            cursor.execute("SELECT timestamp FROM Messages WHERE message_id = %s", (message_id,))
+            timestamp = cursor.fetchone()[0]
+            
+            # Format message for real-time delivery
+            formatted_timestamp = timestamp.strftime("%I:%M %p")
+            
+            print(f"Message saved to database with ID {message_id}")
+            
+            # Get sender info for the receiver
+            cursor.execute("""
+                SELECT first_name, last_name 
+                FROM Users 
+                WHERE user_id = %s
+            """, (sender_id,))
+            sender_info = cursor.fetchone()
+            sender_name = f"{sender_info[0]} {sender_info[1]}" if sender_info else "Unknown User"
+            
+            # Create message payload for sender
+            sender_payload = {
+                'sender_id': sender_id,
+                'receiver_id': receiver_id,
+                'text': content,
+                'timestamp': formatted_timestamp,
+                'is_sent': True,
+                'message_id': message_id
+            }
+            
+            # Emit message to sender's room (for multiple tabs/windows)
+            print(f"Emitting message to sender's room: {sender_id}")
+            emit('new_message', sender_payload, room=str(sender_id))
+            
+            # Create message payload for receiver
+            receiver_payload = {
+                'sender_id': sender_id,
+                'receiver_id': receiver_id,
+                'text': content,
+                'timestamp': formatted_timestamp,
+                'is_sent': False,
+                'message_id': message_id,
+                'sender_name': sender_name
+            }
+            
+            # Emit message to receiver's room
+            print(f"Emitting message to receiver's room: {receiver_id}")
+            emit('new_message', receiver_payload, room=str(receiver_id))
+            
+        except Error as db_err:
+            print(f"Database error sending message: {db_err}")
+            emit('message_error', {'error': 'Database error'}, room=str(sender_id))
+        except Exception as e:
+            print(f"Error sending message: {e}")
+            emit('message_error', {'error': 'Unknown error'}, room=str(sender_id))
+        finally:
+            if cursor:
+                cursor.close()
+            if connection and connection.is_connected():
+                connection.close()
+    except KeyError as ke:
+        print(f"KeyError in socket message data: {ke}")
+        if 'user_id' in session:
+            emit('message_error', {'error': f'Missing required data: {ke}'}, room=str(session['user_id']))
+    except ValueError as ve:
+        print(f"ValueError in socket message data: {ve}")
+        if 'user_id' in session:
+            emit('message_error', {'error': f'Invalid data format: {ve}'}, room=str(session['user_id']))
+    except Exception as e:
+        print(f"Unexpected error processing message: {e}")
+        if 'user_id' in session:
+            emit('message_error', {'error': 'An unexpected error occurred'}, room=str(session['user_id']))
 
 # Wishlist Page
 @app.route('/wishlist')
@@ -1574,5 +1828,4 @@ def update_product_description():
             connection.close()
 
 if __name__ == '__main__':
-    app.debug = os.getenv("FLASK_ENV") != "production"
-    app.run()
+    socketio.run(app, debug=True, host='0.0.0.0')

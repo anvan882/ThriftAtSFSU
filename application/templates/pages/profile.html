@@ -235,7 +235,7 @@ textarea{
     {% if is_own_profile %}
     <!-- Edit Profile button removed since bio is now editable inline -->
     {% else %}
-    <a href="{{ url_for('messages') }}" class="contact-btn">Contact</a>
+    <a href="{{ url_for('start_conversation', user_id=profile_user.user_id) }}" class="contact-btn">Contact</a>
     {% endif %}
 
     <h3>Bio

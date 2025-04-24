@@ -84,7 +84,9 @@
           {# Link to seller profile page (if it exists) #}
           {# <button class="btn btn-purple">View Profile</button> #} 
           {# Link to contact seller (if messaging exists) #}
-          {# <button class="btn btn-purple">Contact Seller</button> #}
+          {% if user_is_logged_in and not is_owner %}
+            <a href="{{ url_for('start_conversation', user_id=product.seller_id, product_id=product.product_id) }}" class="btn btn-purple">Contact Seller</a>
+          {% endif %}
           {# Link to ratings (if ratings exist) #}
           {# <button class="btn btn-purple">Ratings</button> #}
           {# Add to Wishlist button? #}

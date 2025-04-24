@@ -26,11 +26,13 @@
   {% include '_navbar.html' %}
   {% include '_submenu.html' %}
 
-  <main>
+  <main{% if hide_footer %} class="no-padding-bottom"{% endif %}>
     {% block content %}{% endblock %}
   </main>
 
+  {% if not hide_footer %}
   {% include '_footer.html' %}
+  {% endif %}
 
   {% block scripts %}
   <script>
