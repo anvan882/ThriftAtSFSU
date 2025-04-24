@@ -1,82 +1,654 @@
 {% extends "base.html" %}
-{% block title %}Profile – SFSU Thrift Market{% endblock %}
+
+{% block title %}{{ profile_user.full_name }} – Listings & Reviews{% endblock %}
+
+{% block head %}
+<style>
+:root{
+  --accent-purple:          #6a0dad;
+  --accent-purple-dark:     #550a9e;
+  --accent-purple-medium:   #9b4dca;
+  --accent-purple-light:    #f3e5f5;
+
+  --bg-color:       #f2f2f2;
+  --text-color:     #2c3e50;
+  --text-color-light:#6c757d;
+  --light-border:   #e9ecef;
+  --hover-bg:       #f8f9fa;
+
+  /* helpers */
+  --accent:         var(--accent-purple);
+  --radius:         10px;
+  --shadow:         0 2px 6px rgba(0,0,0,.05);
+  --grid-gap:       1.6rem;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family: system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  background:var(--bg-color);
+  color:var(--text-color);
+  line-height:1.45;
+  /* Removed padding from body as it's handled by base template */
+}
+h1,h2,h3{font-weight:700}
+h1{font-size:1.9rem;margin:.9rem 0 .4rem}
+h2{font-size:1.35rem;margin-bottom:.5rem}
+h3{font-size:1.15rem;margin:.8rem 0 .4rem}
+img{max-width:100%;display:block}
+
+.layout{
+  display:grid;
+  grid-template-columns: 260px 1fr;
+  gap:var(--grid-gap);
+  max-width:1200px;
+  margin-inline:auto;
+  padding: 2.5rem 1.75rem; /* Added padding for proper spacing */
+}
+
+/* ——— PROFILE CARD ——— */
+.profile{
+  background:#fff;
+  border-radius:var(--radius);
+  padding:2rem 1.5rem 2.2rem;
+  box-shadow:var(--shadow);
+  text-align:center;
+}
+.profile__avatar{
+  width:150px;height:150px;
+  border-radius:50%;
+  background:#eee;
+  margin:0 auto 1.25rem;
+  object-fit:cover;
+}
+.profile small{color:var(--text-color-light)}
+.contact-btn{
+  display:inline-block;
+  background:var(--accent);
+  color:#fff;
+  padding:.65rem 1.6rem;
+  border-radius:var(--radius);
+  font-weight:600;
+  margin-top:.8rem;
+  transition:background .15s;
+  text-decoration:none;
+}
+.contact-btn:hover{background:var(--accent-purple-dark)}
+.profile p{margin-top:1.4rem;text-align:left}
+
+/* ——— AVAILABILITY ——— */
+.availability-wrapper{
+  background:#fff;
+  border-radius:var(--radius);
+  padding:1.5rem;
+  box-shadow:var(--shadow);
+}
+.table-scroll{overflow-x:auto}
+.calendar{
+  border-collapse:collapse;
+  width:100%;
+  min-width:520px;
+}
+.calendar th,
+.calendar td{
+  border:1px solid var(--light-border);
+  text-align:center;
+  height:34px;
+  font-size:.88rem;
+  user-select:none;
+}
+.calendar th{background:#fafafa}
+.calendar .label{
+  background:#fafafa;
+  font-weight:600;
+  width:70px;
+}
+.calendar td.selected{background:#cde8d5}   /* light green */
+
+.save-availability-btn {
+  background:var(--accent);
+  color:#fff;
+  padding:.6rem 1.5rem;
+  border:none;
+  border-radius:var(--radius);
+  font-weight:600;
+  margin-top:1rem;
+  cursor:pointer;
+  transition:opacity .15s;
+}
+.save-availability-btn:hover{opacity:.9}
+.save-availability-btn:disabled{
+  background:#ccc;
+  cursor:not-allowed;
+  opacity:.7;
+}
+
+/* ——— LISTINGS GRID ——— */
+.listings{margin-top:var(--grid-gap)}
+.listing-grid{
+  display:grid;
+  grid-template-columns: repeat(auto-fill,minmax(160px,1fr));
+  gap:1.1rem;
+}
+.card{
+  background:#fff;
+  border-radius:var(--radius);
+  box-shadow:var(--shadow);
+  padding:1rem;
+  text-align:center;
+}
+.card img{height:140px;object-fit:contain;margin-bottom:1rem}
+.card-name{font-weight:600;margin:.15rem 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.card-price{font-weight:700}
+.no-items{
+  padding:1rem;
+  color:var(--text-color-light);
+  text-align:center;
+}
+
+/* ——— REVIEW SECTION ——— */
+.reviews{
+  background:#fff;
+  border-radius:var(--radius);
+  padding:1.6rem;
+  margin-top:var(--grid-gap);
+  box-shadow:var(--shadow);
+}
+.rating-stars{
+  display:flex;gap:.35rem;margin:.4rem 0 1.1rem;
+}
+.star{
+  font-size:1.6rem;cursor:pointer;
+  color:#cbd5e1;transition:color .15s;
+}
+.star.active{color:var(--accent)}
+textarea{
+  width:100%;min-height:150px;resize:vertical;
+  padding:.8rem;border:1px solid var(--light-border);
+  border-radius:var(--radius);
+}
+.char-count{font-size:.85rem;color:var(--text-color-light);margin:.35rem 0 1rem}
+.btn{
+  background:var(--accent);color:#fff;
+  padding:.75rem 2.3rem;border:none;
+  font-weight:600;border-radius:var(--radius);
+  cursor:pointer;transition:opacity .15s;
+}
+.btn:hover{opacity:.9}
+.review-card{
+  border:1px solid var(--light-border);
+  border-radius:var(--radius);
+  padding:1rem;margin-top:var(--grid-gap);
+  max-width:380px;
+}
+.review-card h4{font-weight:600;margin-bottom:.35rem}
+.review-card .rating-static{color:var(--accent);letter-spacing:.03rem}
+
+/* Add some styles for the edit bio functionality */
+.edit-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px;
+  margin-left: 5px;
+  vertical-align: middle;
+  color: var(--accent-purple);
+  transition: color 0.2s;
+}
+
+.edit-btn:hover {
+  color: var(--accent-purple-dark);
+}
+
+.btn-sm {
+  padding: 0.4rem 1rem;
+  font-size: 0.9rem;
+}
+
+.btn-outline.btn-sm {
+  background: white;
+  border: 1px solid var(--accent-purple);
+  color: var(--accent-purple);
+  padding: 0.4rem 1rem;
+  font-size: 0.9rem;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btn-outline.btn-sm:hover {
+  background: var(--accent-purple-light);
+}
+</style>
+{% endblock %}
 
 {% block content %}
-<!-- ========== Main Container ========== -->
-<div class="profile-main-container">
-  <div class="profile-grouping">
-    <div class="profile-main-section profile-info">
-      <h1>John Doe</h1>
-      <img src="../static/templatephotos/stock-happy-man.jpg" width=100%>
-      <p>joined Apr 15, 2024</p>
-      <p>Average Rating: 4.6/5</p>
-      <p>13 listings</p>
-      <div class="profile-buttons">
-        <a href="" class="btn btn-outline">Contact</a>
+<!-- —————————————————————  LAYOUT  ————————————————————— -->
+<div class="layout">
+
+  <!-- —— Sidebar ——— -->
+  <aside class="profile">
+    <img src="{{ url_for('serve_user_picture', user_id=profile_user.user_id) }}" alt="{{ profile_user.full_name }}" class="profile__avatar">
+    <h1>{{ profile_user.full_name }}</h1>
+    <small>Joined: {{ profile_user.created_at.strftime('%b %d %Y') }}<br>
+    {% if review_count > 0 %}{{ review_count }} review{% if review_count != 1 %}s{% endif %}{% else %}No reviews yet{% endif %}</small><br>
+    
+    {% if is_own_profile %}
+    <!-- Edit Profile button removed since bio is now editable inline -->
+    {% else %}
+    <a href="{{ url_for('start_conversation', user_id=profile_user.user_id) }}" class="contact-btn">Contact</a>
+    {% endif %}
+
+    <h3>Bio
+    {% if is_own_profile %}
+      <button id="edit-bio-btn" class="edit-btn">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+        </svg>
+      </button>
+    {% endif %}
+    </h3>
+    
+    <!-- View Mode -->
+    <p id="bio-text">{{ profile_user.bio or 'No bio provided.' }}</p>
+    
+    <!-- Edit Mode (initially hidden) -->
+    {% if is_own_profile %}
+    <div id="bio-edit-container" style="display: none;">
+      <textarea id="bio-textarea" maxlength="1000" rows="5" style="width:100%">{{ profile_user.bio or '' }}</textarea>
+      <div class="char-count"><span id="bio-char-count">0</span>/1000</div>
+      <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+        <button id="save-bio-btn" class="btn btn-sm">Save</button>
+        <button id="cancel-bio-btn" class="btn-outline btn-sm">Cancel</button>
       </div>
     </div>
-    <div class="profile-main-section">
-      <h2>Bio</h2>
-      <p>Hey there! My name is John Doe, and I'm a third-year student at SF State.
-        I like to join the SFSU Campus Rec events and I enjoy playing video games and
-        hanging out with friends. Looking to sell some old clothes, if you're interested
-        hmu!
-      </p>
-    </div>
-  </div>
+    {% endif %}
+  </aside>
 
-  <div class="profile-schedule">
-    <div>
+  <!-- —— Main ——— -->
+  <main>
+
+    <!-- Availability -->
+    <section class="availability-wrapper">
       <h2>Availability</h2>
-    </div>
-    <img src="../static/templatephotos/google-agenda.jpg" width="100%">
-  </div>
+      <div class="table-scroll">
+        <table class="calendar" id="calendar" data-user-id="{{ profile_user.user_id }}" data-is-own-profile="{{ 'true' if is_own_profile else 'false' }}">
+          <thead>
+            <tr>
+              <th class="label"></th>
+              <th>Su</th><th>Mo</th><th>Tu</th><th>We</th><th>Th</th><th>Fr</th><th>Sa</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- 30-min rows, 6:00 am → 12:00 pm -->
+            <!-- first cell in each row gets .label -->
+            <tr><td class="label">6:00</td><td data-day="Sunday" data-time="6:00"></td><td data-day="Monday" data-time="6:00"></td><td data-day="Tuesday" data-time="6:00"></td><td data-day="Wednesday" data-time="6:00"></td><td data-day="Thursday" data-time="6:00"></td><td data-day="Friday" data-time="6:00"></td><td data-day="Saturday" data-time="6:00"></td></tr>
+            <tr><td class="label">6:30</td><td data-day="Sunday" data-time="6:30"></td><td data-day="Monday" data-time="6:30"></td><td data-day="Tuesday" data-time="6:30"></td><td data-day="Wednesday" data-time="6:30"></td><td data-day="Thursday" data-time="6:30"></td><td data-day="Friday" data-time="6:30"></td><td data-day="Saturday" data-time="6:30"></td></tr>
+            <tr><td class="label">7:00</td><td data-day="Sunday" data-time="7:00"></td><td data-day="Monday" data-time="7:00"></td><td data-day="Tuesday" data-time="7:00"></td><td data-day="Wednesday" data-time="7:00"></td><td data-day="Thursday" data-time="7:00"></td><td data-day="Friday" data-time="7:00"></td><td data-day="Saturday" data-time="7:00"></td></tr>
+            <tr><td class="label">7:30</td><td data-day="Sunday" data-time="7:30"></td><td data-day="Monday" data-time="7:30"></td><td data-day="Tuesday" data-time="7:30"></td><td data-day="Wednesday" data-time="7:30"></td><td data-day="Thursday" data-time="7:30"></td><td data-day="Friday" data-time="7:30"></td><td data-day="Saturday" data-time="7:30"></td></tr>
+            <tr><td class="label">8:00</td><td data-day="Sunday" data-time="8:00"></td><td data-day="Monday" data-time="8:00"></td><td data-day="Tuesday" data-time="8:00"></td><td data-day="Wednesday" data-time="8:00"></td><td data-day="Thursday" data-time="8:00"></td><td data-day="Friday" data-time="8:00"></td><td data-day="Saturday" data-time="8:00"></td></tr>
+            <tr><td class="label">8:30</td><td data-day="Sunday" data-time="8:30"></td><td data-day="Monday" data-time="8:30"></td><td data-day="Tuesday" data-time="8:30"></td><td data-day="Wednesday" data-time="8:30"></td><td data-day="Thursday" data-time="8:30"></td><td data-day="Friday" data-time="8:30"></td><td data-day="Saturday" data-time="8:30"></td></tr>
+            <tr><td class="label">9:00</td><td data-day="Sunday" data-time="9:00"></td><td data-day="Monday" data-time="9:00"></td><td data-day="Tuesday" data-time="9:00"></td><td data-day="Wednesday" data-time="9:00"></td><td data-day="Thursday" data-time="9:00"></td><td data-day="Friday" data-time="9:00"></td><td data-day="Saturday" data-time="9:00"></td></tr>
+            <tr><td class="label">9:30</td><td data-day="Sunday" data-time="9:30"></td><td data-day="Monday" data-time="9:30"></td><td data-day="Tuesday" data-time="9:30"></td><td data-day="Wednesday" data-time="9:30"></td><td data-day="Thursday" data-time="9:30"></td><td data-day="Friday" data-time="9:30"></td><td data-day="Saturday" data-time="9:30"></td></tr>
+            <tr><td class="label">10:00</td><td data-day="Sunday" data-time="10:00"></td><td data-day="Monday" data-time="10:00"></td><td data-day="Tuesday" data-time="10:00"></td><td data-day="Wednesday" data-time="10:00"></td><td data-day="Thursday" data-time="10:00"></td><td data-day="Friday" data-time="10:00"></td><td data-day="Saturday" data-time="10:00"></td></tr>
+            <tr><td class="label">10:30</td><td data-day="Sunday" data-time="10:30"></td><td data-day="Monday" data-time="10:30"></td><td data-day="Tuesday" data-time="10:30"></td><td data-day="Wednesday" data-time="10:30"></td><td data-day="Thursday" data-time="10:30"></td><td data-day="Friday" data-time="10:30"></td><td data-day="Saturday" data-time="10:30"></td></tr>
+            <tr><td class="label">11:00</td><td data-day="Sunday" data-time="11:00"></td><td data-day="Monday" data-time="11:00"></td><td data-day="Tuesday" data-time="11:00"></td><td data-day="Wednesday" data-time="11:00"></td><td data-day="Thursday" data-time="11:00"></td><td data-day="Friday" data-time="11:00"></td><td data-day="Saturday" data-time="11:00"></td></tr>
+            <tr><td class="label">11:30</td><td data-day="Sunday" data-time="11:30"></td><td data-day="Monday" data-time="11:30"></td><td data-day="Tuesday" data-time="11:30"></td><td data-day="Wednesday" data-time="11:30"></td><td data-day="Thursday" data-time="11:30"></td><td data-day="Friday" data-time="11:30"></td><td data-day="Saturday" data-time="11:30"></td></tr>
+            <tr><td class="label">12:00</td><td data-day="Sunday" data-time="12:00"></td><td data-day="Monday" data-time="12:00"></td><td data-day="Tuesday" data-time="12:00"></td><td data-day="Wednesday" data-time="12:00"></td><td data-day="Thursday" data-time="12:00"></td><td data-day="Friday" data-time="12:00"></td><td data-day="Saturday" data-time="12:00"></td></tr>
+          </tbody>
+        </table>
+      </div>
+      {% if is_own_profile %}
+      <div style="text-align: right;">
+        <button id="save-availability" class="save-availability-btn">Save Availability</button>
+      </div>
+      {% endif %}
+    </section>
 
-  <div class="profile-listing-row">
-    <div>
-      <h2>Listings</h2>
-    </div>
-    <div class="listing-card">
-      <img src="../static/templatephotos/compression-shirt.png" class="listing-img">
-      <h3>Compression shirt, black</h3>
-      <div class="auth-buttons">
-        <a class="btn btn-outline">Buy Now</a>
+    <!-- Listings -->
+    <section class="listings">
+      <h2>Listings by {{ profile_user.first_name }}</h2>
+      <div class="listing-grid">
+        {% if listings %}
+          {% for item in listings %}
+          <a href="{{ url_for('product_detail', product_id=item.product_id) }}" style="text-decoration: none; color: inherit;">
+            <article class="card">
+              <img src="{{ url_for('serve_image', image_id=item.first_image_id) }}" alt="{{ item.title }}">
+              <div class="card-name">{{ item.title }}</div>
+              <div class="card-price">${{ "%.2f"|format(item.price) }}</div>
+            </article>
+          </a>
+          {% endfor %}
+        {% else %}
+          <div class="no-items">No listings available</div>
+        {% endif %}
       </div>
-    </div>
-    <div class="listing-card">
-      <img src="../static/templatephotos/shorts.jpeg" class="listing-img">
-      <h3>Gray shorts</h3>
-      <div class="auth-buttons">
-        <a class="btn btn-outline">Buy Now</a>
-      </div>
-    </div>
-    <div class="listing-card">
-      <img src="../static/templatephotos/sweater.jpg" class="listing-img">
-      <h3>Sweater</h3>
-      <div class="auth-buttons">
-        <a class="btn btn-outline">Buy Now</a>
-      </div>
-    </div>
-  </div>
+    </section>
 
-  <div class="profile-review-row">
-    <h2>Reviews</h2>
-    <div class="review-card">
-      <h3>Sabrina L.</h3>
-      <p>My boyfriend loves this compression shirt! Fits perfect!</p>
-    </div>
-    <div class="review-card">
-      <h3>Danny P.</h3>
-      <p>The shorts were needed after my last ones ripped. Thanks, John!</p>
-    </div>
-    <div class="review-card">
-      <h3>Chris B.</h3>
-      <p>Practically not even used. The shoes are a bit loose but the quality is great for being worn for so long.</p>
-    </div>
-    <div class="review-card">
-      <h3>Lenny J.</h3>
-      <p>Awesome t-shirts. Thanks, John</p>
-    </div>
-  </div>
-</div>
+    <!-- Reviews -->
+    <section class="reviews">
+      <h2>Reviews for {{ profile_user.first_name }}</h2>
+      
+      {% if avg_rating %}
+      <div style="font-size: 1.2rem; margin-bottom: 1rem;">
+        Average Rating: {{ avg_rating }} ★ ({{ review_count }} review{% if review_count != 1 %}s{% endif %})
+      </div>
+      {% endif %}
+      
+      {% if not is_own_profile and not has_reviewed %}
+      <h3>Leave a Review</h3>
+      
+      <form action="{{ url_for('add_review', reviewed_user_id=profile_user.user_id) }}" method="POST">
+        <!-- star picker -->
+        <div class="rating-stars" id="rating"></div>
+        <input type="hidden" id="rating-value" name="rating" value="0">
+
+        <textarea id="comment" name="comment" maxlength="500" placeholder="Comment" required></textarea>
+        <div class="char-count" id="counter">0/500 characters</div>
+
+        <button type="submit" class="btn" id="submit">Submit Review</button>
+      </form>
+      {% elif has_reviewed %}
+      <p style="margin-bottom: 1rem;">You've already submitted a review for this user.</p>
+      {% endif %}
+
+      <!-- Reviews -->
+      {% if reviews %}
+        {% for review in reviews %}
+        <div class="review-card">
+          <h4>{{ review.reviewer_first_name }} {{ review.reviewer_last_name|first }}.</h4>
+          <div class="rating-static">
+            {% for i in range(5) %}
+              {% if i < review.rating %}★{% else %}☆{% endif %}
+            {% endfor %}
+          </div>
+          <p style="margin-top:.5rem">{{ review.comment }}</p>
+        </div>
+        {% endfor %}
+      {% else %}
+        <div class="review-card">
+          <p>No reviews yet.</p>
+        </div>
+      {% endif %}
+    </section>
+
+  </main>
+</div><!-- /layout -->
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+/* —— STAR RATING —— */
+(function(){
+  const holder = document.getElementById('rating');
+  const ratingInput = document.getElementById('rating-value');
+  const total = 5;
+  let current = 0;
+  
+  if (holder) { // Only run if the rating element exists
+    for(let i=1; i<=total; i++){
+      const s=document.createElement('span');
+      s.className='star';s.textContent='★';s.dataset.val=i;
+      holder.appendChild(s);
+    }
+    const stars=[...holder.children];
+    const set = v => {
+      current = v;
+      ratingInput.value = v;
+      stars.forEach((s,idx)=>s.classList.toggle('active',idx<v));
+    };
+    holder.addEventListener('click',e=>{
+      if(e.target.classList.contains('star')) set(Number(e.target.dataset.val));
+    });
+  }
+})();
+
+/* —— CHARACTER COUNTER —— */
+const commentEl=document.getElementById('comment');
+const counterEl=document.getElementById('counter');
+if (commentEl && counterEl) {
+  commentEl.addEventListener('input',()=>counterEl.textContent=`${commentEl.value.length}/500 characters`);
+}
+
+/* —— AVAILABILITY SYSTEM —— */
+(function(){
+  const table = document.getElementById('calendar');
+  const saveBtn = document.getElementById('save-availability');
+  
+  // Get user data from data attributes
+  const profileUserId = table.dataset.userId;
+  const isOwnProfile = table.dataset.isOwnProfile === 'true';
+  
+  // Track if availability data has changed
+  let availabilityChanged = false;
+  
+  // Map table cells to their day/time
+  const cells = {};
+  document.querySelectorAll('td[data-day][data-time]').forEach(cell => {
+    const day = cell.dataset.day;
+    const time = cell.dataset.time;
+    if (!cells[day]) cells[day] = {};
+    cells[day][time] = cell;
+  });
+  
+  // Function to load availability data from the server
+  function loadAvailability() {
+    fetch(`/get_availability/${profileUserId}`)
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          // Clear any existing selections
+          document.querySelectorAll('td.selected').forEach(cell => {
+            cell.classList.remove('selected');
+          });
+          
+          // Apply selections based on available times
+          const availability = data.availability;
+          for (const day in availability) {
+            for (const time of availability[day]) {
+              if (cells[day] && cells[day][time]) {
+                cells[day][time].classList.add('selected');
+              }
+            }
+          }
+        } else {
+          console.error('Failed to load availability data:', data.message);
+        }
+      })
+      .catch(error => {
+        console.error('Error loading availability data:', error);
+      });
+  }
+  
+  // Function to save availability data to the server
+  function saveAvailability() {
+    if (!isOwnProfile) return;
+    
+    // Collect all selected times
+    const availability = {};
+    document.querySelectorAll('td.selected').forEach(cell => {
+      const day = cell.dataset.day;
+      const time = cell.dataset.time;
+      
+      if (!availability[day]) {
+        availability[day] = [];
+      }
+      
+      availability[day].push(time);
+    });
+    
+    // Send data to server
+    fetch(`/update_availability/${profileUserId}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ availability }),
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        availabilityChanged = false;
+        if (saveBtn) saveBtn.textContent = 'Saved!';
+        setTimeout(() => {
+          if (saveBtn) saveBtn.textContent = 'Save Availability';
+        }, 2000);
+      } else {
+        console.error('Failed to save availability:', data.message);
+        alert('Failed to save availability data. Please try again.');
+      }
+    })
+    .catch(error => {
+      console.error('Error saving availability:', error);
+      alert('An error occurred while saving availability data.');
+    });
+  }
+  
+  // Set up event listeners
+  let down = false, adding = true;
+  
+  // Handle interaction only if user can edit (own profile)
+  if (isOwnProfile) {
+    table.addEventListener('mousedown', e => {
+      if (e.target.tagName === 'TD' && !e.target.classList.contains('label') && e.target.hasAttribute('data-day')) {
+        down = true;
+        adding = !e.target.classList.contains('selected');
+        toggle(e.target);
+        availabilityChanged = true;
+        updateSaveButton();
+      }
+    });
+    
+    table.addEventListener('mouseover', e => {
+      if (down && e.target.tagName === 'TD' && !e.target.classList.contains('label') && e.target.hasAttribute('data-day')) {
+        toggle(e.target);
+        availabilityChanged = true;
+        updateSaveButton();
+      }
+    });
+    
+    // Save button functionality
+    if (saveBtn) {
+      saveBtn.addEventListener('click', () => {
+        if (availabilityChanged) {
+          saveAvailability();
+        }
+      });
+    }
+  } else {
+    // Make cells non-interactive for viewers
+    table.querySelectorAll('td').forEach(cell => {
+      cell.style.cursor = 'default';
+    });
+  }
+  
+  document.addEventListener('mouseup', () => {
+    down = false;
+  });
+  
+  function toggle(c) {
+    adding ? c.classList.add('selected') : c.classList.remove('selected');
+  }
+  
+  function updateSaveButton() {
+    if (saveBtn) {
+      saveBtn.disabled = !availabilityChanged;
+    }
+  }
+  
+  // Load availability data on page load
+  loadAvailability();
+})();
+
+// Bio editing functionality
+const editBioBtn = document.getElementById('edit-bio-btn');
+const bioText = document.getElementById('bio-text');
+const bioEditContainer = document.getElementById('bio-edit-container');
+const bioTextarea = document.getElementById('bio-textarea');
+const bioCharCount = document.getElementById('bio-char-count');
+const saveBioBtn = document.getElementById('save-bio-btn');
+const cancelBioBtn = document.getElementById('cancel-bio-btn');
+
+if (editBioBtn) {
+  // Update char count initially
+  bioCharCount.textContent = bioTextarea.value.length;
+  
+  // Toggle edit mode
+  editBioBtn.addEventListener('click', function() {
+    bioText.style.display = 'none';
+    bioEditContainer.style.display = 'block';
+    bioTextarea.focus();
+  });
+  
+  // Character count
+  bioTextarea.addEventListener('input', function() {
+    bioCharCount.textContent = bioTextarea.value.length;
+  });
+  
+  // Cancel editing
+  cancelBioBtn.addEventListener('click', function() {
+    bioText.style.display = 'block';
+    bioEditContainer.style.display = 'none';
+    // Reset textarea to original value
+    bioTextarea.value = bioText.textContent === 'No bio provided.' ? '' : bioText.textContent;
+    bioCharCount.textContent = bioTextarea.value.length;
+  });
+  
+  // Save bio changes
+  saveBioBtn.addEventListener('click', function() {
+    const newBio = bioTextarea.value.trim();
+    
+    // Create form data for the request
+    const formData = new FormData();
+    formData.append('bio', newBio);
+    
+    // Show saving state
+    saveBioBtn.textContent = 'Saving...';
+    saveBioBtn.disabled = true;
+    
+    // Send AJAX request
+    fetch('{{ url_for("update_bio") }}', {
+      method: 'POST',
+      body: formData,
+      credentials: 'same-origin'
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        // Update displayed bio
+        bioText.textContent = newBio || 'No bio provided.';
+        
+        // Return to view mode
+        bioText.style.display = 'block';
+        bioEditContainer.style.display = 'none';
+        
+        // Show a temporary success message
+        const successMsg = document.createElement('div');
+        successMsg.textContent = 'Bio updated!';
+        successMsg.style.color = 'green';
+        successMsg.style.fontSize = '0.9rem';
+        successMsg.style.marginTop = '0.5rem';
+        bioText.parentNode.insertBefore(successMsg, bioText.nextSibling);
+        
+        // Remove message after 3 seconds
+        setTimeout(() => {
+          successMsg.remove();
+        }, 3000);
+      } else {
+        alert('Error: ' + (data.message || 'Failed to update bio'));
+      }
+    })
+    .catch(error => {
+      console.error('Error updating bio:', error);
+      alert('An error occurred while updating your bio');
+    })
+    .finally(() => {
+      // Reset button
+      saveBioBtn.textContent = 'Save';
+      saveBioBtn.disabled = false;
+    });
+  });
+}
+</script>
 {% endblock %}

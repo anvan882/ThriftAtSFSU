@@ -19,7 +19,7 @@
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-family: 'Inter', sans-serif;
   background-color: var(--bg-color);
   color: var(--text-color);
   line-height: 1.6;
@@ -213,3 +213,59 @@ label.custom-upload-btn svg {
 }
 
 /* Remove responsive absolute positioning override */
+
+/* Style for required field indicators */
+.required {
+    color: red;
+    margin-left: 2px; /* Add a small space before the asterisk */
+}
+
+/* ========== Flash Message Styles ========== */
+.flash-messages-container {
+  width: 100%;
+  padding: 0; /* Remove padding if messages have their own */
+  margin-bottom: 1rem; /* Space below messages */
+  position: absolute; /* Position at the top */
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1050; /* Ensure it's above most other content */
+}
+
+/* Specific styling for auth pages flash messages if needed */
+.auth-flash-messages {
+  /* Example: Adjust top position if Back link overlaps */
+  /* top: 4rem;  */
+}
+
+.alert {
+  padding: 0.75rem 1.25rem;
+  margin-bottom: 0; /* No margin between alerts */
+  border: 1px solid transparent;
+  border-radius: 0; /* No border radius for full width */
+  width: 100%;
+  text-align: center;
+  font-weight: 500;
+}
+
+.alert-success {
+  color: #155724;
+  background-color: #d4edda;
+  border-color: #c3e6cb;
+}
+
+.alert-error {
+  color: #721c24;
+  background-color: #f8d7da;
+  border-color: #f5c6cb;
+}
+
+/* Style for invalid form inputs */
+.form-control.is-invalid {
+  border-color: #dc3545; /* Bootstrap's danger color */
+  box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25); /* Optional: add a glow effect */
+}
+
+/* Responsive adjustments */
+@media (max-width: 576px) {
+}

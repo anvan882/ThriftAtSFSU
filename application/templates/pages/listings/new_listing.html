@@ -1,10 +1,27 @@
 {% extends "base.html" %}
 {% block title %}Create Listing – SFSU Thrift Market{% endblock %}
 
+{% block head %}
+{{ super() }}
+<style>
+  .char-counter {
+    text-align: right;
+    font-size: 0.8rem;
+    color: #6c757d;
+    margin-top: 5px;
+  }
+  
+  .approaching-limit {
+    color: #dc3545;
+    font-weight: bold;
+  }
+</style>
+{% endblock %}
+
 {% block content %}
 <!-- ========== Create Listing Form Container ========== -->
 <section class="creationForm">
-  <form class="listing-form">
+  <form class="listing-form" method="POST" action="{{ url_for('newListing') }}" enctype="multipart/form-data">
     <!-- Image Upload -->
     <div class="form-group image-upload">
       <label for="images">Upload Images JPG or PNG</label>
@@ -19,16 +36,23 @@
       <span id="file-names" class="file-name">No files chosen</span>
     </div>
 
+    <!-- Autofill Button -->
+    <div class="form-group">
+      <button type="button" id="autofill-btn" class="btn btn-secondary" style="text-align: center;">Autofill Form Using LLM</button>
+      <div id="autofill-status" style="margin-top: 5px; font-size: 0.9em; color: #6c757d;"></div>
+      <span style="font-size: 0.8em; color: #888;">Powered by OpenAI</span>
+    </div>
+
     <!-- Title -->
     <div class="form-group">
       <label for="title">Title</label>
-      <input type="text" id="title" name="title" required>
+      <input type="text" id="title" name="title" value="{{ form_data.title or '' }}" required>
     </div>
 
     <!-- Price -->
     <div class="form-group">
       <label for="price">Price ($)</label>
-      <input type="number" id="price" name="price" min="0" step="0.01" required>
+      <input type="number" id="price" name="price" min="0" step="0.01" value="{{ form_data.price or '' }}" required>
     </div>
 
     <!-- Category -->
@@ -36,9 +60,9 @@
       <label for="category">Category</label>
       <select id="category" name="category" required>
         <option value="">--Select a category--</option>
-        <option value="Electronics">Electronics</option>
-        <option value="Books">Books</option>
-        <option value="Clothing">Clothing</option>
+        {% for category in categories %}
+          <option value="{{ category }}" {% if form_data.category == category %}selected{% endif %}>{{ category }}</option>
+        {% endfor %}
       </select>
     </div>
 
@@ -47,18 +71,21 @@
       <label for="condition">Condition</label>
       <select id="condition" name="condition" required>
         <option value="">--Select condition--</option>
-        <option value="Very Worn">Very Worn</option>
-        <option value="Used">Used</option>
-        <option value="Fairly Used">Fairly Used</option>
-        <option value="Good Condition">Good Condition</option>
-        <option value="Great Condition">Great Condition</option>
+        <option value="Very Worn" {% if form_data.condition == "Very Worn" %}selected{% endif %}>Very Worn</option>
+        <option value="Used" {% if form_data.condition == "Used" %}selected{% endif %}>Used</option>
+        <option value="Fairly Used" {% if form_data.condition == "Fairly Used" %}selected{% endif %}>Fairly Used</option>
+        <option value="Good Condition" {% if form_data.condition == "Good Condition" %}selected{% endif %}>Good Condition</option>
+        <option value="Great Condition" {% if form_data.condition == "Great Condition" %}selected{% endif %}>Great Condition</option>
       </select>
     </div>
 
     <!-- Description -->
     <div class="form-group">
       <label for="description">Description</label>
-      <textarea id="description" name="description" rows="5" required></textarea>
+      <textarea id="description" name="description" rows="5" maxlength="500" required>{{ form_data.description or '' }}</textarea>
+      <div class="char-counter">
+        <span id="char-count">0</span>/500 characters
+      </div>
     </div>
 
     <!-- Submit Button -->
@@ -84,5 +111,229 @@
     }
     document.getElementById('file-names').textContent = fileNamesText;
   });
+
+  // Character counter for description
+  const descriptionField = document.getElementById('description');
+  const charCounter = document.getElementById('char-count');
+  
+  // Initialize counter with current text length
+  charCounter.textContent = descriptionField.value.length;
+  
+  descriptionField.addEventListener('input', function() {
+    const currentLength = this.value.length;
+    charCounter.textContent = currentLength;
+    
+    // Visual feedback when approaching limit
+    if (currentLength >= 450) {
+      charCounter.classList.add('approaching-limit');
+    } else {
+      charCounter.classList.remove('approaching-limit');
+    }
+  });
+
+  // Price field validation - ensure only numbers and decimal point
+  const priceField = document.getElementById('price');
+  
+  // Block non-numeric keypresses completely
+  priceField.addEventListener('keypress', function(e) {
+    // Allow only numbers, decimal point, and control keys
+    const key = e.key;
+    const isNumber = /[0-9]/.test(key);
+    const isDecimal = key === '.';
+    const isAllowedControl = ['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab'].includes(key);
+    
+    // If the key is not a number or decimal point or allowed control key, prevent it
+    if (!(isNumber || isDecimal || isAllowedControl)) {
+      e.preventDefault();
+      return false;
+    }
+    
+    // Only allow one decimal point
+    if (isDecimal && this.value.includes('.')) {
+      e.preventDefault();
+      return false;
+    }
+  });
+  
+  // Clean up any invalid characters that might get through
+  priceField.addEventListener('input', function() {
+    const originalValue = this.value;
+    // Keep only numbers and at most one decimal point
+    const cleanValue = originalValue
+      .replace(/[^\d.]/g, '') // Remove anything that's not a digit or decimal
+      .replace(/^(\d*\.?\d*).*$/, '$1') // Keep only the first decimal if multiple exist
+      .replace(/^\./, '0.'); // Add leading zero if value starts with decimal
+      
+    if (originalValue !== cleanValue) {
+      this.value = cleanValue;
+    }
+  });
+  
+  // Prevent invalid paste
+  priceField.addEventListener('paste', function(e) {
+    e.preventDefault();
+    
+    // Get pasted text
+    const pastedText = (e.clipboardData || window.clipboardData).getData('text');
+    
+    // Clean the pasted text - only allow numbers and one decimal
+    const cleanPaste = pastedText
+      .replace(/[^\d.]/g, '')
+      .replace(/^(\d*\.?\d*).*$/, '$1')
+      .replace(/^\./, '0.');
+      
+    // Insert at cursor position
+    const start = this.selectionStart;
+    const end = this.selectionEnd;
+    
+    const beforeText = this.value.substring(0, start);
+    const afterText = this.value.substring(end);
+    
+    // Combine and ensure only one decimal in the final result
+    const newValue = (beforeText + cleanPaste + afterText)
+      .replace(/^(\d*\.?\d*).*$/, '$1');
+      
+    this.value = newValue;
+    
+    // Set cursor position after pasted content
+    this.selectionStart = this.selectionEnd = start + cleanPaste.length;
+  });
+  
+  // Filter on blur to ensure final value is valid
+  priceField.addEventListener('blur', function() {
+    // Format to 2 decimal places if there's a decimal
+    if (this.value.includes('.')) {
+      const parts = this.value.split('.');
+      if (parts[1].length > 2) {
+        this.value = parseFloat(this.value).toFixed(2);
+      }
+    }
+    
+    // Remove price if it's just a decimal point or empty
+    if (this.value === '.' || this.value === '') {
+      this.value = '';
+    }
+  });
+</script>
+
+<script>
+  // Autofill functionality
+  const autofillBtn = document.getElementById('autofill-btn');
+  const autofillStatus = document.getElementById('autofill-status');
+  const imagesInput = document.getElementById('images');
+  const titleInput = document.getElementById('title');
+  const priceInput = document.getElementById('price');
+  const categorySelect = document.getElementById('category');
+  const conditionSelect = document.getElementById('condition');
+  const descriptionTextarea = document.getElementById('description');
+  const charCounterSpan = document.getElementById('char-count'); // For updating char count
+
+  const COOLDOWN_PERIOD = 5 * 60 * 1000; // 5 minutes in milliseconds
+  const LAST_AUTOFILL_TIME_KEY = 'lastAutofillTime';
+
+  function checkCooldown() {
+    const lastAutofillTime = localStorage.getItem(LAST_AUTOFILL_TIME_KEY);
+    if (lastAutofillTime) {
+      const timePassed = Date.now() - parseInt(lastAutofillTime, 10);
+      if (timePassed < COOLDOWN_PERIOD) {
+        const timeLeft = Math.ceil((COOLDOWN_PERIOD - timePassed) / 1000);
+        autofillStatus.textContent = `Please wait ${timeLeft} seconds before trying again.`;
+        autofillBtn.disabled = true;
+        // Re-enable button after cooldown
+        setTimeout(() => {
+          autofillBtn.disabled = false;
+          autofillStatus.textContent = '';
+          checkCooldown(); // Recheck in case user waits exactly till timeout
+        }, COOLDOWN_PERIOD - timePassed);
+        return true; // Still in cooldown
+      }
+    }
+    autofillBtn.disabled = false; // Ensure button is enabled if cooldown passed
+    autofillStatus.textContent = ''; // Clear status if cooldown passed
+    return false; // Not in cooldown
+  }
+
+  autofillBtn.addEventListener('click', async () => {
+    if (checkCooldown()) {
+      return; // Exit if still in cooldown
+    }
+
+    if (imagesInput.files.length === 0) {
+      autofillStatus.textContent = 'Please select an image first.';
+      return;
+    }
+
+    const firstImage = imagesInput.files[0];
+    const formData = new FormData();
+    formData.append('image', firstImage);
+
+    // Disable button, set cooldown, show processing message
+    autofillBtn.disabled = true;
+    autofillStatus.textContent = 'Processing image... Please wait.';
+    localStorage.setItem(LAST_AUTOFILL_TIME_KEY, Date.now().toString());
+    setTimeout(() => {
+        autofillBtn.disabled = false; // Re-enable after 5 mins regardless of outcome
+        if (autofillStatus.textContent === 'Processing image... Please wait.') {
+             autofillStatus.textContent = ''; // Clear processing message if still there
+        }
+        checkCooldown(); // Re-check and update status if needed
+    }, COOLDOWN_PERIOD);
+
+
+    try {
+      const response = await fetch("{{ url_for('autofill_listing') }}", {
+        method: 'POST',
+        body: formData,
+        // Add headers if needed, e.g., CSRF token
+      });
+
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        const data = result.data;
+        // Populate fields
+        titleInput.value = data.title || '';
+        priceInput.value = data.price || '';
+        
+        // Select category option if it exists
+        const categoryOption = Array.from(categorySelect.options).find(opt => opt.value.toLowerCase() === (data.category || '').toLowerCase());
+        if (categoryOption) {
+          categorySelect.value = categoryOption.value;
+        } else {
+          categorySelect.value = ''; // Reset if no match
+          console.warn(`Suggested category "${data.category}" not found in dropdown.`);
+        }
+
+        // Select condition option if it exists
+        const conditionOption = Array.from(conditionSelect.options).find(opt => opt.value.toLowerCase() === (data.condition || '').toLowerCase());
+         if (conditionOption) {
+          conditionSelect.value = conditionOption.value;
+        } else {
+          conditionSelect.value = ''; // Reset if no match
+           console.warn(`Suggested condition "${data.condition}" not found in dropdown.`);
+        }
+        
+        descriptionTextarea.value = data.description || '';
+        // Trigger input event to update character counter
+        descriptionTextarea.dispatchEvent(new Event('input', { bubbles: true })); 
+
+        autofillStatus.textContent = 'Form autofilled successfully! Please review.';
+        // Keep button disabled for the full cooldown period (handled by the setTimeout above)
+
+      } else {
+        autofillStatus.textContent = `Error: ${result.message || 'Could not autofill form.'}`;
+        // Keep button disabled for the full cooldown period
+      }
+    } catch (error) {
+      console.error('Autofill fetch error:', error);
+      autofillStatus.textContent = 'Error connecting to the server for autofill.';
+      // Keep button disabled for the full cooldown period
+    }
+    // Don't re-enable button here, rely on the initial 5-min timeout
+  });
+
+  // Initial check when page loads
+  checkCooldown();
+
 </script>
 {% endblock %}
