@@ -92,9 +92,10 @@ img{max-width:100%;display:block}
 .calendar td{
   border:1px solid var(--light-border);
   text-align:center;
-  height:34px;
+  height:40px;
   font-size:.88rem;
   user-select:none;
+  padding: 0;
 }
 .calendar th{background:#fafafa}
 .calendar .label{
@@ -103,6 +104,27 @@ img{max-width:100%;display:block}
   width:70px;
 }
 .calendar td.selected{background:#cde8d5}   /* light green */
+
+.time-cell {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+}
+
+.first-half, .second-half {
+  height: 50%;
+  width: 100%;
+  cursor: pointer;
+}
+
+.first-half.selected {
+  background-color: #cde8d5;
+}
+
+.second-half.selected {
+  background-color: #cde8d5;
+}
 
 .save-availability-btn {
   background:var(--accent);
@@ -280,21 +302,28 @@ textarea{
             </tr>
           </thead>
           <tbody>
-            <!-- 30-min rows, 6:00 am → 12:00 pm -->
+            <!-- Hourly rows, 7:00 am → 11:00 pm -->
             <!-- first cell in each row gets .label -->
-            <tr><td class="label">6:00</td><td data-day="Sunday" data-time="6:00"></td><td data-day="Monday" data-time="6:00"></td><td data-day="Tuesday" data-time="6:00"></td><td data-day="Wednesday" data-time="6:00"></td><td data-day="Thursday" data-time="6:00"></td><td data-day="Friday" data-time="6:00"></td><td data-day="Saturday" data-time="6:00"></td></tr>
-            <tr><td class="label">6:30</td><td data-day="Sunday" data-time="6:30"></td><td data-day="Monday" data-time="6:30"></td><td data-day="Tuesday" data-time="6:30"></td><td data-day="Wednesday" data-time="6:30"></td><td data-day="Thursday" data-time="6:30"></td><td data-day="Friday" data-time="6:30"></td><td data-day="Saturday" data-time="6:30"></td></tr>
-            <tr><td class="label">7:00</td><td data-day="Sunday" data-time="7:00"></td><td data-day="Monday" data-time="7:00"></td><td data-day="Tuesday" data-time="7:00"></td><td data-day="Wednesday" data-time="7:00"></td><td data-day="Thursday" data-time="7:00"></td><td data-day="Friday" data-time="7:00"></td><td data-day="Saturday" data-time="7:00"></td></tr>
-            <tr><td class="label">7:30</td><td data-day="Sunday" data-time="7:30"></td><td data-day="Monday" data-time="7:30"></td><td data-day="Tuesday" data-time="7:30"></td><td data-day="Wednesday" data-time="7:30"></td><td data-day="Thursday" data-time="7:30"></td><td data-day="Friday" data-time="7:30"></td><td data-day="Saturday" data-time="7:30"></td></tr>
-            <tr><td class="label">8:00</td><td data-day="Sunday" data-time="8:00"></td><td data-day="Monday" data-time="8:00"></td><td data-day="Tuesday" data-time="8:00"></td><td data-day="Wednesday" data-time="8:00"></td><td data-day="Thursday" data-time="8:00"></td><td data-day="Friday" data-time="8:00"></td><td data-day="Saturday" data-time="8:00"></td></tr>
-            <tr><td class="label">8:30</td><td data-day="Sunday" data-time="8:30"></td><td data-day="Monday" data-time="8:30"></td><td data-day="Tuesday" data-time="8:30"></td><td data-day="Wednesday" data-time="8:30"></td><td data-day="Thursday" data-time="8:30"></td><td data-day="Friday" data-time="8:30"></td><td data-day="Saturday" data-time="8:30"></td></tr>
-            <tr><td class="label">9:00</td><td data-day="Sunday" data-time="9:00"></td><td data-day="Monday" data-time="9:00"></td><td data-day="Tuesday" data-time="9:00"></td><td data-day="Wednesday" data-time="9:00"></td><td data-day="Thursday" data-time="9:00"></td><td data-day="Friday" data-time="9:00"></td><td data-day="Saturday" data-time="9:00"></td></tr>
-            <tr><td class="label">9:30</td><td data-day="Sunday" data-time="9:30"></td><td data-day="Monday" data-time="9:30"></td><td data-day="Tuesday" data-time="9:30"></td><td data-day="Wednesday" data-time="9:30"></td><td data-day="Thursday" data-time="9:30"></td><td data-day="Friday" data-time="9:30"></td><td data-day="Saturday" data-time="9:30"></td></tr>
-            <tr><td class="label">10:00</td><td data-day="Sunday" data-time="10:00"></td><td data-day="Monday" data-time="10:00"></td><td data-day="Tuesday" data-time="10:00"></td><td data-day="Wednesday" data-time="10:00"></td><td data-day="Thursday" data-time="10:00"></td><td data-day="Friday" data-time="10:00"></td><td data-day="Saturday" data-time="10:00"></td></tr>
-            <tr><td class="label">10:30</td><td data-day="Sunday" data-time="10:30"></td><td data-day="Monday" data-time="10:30"></td><td data-day="Tuesday" data-time="10:30"></td><td data-day="Wednesday" data-time="10:30"></td><td data-day="Thursday" data-time="10:30"></td><td data-day="Friday" data-time="10:30"></td><td data-day="Saturday" data-time="10:30"></td></tr>
-            <tr><td class="label">11:00</td><td data-day="Sunday" data-time="11:00"></td><td data-day="Monday" data-time="11:00"></td><td data-day="Tuesday" data-time="11:00"></td><td data-day="Wednesday" data-time="11:00"></td><td data-day="Thursday" data-time="11:00"></td><td data-day="Friday" data-time="11:00"></td><td data-day="Saturday" data-time="11:00"></td></tr>
-            <tr><td class="label">11:30</td><td data-day="Sunday" data-time="11:30"></td><td data-day="Monday" data-time="11:30"></td><td data-day="Tuesday" data-time="11:30"></td><td data-day="Wednesday" data-time="11:30"></td><td data-day="Thursday" data-time="11:30"></td><td data-day="Friday" data-time="11:30"></td><td data-day="Saturday" data-time="11:30"></td></tr>
-            <tr><td class="label">12:00</td><td data-day="Sunday" data-time="12:00"></td><td data-day="Monday" data-time="12:00"></td><td data-day="Tuesday" data-time="12:00"></td><td data-day="Wednesday" data-time="12:00"></td><td data-day="Thursday" data-time="12:00"></td><td data-day="Friday" data-time="12:00"></td><td data-day="Saturday" data-time="12:00"></td></tr>
+            {% for hour in range(7, 24) %}
+              <tr>
+                <td class="label">
+                  {% if hour < 12 %}
+                    {{ hour }}:00 AM
+                  {% elif hour == 12 %}
+                    {{ hour }}:00 PM
+                  {% else %}
+                    {{ hour - 12 }}:00 PM
+                  {% endif %}
+                </td>
+                <td data-day="Sunday" data-time="{{ hour }}:00" data-span="full"><div class="time-cell"><div class="first-half" data-time="{{ hour }}:00"></div><div class="second-half" data-time="{{ hour }}:30"></div></div></td>
+                <td data-day="Monday" data-time="{{ hour }}:00" data-span="full"><div class="time-cell"><div class="first-half" data-time="{{ hour }}:00"></div><div class="second-half" data-time="{{ hour }}:30"></div></div></td>
+                <td data-day="Tuesday" data-time="{{ hour }}:00" data-span="full"><div class="time-cell"><div class="first-half" data-time="{{ hour }}:00"></div><div class="second-half" data-time="{{ hour }}:30"></div></div></td>
+                <td data-day="Wednesday" data-time="{{ hour }}:00" data-span="full"><div class="time-cell"><div class="first-half" data-time="{{ hour }}:00"></div><div class="second-half" data-time="{{ hour }}:30"></div></div></td>
+                <td data-day="Thursday" data-time="{{ hour }}:00" data-span="full"><div class="time-cell"><div class="first-half" data-time="{{ hour }}:00"></div><div class="second-half" data-time="{{ hour }}:30"></div></div></td>
+                <td data-day="Friday" data-time="{{ hour }}:00" data-span="full"><div class="time-cell"><div class="first-half" data-time="{{ hour }}:00"></div><div class="second-half" data-time="{{ hour }}:30"></div></div></td>
+                <td data-day="Saturday" data-time="{{ hour }}:00" data-span="full"><div class="time-cell"><div class="first-half" data-time="{{ hour }}:00"></div><div class="second-half" data-time="{{ hour }}:30"></div></div></td>
+              </tr>
+            {% endfor %}
           </tbody>
         </table>
       </div>
@@ -423,10 +452,10 @@ if (commentEl && counterEl) {
   // Track if availability data has changed
   let availabilityChanged = false;
   
-  // Map table cells to their day/time
+  // Map half-hour cells to their day/time
   const cells = {};
-  document.querySelectorAll('td[data-day][data-time]').forEach(cell => {
-    const day = cell.dataset.day;
+  document.querySelectorAll('.first-half, .second-half').forEach(cell => {
+    const day = cell.closest('td').dataset.day;
     const time = cell.dataset.time;
     if (!cells[day]) cells[day] = {};
     cells[day][time] = cell;
@@ -439,7 +468,7 @@ if (commentEl && counterEl) {
       .then(data => {
         if (data.success) {
           // Clear any existing selections
-          document.querySelectorAll('td.selected').forEach(cell => {
+          document.querySelectorAll('.first-half.selected, .second-half.selected').forEach(cell => {
             cell.classList.remove('selected');
           });
           
@@ -467,8 +496,8 @@ if (commentEl && counterEl) {
     
     // Collect all selected times
     const availability = {};
-    document.querySelectorAll('td.selected').forEach(cell => {
-      const day = cell.dataset.day;
+    document.querySelectorAll('.first-half.selected, .second-half.selected').forEach(cell => {
+      const day = cell.closest('td').dataset.day;
       const time = cell.dataset.time;
       
       if (!availability[day]) {
@@ -511,7 +540,7 @@ if (commentEl && counterEl) {
   // Handle interaction only if user can edit (own profile)
   if (isOwnProfile) {
     table.addEventListener('mousedown', e => {
-      if (e.target.tagName === 'TD' && !e.target.classList.contains('label') && e.target.hasAttribute('data-day')) {
+      if ((e.target.classList.contains('first-half') || e.target.classList.contains('second-half'))) {
         down = true;
         adding = !e.target.classList.contains('selected');
         toggle(e.target);
@@ -521,7 +550,7 @@ if (commentEl && counterEl) {
     });
     
     table.addEventListener('mouseover', e => {
-      if (down && e.target.tagName === 'TD' && !e.target.classList.contains('label') && e.target.hasAttribute('data-day')) {
+      if (down && (e.target.classList.contains('first-half') || e.target.classList.contains('second-half'))) {
         toggle(e.target);
         availabilityChanged = true;
         updateSaveButton();
@@ -538,7 +567,7 @@ if (commentEl && counterEl) {
     }
   } else {
     // Make cells non-interactive for viewers
-    table.querySelectorAll('td').forEach(cell => {
+    table.querySelectorAll('.first-half, .second-half').forEach(cell => {
       cell.style.cursor = 'default';
     });
   }
