@@ -14,6 +14,9 @@ def get_image_filename(title, ext='jpg'):
     """
     return re.sub(r'\W+', '', title.lower()) + f".{ext}"
 
+# Path to your images folder - using relative path based on script location
+image_folder = os.path.join(os.path.dirname(__file__), "images")
+
 db_name = input("Enter the name of the database to connect to: ").strip()
 
 # Database connection config
@@ -74,9 +77,6 @@ sample_products = [
     ('Hoodie', 'Gray hoodie, fleece-lined.', 35.00, 'Clothing', 'alice@example.com', 'Good Condition'),
     ('Sneakers', 'Nike running shoes, size 10.', 60.00, 'Clothing', 'bob@example.com', 'Used')
 ]
-
-# Path to your images folder
-image_folder = "/home/sid/Code/csc648-fa25-0104-team15/db/images"  # Update if needed
 
 try:
     cnx = db  # using our already created connection
