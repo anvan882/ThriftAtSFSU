@@ -11,6 +11,7 @@ import json   # Added for parsing AI response
 from decimal import Decimal # Import Decimal for accurate price handling
 from openai import OpenAI # Added for OpenAI API call
 from flask_socketio import SocketIO, emit, join_room, leave_room
+import math
 
 load_dotenv()
 
@@ -182,6 +183,10 @@ def home():
         price_range = cursor.fetchone()
         min_db_price = price_range.get('min_price', 0) or 0 # Default to 0 if None or 0
         max_db_price = price_range.get('max_price', 2000) or 2000 # Default to 2000 if None or 0
+        
+        # Round up max_db_price to avoid truncation issues
+        # This prevents issues where 1399 might be shown as 1398.01 due to floating point precision
+        max_db_price = math.ceil(max_db_price)
 
         # --- Determine filter defaults ---
         # Default min_price filter to actual min_db_price
@@ -196,10 +201,19 @@ def home():
             min_price = default_min_filter
             
         try:
-            max_price = float(max_price_str) if max_price_str else default_max_filter
+            # For max_price, if the string is empty (not provided in URL), use default_max_filter
+            if not max_price_str:
+                max_price = default_max_filter
+                # Print debug info for default max value
+                print(f"DEBUG - Using default max_price: {max_price}")
+            else:
+                max_price = float(max_price_str)
+                # Print debug info for explicit max value
+                print(f"DEBUG - Using explicit max_price from URL: {max_price}")
         except (ValueError, TypeError):
             max_price = default_max_filter
-            
+            print(f"DEBUG - Using default max_price after error: {max_price}")
+
         try:
             rating = float(rating_str) if rating_str else None
         except (ValueError, TypeError):
@@ -233,10 +247,17 @@ def home():
             "(%s = '' OR c.name = %s)",
             "(p.title LIKE %s OR p.description LIKE %s)",
             "p.status = 'available'",
-            "p.price >= %s",
-            "p.price <= %s"
+            "p.price >= %s"
         ]
-        params.extend([category, category, f"%{keyword}%", f"%{keyword}%", min_price, max_price])
+        params = [category, category, f"%{keyword}%", f"%{keyword}%", min_price]
+        
+        # For max price, ensure we're using the ceiling to include all items
+        # Use CEILING in SQL to avoid floating point precision issues
+        where_clauses.append("p.price <= CEILING(%s)")
+        params.append(max_price)
+        
+        # Log the actual values for debugging
+        print(f"DEBUG - Price filter values: min={min_price}, max={max_price}, max_db_price={max_db_price}")
 
         # Add condition filter if selected
         condition_param = None
@@ -598,6 +619,54 @@ def update_bio():
         return jsonify({'success': False, 'message': 'Database error updating bio.'}), 500
     except Exception as e:
         print(f"Unexpected error updating bio for user {user_id}: {e}")
+        if connection: connection.rollback()
+        return jsonify({'success': False, 'message': 'An unexpected error occurred.'}), 500
+    finally:
+        if cursor: cursor.close()
+        if connection and connection.is_connected(): connection.close()
+
+@app.route('/profile/update_profile_picture', methods=['POST'])
+@login_required
+def update_profile_picture():
+    user_id = session['user_id']
+    
+    # Check if profile picture was included in the request
+    if 'profile_picture' not in request.files:
+        return jsonify({'success': False, 'message': 'No profile picture provided.'}), 400
+    
+    profile_picture = request.files['profile_picture']
+    
+    # Check if a file was selected
+    if profile_picture.filename == '':
+        return jsonify({'success': False, 'message': 'No file selected.'}), 400
+    
+    # Check file type (simple check based on extension)
+    allowed_extensions = {'png', 'jpg', 'jpeg'}
+    if '.' not in profile_picture.filename or \
+       profile_picture.filename.rsplit('.', 1)[1].lower() not in allowed_extensions:
+        return jsonify({'success': False, 'message': 'Invalid file type. Please use PNG, JPG, or JPEG.'}), 400
+    
+    # Read the file content
+    picture_blob = profile_picture.read()
+    
+    connection = None
+    cursor = None
+    try:
+        connection = cnxpool.get_connection()
+        cursor = connection.cursor()
+        
+        # Update the profile picture
+        cursor.execute("UPDATE Users SET profile_picture = %s WHERE user_id = %s", (picture_blob, user_id))
+        connection.commit()
+        
+        return jsonify({'success': True, 'message': 'Profile picture updated successfully!'})
+        
+    except Error as db_err:
+        print(f"Database error updating profile picture for user {user_id}: {db_err}")
+        if connection: connection.rollback()
+        return jsonify({'success': False, 'message': 'Database error updating profile picture.'}), 500
+    except Exception as e:
+        print(f"Unexpected error updating profile picture for user {user_id}: {e}")
         if connection: connection.rollback()
         return jsonify({'success': False, 'message': 'An unexpected error occurred.'}), 500
     finally:
@@ -1820,6 +1889,69 @@ def update_product_description():
         return jsonify({'success': False, 'message': 'Database error occurred'}), 500
     except Exception as e:
         print(f"Error updating product description: {e}")
+        return jsonify({'success': False, 'message': 'An unexpected error occurred'}), 500
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
+
+@app.route('/update_product_title', methods=['POST'])
+def update_product_title():
+    """Update a product's title via AJAX"""
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'message': 'You must be logged in to perform this action'}), 401
+    
+    user_id = session['user_id']
+    title = request.form.get('title', '').strip()
+    product_id = request.form.get('product_id')
+    
+    if not title:
+        return jsonify({'success': False, 'message': 'Title cannot be empty'}), 400
+    
+    if not product_id:
+        return jsonify({'success': False, 'message': 'Product ID is required'}), 400
+    
+    try:
+        product_id = int(product_id)
+    except ValueError:
+        return jsonify({'success': False, 'message': 'Invalid product ID'}), 400
+    
+    connection = None
+    cursor = None
+    
+    try:
+        connection = cnxpool.get_connection()
+        cursor = connection.cursor(dictionary=True)
+        
+        # First check if the current user is the owner of the product
+        cursor.execute(
+            "SELECT seller_id FROM Products WHERE product_id = %s",
+            (product_id,)
+        )
+        product = cursor.fetchone()
+        
+        if not product:
+            return jsonify({'success': False, 'message': 'Product not found'}), 404
+        
+        if product['seller_id'] != user_id:
+            return jsonify({'success': False, 'message': 'You do not have permission to edit this product'}), 403
+        
+        # Update the product title
+        cursor.execute(
+            "UPDATE Products SET title = %s WHERE product_id = %s",
+            (title, product_id)
+        )
+        
+        connection.commit()
+        
+        return jsonify({'success': True, 'message': 'Title updated successfully'})
+        
+    except Error as db_err:
+        print(f"Database error updating product title: {db_err}")
+        return jsonify({'success': False, 'message': 'Database error occurred'}), 500
+    except Exception as e:
+        print(f"Error updating product title: {e}")
         return jsonify({'success': False, 'message': 'An unexpected error occurred'}), 500
     finally:
         if cursor:

@@ -20,6 +20,65 @@
 .containerFixed {
   overflow-y: auto !important; /* Override any existing styles */
   max-height: calc(100vh - 150px) !important; /* Account for header space */
+  position: relative; /* Added for absolute positioning of toggle button */
+  transition: width 0.5s ease, opacity 0.5s ease;
+  width: 280px; /* Wider filters pane */
+  opacity: 1;
+}
+
+.containerFixed.collapsed {
+  width: 0;
+  opacity: 0;
+  overflow: hidden;
+}
+
+.containerGrid {
+  display: grid;
+  grid-template-columns: 280px 1fr; /* Match the wider filters pane */
+  gap: 20px;
+  transition: grid-template-columns 0.5s ease;
+}
+
+.containerGrid.filters-collapsed {
+  grid-template-columns: 0 1fr; /* Collapsed grid */
+}
+
+/* Vertical Filters Toggle Button */
+.vertical-toggle-btn {
+  position: absolute;
+  left: 280px; /* Position it at the right edge of the wider filters container */
+  top: 36px; /* Lower the position */
+  width: 25px; /* Slightly wider for text */
+  height: 90px;
+  background: var(--purple);
+  border: none;
+  border-radius: 0 8px 8px 0;
+  color: white;
+  cursor: pointer;
+  z-index: 1000; /* Higher z-index to ensure it's clickable */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: left 0.5s ease;
+}
+
+/* No transition class for initial state */
+.no-transition {
+  transition: none !important;
+}
+
+.vertical-toggle-btn .filter-text {
+  transform: rotate(-90deg);
+  white-space: nowrap;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+/* When filters are collapsed, move the button to the left edge */
+.containerGrid.filters-collapsed .vertical-toggle-btn {
+  left: 0;
 }
 
 /* Price Range Slider */
@@ -149,6 +208,21 @@ input[type=date]{
   display: block; /* Ensure link takes up space for positioning */
   position: relative;
 }
+
+/* Add styles for the product title and price */
+.product-title {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 5px;
+}
+
+.product-price {
+  display: block;
+  margin-bottom: 10px; /* Add padding between price and image */
+  font-weight: 600;
+  font-size: 1em; /* Match the size of regular text */
+}
 </style>
 {% endblock %}
 
@@ -156,6 +230,11 @@ input[type=date]{
 <section style="display: flex; justify-content: center;">
   <div class="containerGrid">
 
+    <!-- Move the toggle button outside the filters container -->
+    <button id="toggleFiltersBtn" class="vertical-toggle-btn">
+      <span class="filter-text">Filters</span>
+    </button>
+    
     <!-- Filters Sidebar -->
     <div class="containerFixed" id="filtersContainer">
       <div class="filters">
@@ -238,7 +317,8 @@ input[type=date]{
                 </button>
             {% endif %}
             <a href="{{ url_for('product_detail', product_id=item.product_id) }}" class="product-card-link">
-                <h3 class="product-title">{{ item.title }} — ${{ "%.2f"|format(item.price) }}</h3>
+                <h3 class="product-title">{{ item.title }}</h3>
+                <span class="product-price">${{ "%.2f"|format(item.price) }}</span>
                 {# Check if first_image_id exists and is not None #}
                 {% if item.first_image_id %}
                 <img src="{{ url_for('serve_image', image_id=item.first_image_id) }}" alt="{{ item.title }}"
@@ -262,36 +342,69 @@ input[type=date]{
 {% block scripts %}
 {{ super() }} {# Include scripts from base.html (e.g., flash message hider) #}
 
-<!-- Filter toggle (submenu provides the button when show_filters=True) -->
+<!-- Filter toggle script -->
 <script>
-  const toggleBtn = document.getElementById('toggleFiltersBtn');
-  const filtersContainer = document.getElementById('filtersContainer');
-  const gridContainer = document.querySelector('.containerGrid');
-  const animationDelay = 400; // ms, slightly less than CSS transition duration (500ms)
-
-  toggleBtn?.addEventListener('click', () => {
-    const isCurrentlyCollapsed = filtersContainer.classList.contains('collapsed');
-
-    // Toggle button active state immediately
-    toggleBtn.classList.toggle('active');
-
-    if (isCurrentlyCollapsed) {
-      // === Expand Sequence ===
-      // 1. Start grid expanding (remove class)
-      gridContainer?.classList.remove('filters-collapsed');
-      // 2. Wait, then start filter expansion (remove class)
-      setTimeout(() => {
-        filtersContainer.classList.remove('collapsed');
-      }, animationDelay);
-    } else {
-      // === Collapse Sequence ===
-      // 1. Start filter collapsing (add class)
+  document.addEventListener('DOMContentLoaded', () => {
+    const toggleBtn = document.getElementById('toggleFiltersBtn');
+    const filtersContainer = document.getElementById('filtersContainer');
+    const gridContainer = document.querySelector('.containerGrid');
+    const animationDelay = 400; // ms, slightly less than CSS transition duration (500ms)
+    
+    // Apply no-transition class on page load
+    gridContainer.classList.add('no-transition');
+    filtersContainer.classList.add('no-transition');
+    toggleBtn.classList.add('no-transition');
+    
+    // Check localStorage for saved state (default to expanded/false if not set)
+    const shouldBeCollapsed = localStorage.getItem('filtersCollapsed') === 'true';
+    
+    // Set initial state
+    if (shouldBeCollapsed) {
+      // Initial collapsed state without animation
       filtersContainer.classList.add('collapsed');
-      // 2. Wait, then start grid collapsing (add class)
-      setTimeout(() => {
-        gridContainer?.classList.add('filters-collapsed');
-      }, animationDelay);
+      gridContainer.classList.add('filters-collapsed');
+      toggleBtn.classList.add('active');
     }
+    
+    // Remove no-transition class after a short delay to enable animations for user interactions
+    setTimeout(() => {
+      gridContainer.classList.remove('no-transition');
+      filtersContainer.classList.remove('no-transition');
+      toggleBtn.classList.remove('no-transition');
+    }, 50);
+  
+    toggleBtn.addEventListener('click', () => {
+      const isCurrentlyCollapsed = filtersContainer.classList.contains('collapsed');
+  
+      // Toggle button active state
+      toggleBtn.classList.toggle('active');
+  
+      if (isCurrentlyCollapsed) {
+        // === Expand Sequence ===
+        // Start grid expanding (remove class)
+        gridContainer.classList.remove('filters-collapsed');
+        
+        // Wait, then start filter expansion (remove class)
+        setTimeout(() => {
+          filtersContainer.classList.remove('collapsed');
+        }, animationDelay);
+        
+        // Save state to localStorage
+        localStorage.setItem('filtersCollapsed', 'false');
+      } else {
+        // === Collapse Sequence ===
+        // Start filter collapsing (add class)
+        filtersContainer.classList.add('collapsed');
+        
+        // Wait, then start grid collapsing (add class)
+        setTimeout(() => {
+          gridContainer.classList.add('filters-collapsed');
+        }, animationDelay);
+        
+        // Save state to localStorage
+        localStorage.setItem('filtersCollapsed', 'true');
+      }
+    });
   });
 </script>
 
@@ -321,8 +434,9 @@ input[type=date]{
     fill.style.left  = minPct + '%';
     fill.style.width = (maxPct-minPct) + '%';
 
-    vMin.textContent = `$ ${minR.value}`;
-    vMax.textContent = `$ ${maxR.value}`;
+    // Format prices with proper rounding
+    vMin.textContent = `$ ${Math.floor(minR.value)}`;
+    vMax.textContent = `$ ${Math.ceil(maxR.value)}`;
   }
   [minR,maxR].forEach(i => i.addEventListener('input',update));
   update();
@@ -385,6 +499,14 @@ input[type=date]{
     const minPrice = minR.value;
     const maxPrice = maxR.value;
     
+    // Log values for debugging
+    console.log("Filter Values (before apply):", {
+      minPrice: minPrice,
+      maxPrice: maxPrice,
+      minRange: minR.min,
+      maxRange: maxR.max
+    });
+    
     // Get selected condition
     let condition = '';
     document.querySelectorAll('input[name="condition"]').forEach(r => {
@@ -407,8 +529,14 @@ input[type=date]{
     if (minPrice !== minR.min) queryParams.set('min_price', minPrice);
     else queryParams.delete('min_price');
     
-    if (maxPrice !== maxR.max) queryParams.set('max_price', maxPrice);
-    else queryParams.delete('max_price');
+    // For max price, make sure we're using the actual value
+    // Force floating point for better handling of max value
+    if (parseFloat(maxPrice) < parseFloat(maxR.max)) {
+      queryParams.set('max_price', maxPrice);
+    } else {
+      // If at max range, don't set max_price param to ensure we use full range
+      queryParams.delete('max_price');
+    }
     
     if (condition) queryParams.set('condition', condition);
     else queryParams.delete('condition');
