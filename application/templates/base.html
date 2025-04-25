@@ -10,6 +10,14 @@
 </head>
 
 <body>
+  <div id="viewport-warning" class="viewport-warning">
+    <div class="viewport-warning-content">
+      <h3>Aspect Ratio Unsupported</h3>
+      <p>This site is optimized for larger screens (minimum width 1250px).</p>
+      <p>Do you wish to proceed anyway?</p>
+      <button id="proceed-anyway" class="btn">Proceed Anyway</button>
+    </div>
+  </div>
 
   {# --- Global Flash Messages --- #}
   {% with messages = get_flashed_messages(with_categories=true) %}
@@ -103,6 +111,49 @@
         
         // Run when selection changes
         categorySelector.addEventListener('change', adjustSelectWidth);
+      }
+
+      // ===== Viewport Warning =====
+      const viewportWarning = document.getElementById('viewport-warning');
+      const proceedButton = document.getElementById('proceed-anyway');
+      const pageContent = document.body;
+      
+      // Function to check viewport width and show/hide warning
+      function checkViewport() {
+        if (window.innerWidth < 1250) {
+          viewportWarning.classList.add('active');
+          pageContent.classList.add('blurred');
+          document.documentElement.style.overflow = 'hidden';
+        } else {
+          viewportWarning.classList.remove('active');
+          pageContent.classList.remove('blurred');
+          document.documentElement.style.overflow = '';
+        }
+      }
+      
+      // Check on page load
+      checkViewport();
+      
+      // Check on window resize
+      window.addEventListener('resize', checkViewport);
+      
+      // Handle "Proceed Anyway" button click
+      if (proceedButton) {
+        proceedButton.addEventListener('click', function() {
+          viewportWarning.classList.remove('active');
+          pageContent.classList.remove('blurred');
+          document.documentElement.style.overflow = '';
+          
+          // Store user preference in session storage
+          sessionStorage.setItem('proceedAnyway', 'true');
+        });
+      }
+      
+      // Check if user has already chosen to proceed
+      if (sessionStorage.getItem('proceedAnyway') === 'true') {
+        viewportWarning.classList.remove('active');
+        pageContent.classList.remove('blurred');
+        document.documentElement.style.overflow = '';
       }
     });
   </script>
