@@ -43,10 +43,15 @@
   grid-template-columns: 0 1fr; /* Collapsed grid */
 }
 
+/* Filters container wrapper */
+.filters-wrapper {
+  position: relative; /* Added to contain both filters and toggle button */
+}
+
 /* Vertical Filters Toggle Button */
 .vertical-toggle-btn {
   position: absolute;
-  left: 280px; /* Position it at the right edge of the wider filters container */
+  right: -25px; /* Position it at the right edge of filters container */
   top: 36px; /* Lower the position */
   width: 25px; /* Slightly wider for text */
   height: 90px;
@@ -59,7 +64,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: left 0.5s ease;
+  transition: right 0.5s ease; /* Changed from left to right for relative positioning */
 }
 
 /* No transition class for initial state */
@@ -74,11 +79,6 @@
   font-weight: 600;
   letter-spacing: 1px;
   text-transform: uppercase;
-}
-
-/* When filters are collapsed, move the button to the left edge */
-.containerGrid.filters-collapsed .vertical-toggle-btn {
-  left: 0;
 }
 
 /* Price Range Slider */
@@ -229,56 +229,57 @@ input[type=date]{
 {% block content %}
 <section style="display: flex; justify-content: center;">
   <div class="containerGrid">
-
-    <!-- Move the toggle button outside the filters container -->
-    <button id="toggleFiltersBtn" class="vertical-toggle-btn">
-      <span class="filter-text">Filters</span>
-    </button>
     
-    <!-- Filters Sidebar -->
-    <div class="containerFixed" id="filtersContainer">
-      <div class="filters">
+    <!-- Filters Sidebar with toggle button inside wrapper -->
+    <div class="filters-wrapper">
+      <div class="containerFixed" id="filtersContainer">
+        <div class="filters">
+          <!-- Price Range -->
+          <h4>Price Range</h4>
+          <div class="slider-wrap">
+            <div class="track"></div>
+            <div class="fill" id="fill"></div>
+            <input type="range" id="min" min="{{ min_db_price }}" max="{{ max_db_price }}" step="1" value="{{ min_price }}">
+            <input type="range" id="max" min="{{ min_db_price }}" max="{{ max_db_price }}" step="1" value="{{ max_price }}">
+          </div>
+          <div class="values"><span id="vmin">$ {{ min_price }}</span><span id="vmax">$ {{ max_price }}</span></div>
 
-        <!-- Price Range -->
-        <h4>Price Range</h4>
-        <div class="slider-wrap">
-          <div class="track"></div>
-          <div class="fill" id="fill"></div>
-          <input type="range" id="min" min="{{ min_db_price }}" max="{{ max_db_price }}" step="1" value="{{ min_price }}">
-          <input type="range" id="max" min="{{ min_db_price }}" max="{{ max_db_price }}" step="1" value="{{ max_price }}">
-        </div>
-        <div class="values"><span id="vmin">$ {{ min_price }}</span><span id="vmax">$ {{ max_price }}</span></div>
+          <!-- Condition -->
+          <h4 style="margin-top:25px;">Condition</h4>
+          <div class="radio-group">
+            <label><input type="radio" name="condition" value="very-worn"><span>Very Worn</span></label>
+            <label><input type="radio" name="condition" value="used"><span>Used</span></label>
+            <label><input type="radio" name="condition" value="fairly-used"><span>Fairly Used</span></label>
+            <label><input type="radio" name="condition" value="good-condition"><span>Good Condition</span></label>
+            <label><input type="radio" name="condition" value="great-condition"><span>Great Condition</span></label>
+          </div>
 
-        <!-- Condition -->
-        <h4 style="margin-top:25px;">Condition</h4>
-        <div class="radio-group">
-          <label><input type="radio" name="condition" value="very-worn"><span>Very Worn</span></label>
-          <label><input type="radio" name="condition" value="used"><span>Used</span></label>
-          <label><input type="radio" name="condition" value="fairly-used"><span>Fairly Used</span></label>
-          <label><input type="radio" name="condition" value="good-condition"><span>Good Condition</span></label>
-          <label><input type="radio" name="condition" value="great-condition"><span>Great Condition</span></label>
-        </div>
+          <!-- Seller Rating -->
+          <h4 style="margin-top:25px;">Seller Rating</h4>
+          <div class="new-stars">
+            <input type="radio" id="s5" name="rating" value="5"><label for="s5">&#9733;</label>
+            <input type="radio" id="s4" name="rating" value="4"><label for="s4">&#9733;</label>
+            <input type="radio" id="s3" name="rating" value="3"><label for="s3">&#9733;</label>
+            <input type="radio" id="s2" name="rating" value="2"><label for="s2">&#9733;</label>
+            <input type="radio" id="s1" name="rating" value="1"><label for="s1">&#9733;</label>
+          </div>
 
-        <!-- Seller Rating -->
-        <h4 style="margin-top:25px;">Seller Rating</h4>
-        <div class="new-stars">
-          <input type="radio" id="s5" name="rating" value="5"><label for="s5">&#9733;</label>
-          <input type="radio" id="s4" name="rating" value="4"><label for="s4">&#9733;</label>
-          <input type="radio" id="s3" name="rating" value="3"><label for="s3">&#9733;</label>
-          <input type="radio" id="s2" name="rating" value="2"><label for="s2">&#9733;</label>
-          <input type="radio" id="s1" name="rating" value="1"><label for="s1">&#9733;</label>
-        </div>
+          <!-- Posted Since -->
+          <h4 style="margin-top:25px;">Posted After</h4>
+          <input type="date" id="postedDate">
 
-        <!-- Posted Since -->
-        <h4 style="margin-top:25px;">Posted After</h4>
-        <input type="date" id="postedDate">
-
-        <!-- Filter Buttons -->
-        <div class="filter-buttons">
-          <button class="apply-button" id="applyFilters">Apply</button>
-          <button class="clear-button" id="clearFilters">Clear all</button>
+          <!-- Filter Buttons -->
+          <div class="filter-buttons">
+            <button class="apply-button" id="applyFilters">Apply</button>
+            <button class="clear-button" id="clearFilters">Clear all</button>
+          </div>
         </div>
       </div>
+      
+      <!-- Toggle button inside wrapper so it moves with the filters -->
+      <button id="toggleFiltersBtn" class="vertical-toggle-btn">
+        <span class="filter-text">Filters</span>
+      </button>
     </div>
 
     <!-- Search Results -->
@@ -347,12 +348,13 @@ input[type=date]{
   document.addEventListener('DOMContentLoaded', () => {
     const toggleBtn = document.getElementById('toggleFiltersBtn');
     const filtersContainer = document.getElementById('filtersContainer');
+    const filtersWrapper = document.querySelector('.filters-wrapper');
     const gridContainer = document.querySelector('.containerGrid');
-    const animationDelay = 400; // ms, slightly less than CSS transition duration (500ms)
     
     // Apply no-transition class on page load
     gridContainer.classList.add('no-transition');
     filtersContainer.classList.add('no-transition');
+    filtersWrapper.classList.add('no-transition');
     toggleBtn.classList.add('no-transition');
     
     // Check localStorage for saved state (default to expanded/false if not set)
@@ -370,6 +372,7 @@ input[type=date]{
     setTimeout(() => {
       gridContainer.classList.remove('no-transition');
       filtersContainer.classList.remove('no-transition');
+      filtersWrapper.classList.remove('no-transition');
       toggleBtn.classList.remove('no-transition');
     }, 50);
   
@@ -381,25 +384,17 @@ input[type=date]{
   
       if (isCurrentlyCollapsed) {
         // === Expand Sequence ===
-        // Start grid expanding (remove class)
+        // Expand both grid and filters at the same time
+        filtersContainer.classList.remove('collapsed');
         gridContainer.classList.remove('filters-collapsed');
-        
-        // Wait, then start filter expansion (remove class)
-        setTimeout(() => {
-          filtersContainer.classList.remove('collapsed');
-        }, animationDelay);
         
         // Save state to localStorage
         localStorage.setItem('filtersCollapsed', 'false');
       } else {
         // === Collapse Sequence ===
-        // Start filter collapsing (add class)
+        // Collapse both grid and filters at the same time
         filtersContainer.classList.add('collapsed');
-        
-        // Wait, then start grid collapsing (add class)
-        setTimeout(() => {
-          gridContainer.classList.add('filters-collapsed');
-        }, animationDelay);
+        gridContainer.classList.add('filters-collapsed');
         
         // Save state to localStorage
         localStorage.setItem('filtersCollapsed', 'true');
@@ -410,35 +405,159 @@ input[type=date]{
 
 <!-- Price range slider script from newFilters.html -->
 <script>
-  /* -------- price slider -------- */
+  /* -------- price slider with conditional logarithmic/linear scale -------- */
   const minR = document.getElementById('min'),
         maxR = document.getElementById('max'),
         fill  = document.getElementById('fill'),
         vMin  = document.getElementById('vmin'),
-        vMax  = document.getElementById('vmax'),
-        STEP  = +minR.step || 0;
+        vMax  = document.getElementById('vmax');
+
+  // Get min/max values from the sliders (from backend)
+  const minDbPrice = parseFloat(minR.min);
+  const maxDbPrice = parseFloat(maxR.max);
+  
+  // Debugging to verify we have correct values
+  console.log("Slider DB values:", {minDbPrice, maxDbPrice});
+  
+  // Set slider step to 1 for smoother movement
+  minR.step = "1";
+  maxR.step = "1";
+  
+  // Determine if we should use logarithmic scale (only if max price > 3000)
+  const useLogarithmic = maxDbPrice > 3000;
+  console.log(`Using ${useLogarithmic ? 'logarithmic' : 'linear'} slider (max price: ${maxDbPrice})`);
+  
+  // For sliders, internally use 0-100 range for simplicity
+  const SLIDER_MIN = 0;
+  const SLIDER_MAX = 100;
+  
+  // Function to convert slider percentage (0-100) to price value
+  function percentToPrice(percent, minVal, maxVal) {
+    // Ensure percent is within 0-100 range
+    percent = Math.max(0, Math.min(100, percent));
+    
+    if (!useLogarithmic) {
+      // Simple linear mapping
+      return minVal + (percent / 100) * (maxVal - minVal);
+    } else {
+      // Early returns for extremes
+      if (percent <= 0) return minVal;
+      if (percent >= 100) return maxVal;
+      
+      // COMPLETELY DIFFERENT APPROACH:
+      // Use a power function approach instead of logarithmic
+      // This gives more control over the curve shape
+      
+      // For a wide price range (0-5000+), a power between 2-3 works well
+      const power = 2.5;
+      
+      // Calculate normalized value with power function
+      // This makes lower slider values increase faster than higher values
+      const normalizedValue = Math.pow(percent / 100, power);
+      
+      // Apply this to the price range
+      return minVal + normalizedValue * (maxVal - minVal);
+    }
+  }
+  
+  // Function to convert price to slider percentage (0-100)
+  function priceToPercent(price, minVal, maxVal) {
+    // Ensure price is within valid range
+    price = Math.max(minVal, Math.min(maxVal, price));
+    
+    if (!useLogarithmic) {
+      // Simple linear mapping
+      return ((price - minVal) / (maxVal - minVal)) * 100;
+    } else {
+      // Early returns for extremes
+      if (price <= minVal) return 0;
+      if (price >= maxVal) return 100;
+      
+      // Inverse of the power function used in percentToPrice
+      const power = 2.5;
+      
+      // Calculate normalized price position
+      const normalizedPrice = (price - minVal) / (maxVal - minVal);
+      
+      // Apply inverse power function
+      return Math.pow(normalizedPrice, 1/power) * 100;
+    }
+  }
+  
+  // Function to set a slider to a specific price
+  function setSliderToPrice(slider, price, minVal, maxVal) {
+    // Convert price to percent
+    const percent = priceToPercent(price, minVal, maxVal);
+    
+    // Normalize percent to slider range
+    const sliderVal = SLIDER_MIN + ((SLIDER_MAX - SLIDER_MIN) * (percent / 100));
+    
+    // Set slider value
+    slider.value = sliderVal;
+  }
 
   // Initialize slider values from URL parameters or backend values
   const urlParams = new URLSearchParams(window.location.search);
-  minR.value = urlParams.get('min_price') || '{{ min_price }}';
-  maxR.value = urlParams.get('max_price') || '{{ max_price }}';
+  
+  // Parse the initial values from backend
+  const initialMinPrice = urlParams.get('min_price') ? parseFloat(urlParams.get('min_price')) : minDbPrice;
+  const initialMaxPrice = urlParams.get('max_price') ? parseFloat(urlParams.get('max_price')) : maxDbPrice;
+  
+  // Override HTML min/max values with our 0-100 scale
+  minR.min = SLIDER_MIN;
+  minR.max = SLIDER_MAX;
+  maxR.min = SLIDER_MIN;
+  maxR.max = SLIDER_MAX;
+  
+  // Set the initial slider positions based on prices
+  setSliderToPrice(minR, initialMinPrice, minDbPrice, maxDbPrice);
+  setSliderToPrice(maxR, initialMaxPrice, minDbPrice, maxDbPrice);
 
-  function update(){
-    /* keep thumbs at least one step apart */
-    if(+minR.value > +maxR.value-STEP) minR.value = +maxR.value-STEP;
-    if(+maxR.value < +minR.value+STEP) maxR.value = +minR.value+STEP;
+  // Main update function for the sliders
+  function update() {
+    // Get current slider positions (0-100 scale)
+    const minPos = parseFloat(minR.value);
+    const maxPos = parseFloat(maxR.value);
+    
+    // Ensure min doesn't exceed max
+    if (minPos >= maxPos) {
+      minR.value = Math.max(SLIDER_MIN, maxPos - 1);
+    }
+    
+    // Convert slider positions to prices
+    const minPrice = percentToPrice(minPos, minDbPrice, maxDbPrice);
+    const maxPrice = percentToPrice(maxPos, minDbPrice, maxDbPrice);
+    
+    // DEBUG - Log all values to diagnose issues
+    console.log("Slider update:", {
+      minPos, maxPos,
+      minPrice, maxPrice,
+      sliderMax: maxR.max,
+      sliderMaxValue: maxR.value,
+      isAtMax: maxPos >= SLIDER_MAX - 0.1
+    });
+    
+    // Update fill visualization
+    const minPct = (minPos / SLIDER_MAX) * 100;
+    const maxPct = (maxPos / SLIDER_MAX) * 100;
+    fill.style.left = minPct + '%';
+    fill.style.width = (maxPct - minPct) + '%';
 
-    const rng = +maxR.max - +maxR.min;
-    const minPct = (+minR.value - minR.min)/rng*100;
-    const maxPct = (+maxR.value - maxR.min)/rng*100;
-    fill.style.left  = minPct + '%';
-    fill.style.width = (maxPct-minPct) + '%';
-
-    // Format prices with proper rounding
-    vMin.textContent = `$ ${Math.floor(minR.value)}`;
-    vMax.textContent = `$ ${Math.ceil(maxR.value)}`;
+    // Format prices
+    vMin.textContent = `$ ${Math.floor(minPrice)}`;
+    
+    // Special handling for max price - ALWAYS show max DB price when slider is at max
+    if (maxPos >= SLIDER_MAX - 0.1) { // Tolerance for being at max
+      vMax.textContent = `$ ${Math.ceil(maxDbPrice)}`;
+    } else {
+      vMax.textContent = `$ ${Math.ceil(maxPrice)}`;
+    }
   }
-  [minR,maxR].forEach(i => i.addEventListener('input',update));
+  
+  // Add input event listeners to both sliders
+  [minR, maxR].forEach(i => i.addEventListener('input', update));
+  
+  // Initial update to set display values
   update();
 
   // Set condition radio button based on URL parameter
@@ -463,10 +582,10 @@ input[type=date]{
 
   /* -------- clear all button -------- */
   document.getElementById('clearFilters').addEventListener('click', () => {
-    /* reset slider to DB min/max */
-    minR.value = minR.min;
-    maxR.value = maxR.max;
-    update(); // Visually update slider
+    // Reset sliders to min/max
+    minR.value = SLIDER_MIN;
+    maxR.value = SLIDER_MAX;
+    update(); // Update visual display
 
     /* uncheck condition radios */
     document.querySelectorAll('input[name="condition"]').forEach(r=>r.checked=false);
@@ -495,16 +614,19 @@ input[type=date]{
   
   /* -------- apply filters button -------- */
   document.getElementById('applyFilters').addEventListener('click', () => {
-    // Get values from filters
-    const minPrice = minR.value;
-    const maxPrice = maxR.value;
+    // Get price values from slider positions
+    const minPercent = parseFloat(minR.value);
+    const maxPercent = parseFloat(maxR.value);
+    
+    const minPrice = percentToPrice(minPercent, minDbPrice, maxDbPrice);
+    const maxPrice = percentToPrice(maxPercent, minDbPrice, maxDbPrice);
     
     // Log values for debugging
-    console.log("Filter Values (before apply):", {
-      minPrice: minPrice,
-      maxPrice: maxPrice,
-      minRange: minR.min,
-      maxRange: maxR.max
+    console.log("Apply filters:", {
+      minPercent, maxPercent,
+      minPrice, maxPrice,
+      isMinAtMin: minPercent <= 0.1,
+      isMaxAtMax: maxPercent >= 99.9
     });
     
     // Get selected condition
@@ -525,16 +647,17 @@ input[type=date]{
     // Create query string with filter parameters
     let queryParams = new URLSearchParams(window.location.search);
     
-    // Only set price if it's different from the default DB range
-    if (minPrice !== minR.min) queryParams.set('min_price', minPrice);
-    else queryParams.delete('min_price');
-    
-    // For max price, make sure we're using the actual value
-    // Force floating point for better handling of max value
-    if (parseFloat(maxPrice) < parseFloat(maxR.max)) {
-      queryParams.set('max_price', maxPrice);
+    // Only set min price if slider isn't at minimum
+    if (minPercent > 0.1) {
+      queryParams.set('min_price', Math.floor(minPrice));
     } else {
-      // If at max range, don't set max_price param to ensure we use full range
+      queryParams.delete('min_price');
+    }
+    
+    // Only set max price if slider isn't at maximum
+    if (maxPercent < 99.9) {
+      queryParams.set('max_price', Math.ceil(maxPrice));
+    } else {
       queryParams.delete('max_price');
     }
     

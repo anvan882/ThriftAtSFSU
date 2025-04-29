@@ -285,6 +285,9 @@ def home():
         
         query += " WHERE " + " AND ".join(where_clauses)
         
+        # Add ORDER BY clause to sort by creation date in descending order
+        query += " ORDER BY p.created_at DESC"
+        
         # --- Execute Query ---
         cursor.execute(query, params)
         results = cursor.fetchall()
@@ -1369,7 +1372,6 @@ def handle_connect():
         # Add user to their own room (user_id as room name)
         join_room(str(user_id))
         # Access socket ID properly
-        from flask import request
         socket_id = request.sid if hasattr(request, 'sid') else 'unknown'
         print(f"User {user_id} connected to socket with SID: {socket_id}")
     else:
