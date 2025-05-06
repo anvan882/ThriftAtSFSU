@@ -295,9 +295,8 @@ input[type=date]{
           (All Products)
           {% endif %}
         </p>
-        {% if user_is_logged_in %}
-          <a href="{{ url_for('newListing') }}" class="btn btn-outline">Add New Listing</a>
-        {% endif %}
+        <!-- Always show add listing button but redirect to login page if user is not logged in -->
+        <a href="{{ url_for('newListing') if user_is_logged_in else url_for('login') }}" class="btn btn-outline">Add New Listing</a>
       </div>
 
       <div class="product-list">
