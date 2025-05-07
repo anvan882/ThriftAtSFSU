@@ -149,6 +149,78 @@ input[type=date]{
   display: block; /* Ensure link takes up space for positioning */
   position: relative;
 }
+
+/* Thumb */
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  border-radius: 5px;
+  height: 20px;
+  width: 25px;
+  background: #9c9c9c;
+  margin-top: -7px; /* aligns thumb vertically with the track */
+  cursor: pointer;
+}
+
+/* ========== Responsive Design ========== */
+@media (max-width: 480px) {
+  .slider-wrap {
+    margin-bottom: 1px;
+  }
+
+  input[type=range] {
+    height: 12px;
+}
+
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    border-radius: 5px;
+    height: 12px;
+    width: 17px;
+  }
+
+  .values{
+    font-size: 10px;
+    margin-top: 0px;
+  }
+  .radio-group{
+    gap: 5px;
+  }
+
+  .radio-group input{
+    margin-right: 4px;
+    width: 10px;
+    height: 10px;
+  }
+
+  .radio-group label{
+    font-size: 9px;
+  }
+
+  .new-stars{
+    gap: 2px;
+    margin-top: 0px;
+  }
+
+  .new-stars label{
+    font-size: 17px;
+  }
+
+  input[type = date]{
+    padding: 5px;
+    font-size: 13px;
+  }
+
+  .filter-buttons{
+    margin-top: 0px;
+    margin-bottom: 100px;
+  }
+
+  .apply-button{
+    margin-top: 5px;
+    padding: 7px;
+    font-size: 9px;
+  }
+}
 </style>
 {% endblock %}
 
@@ -163,6 +235,7 @@ input[type=date]{
         <!-- Price Range -->
         <h4>Price Range</h4>
         <div class="slider-wrap">
+          
           <div class="track"></div>
           <div class="fill" id="fill"></div>
           <input type="range" id="min" min="{{ min_db_price }}" max="{{ max_db_price }}" step="1" value="{{ min_price }}">
@@ -216,8 +289,9 @@ input[type=date]{
           {% endif %}
         </p>
         {% if user_is_logged_in %}
-          <a href="{{ url_for('newListing') }}" class="btn btn-outline">Add New Listing</a>
+          
         {% endif %}
+        <a href="{{ url_for('newListing') }}" class="btn-newList btn-outline">Add New Listing</a>
       </div>
 
       <div class="product-list">

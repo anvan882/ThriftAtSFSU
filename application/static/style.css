@@ -37,11 +37,10 @@ main.no-padding-bottom {
   display: grid;
   grid-template-columns: 270px 1fr;
   position: fixed;
-  top: 120px;
   width: 100vw;
   height: 100vh;
   overflow: hidden;
-  transition: grid-template-columns 0.5s ease-in-out;
+  transition: grid-template-rows 0.5s ease-in-out;
 }
 
 .containerGrid.filters-collapsed {
@@ -56,9 +55,10 @@ main.no-padding-bottom {
   background-color: #F5F7FA;
   color: #2D2D2D;
   height: 85vh;
+  
   padding: 20px;
   overflow: hidden;
-  max-width: 400px;
+  max-width: 400rem;
   width: 100%;
   box-sizing: border-box;
   max-height: 1000px;
@@ -199,6 +199,18 @@ main.no-padding-bottom {
 
 /* General Button Styles (Removed .auth-buttons specificity) */
 .btn {
+  padding: 0.5rem 1.25rem;
+  border-radius: 6px;
+  font-weight: 500;
+  text-decoration: none;
+  font-size: 0.95rem;
+  transition: var(--transition);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.btn-newList {
   padding: 0.5rem 1.25rem;
   border-radius: 6px;
   font-weight: 500;
@@ -444,9 +456,10 @@ main.no-padding-bottom {
 }
 
 
-@media (max-width: 600px) {
+@media (max-width: 480px) {
   .containerFixed {
     padding: 15px;
+    font-size: 0.85rem;
   }
 
   .price-range input {
@@ -459,6 +472,12 @@ main.no-padding-bottom {
 
   .filters h2 {
     font-size: 1.2rem;
+  }
+
+  .btn-newList{
+    padding: 0.1rem;
+    font-size: 0.6rem;
+    text-align: center;
   }
 }
 
@@ -762,25 +781,45 @@ main.no-padding-bottom {
 
 
 /* ========== Responsive Design ========== */
-@media (max-width: 768px) {
+@media (max-width: 480px) {
   .navbar {
     padding: 1rem;
     gap: 1rem;
+  }
+
+  .btn{
+    padding: .4rem;
+  }
+
+  .navbar-profile-pic {
+    margin-left: 100px;
   }
 
   .search-form {
     order: 3;
     width: 100%;
     margin-top: 1rem;
+    min-width: 40px;
+    height: 2rem;
+  }
+
+  .search-form select{
+    max-width: 0;
+    min-width: 40px;
+  }
+
+  .search-form input[type="text"]{
+    width: 50%;
   }
 
   .submenu ul {
-    flex-direction: column;
+    flex-direction: row;
     gap: 0.5rem;
   }
 
   .product-list {
     grid-template-columns: 1fr;
+    margin-bottom: 100px;
   }
 
   .toggle-filters-btn {
@@ -788,19 +827,19 @@ main.no-padding-bottom {
   }
 
   .containerGrid {
-    grid-template-columns: 100%;
-    top: 110px;
+    grid-template-columns: 30% 1fr;
   }
 
   .containerFixed,
   .container {
-    grid-column: 1 / -1;
-    max-width: 100%;
+    font-size: 0.70rem;
   }
 
   .container {
     height: calc(100vh - 110px);
   }
+
+  
 }
 
 /* ========== About Page Styles ========== */
