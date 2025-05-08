@@ -456,31 +456,6 @@ main.no-padding-bottom {
 }
 
 
-@media (max-width: 480px) {
-  .containerFixed {
-    padding: 15px;
-    font-size: 0.85rem;
-  }
-
-  .price-range input {
-    width: 80px;
-  }
-
-  .stars {
-    font-size: 25px;
-  }
-
-  .filters h2 {
-    font-size: 1.2rem;
-  }
-
-  .btn-newList{
-    padding: 0.1rem;
-    font-size: 0.6rem;
-    text-align: center;
-  }
-}
-
 /* ========== Search Info / Results ========== */
 .search-info {
   background: #fff;
@@ -504,6 +479,40 @@ main.no-padding-bottom {
   color: white;
   border-radius: 5px;
   padding: 10px;
+}
+
+@media (max-width: 480px) {
+  .containerFixed {
+    padding: 15px;
+    font-size: 0.85rem;
+  }
+
+  .price-range input {
+    width: 80px;
+  }
+
+  .stars {
+    font-size: 25px;
+  }
+
+  .filters h2 {
+    font-size: 1.2rem;
+  }
+
+  .search-info {
+    padding: 1rem 0.5rem;
+    display: flex;
+    flex-wrap: nowrap;
+    white-space: nowrap;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .btn-newList{
+    padding: 0.1rem;
+    font-size: 0.6rem;
+    text-align: center;
+  }
 }
 
 /* ========== Product List ========== */
@@ -1587,7 +1596,74 @@ label.custom-upload-btn svg {
 }
 
 .char-count {
-  font-size: 0.85rem;
+  display: block;
+  font-size: 0.8rem;
   color: var(--text-color-light);
-  margin: 0.35rem 0 1rem;
+  text-align: right;
+  margin-top: 0.25rem;
+}
+
+/* ========== Viewport Warning ========== */
+.viewport-warning {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.7);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.viewport-warning.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+.viewport-warning-content {
+  background-color: white;
+  padding: 2rem;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  text-align: center;
+  max-width: 90%;
+  width: 450px;
+}
+
+.viewport-warning-content h3 {
+  color: var(--accent-purple);
+  margin-bottom: 1rem;
+  font-size: 1.5rem;
+}
+
+.viewport-warning-content p {
+  margin-bottom: 0.75rem;
+  color: var(--text-color);
+}
+
+.viewport-warning-content button {
+  margin-top: 1rem;
+  background-color: var(--accent-purple);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.2s ease;
+}
+
+.viewport-warning-content button:hover {
+  background-color: var(--accent-purple-dark);
+}
+
+body.blurred > *:not(.viewport-warning) {
+  filter: blur(5px);
+  transition: filter 0.3s ease;
+  pointer-events: none;
 }
