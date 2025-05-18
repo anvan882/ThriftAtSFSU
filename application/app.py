@@ -1652,6 +1652,9 @@ def delete_product(product_id):
         # Remove from any wishlists
         cursor.execute("DELETE FROM Wishlist WHERE product_id = %s", (product_id,))
         
+        # Remove any messages related to the product
+        cursor.execute("DELETE FROM Messages WHERE product_id = %s", (product_id,))
+        
         # Delete the product
         cursor.execute("DELETE FROM Products WHERE product_id = %s", (product_id,))
         

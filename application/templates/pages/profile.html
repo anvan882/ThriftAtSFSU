@@ -416,6 +416,22 @@ textarea{
       {% endif %}
     </section>
 
+    <!-- SFSU Campus Map -->
+    <section class="campus-map-wrapper" style="background:#fff; border-radius:var(--radius); padding:1.6rem; margin-top:var(--grid-gap); box-shadow:var(--shadow);">
+      <h2>SFSU Campus Map</h2>
+      <div style="width:100%; height:400px; border-radius:var(--radius); margin-top:1rem; overflow:hidden;">
+        <iframe 
+          src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3156.9776174094226!2d-122.48207548446536!3d37.72409997976949!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x808f7db005c0e64f%3A0x1ecea3addad74356!2sSan%20Francisco%20State%20University!5e0!3m2!1sen!2sus!4v1652466225668!5m2!1sen!2sus" 
+          width="100%" 
+          height="100%" 
+          style="border:0;" 
+          allowfullscreen="" 
+          loading="lazy" 
+          referrerpolicy="no-referrer-when-downgrade">
+        </iframe>
+      </div>
+    </section>
+
     <!-- Listings -->
     <section class="listings">
       <h2>Listings by {{ profile_user.first_name }}</h2>

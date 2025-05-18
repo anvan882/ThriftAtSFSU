@@ -223,6 +223,13 @@ input[type=date]{
   font-weight: 600;
   font-size: 1em; /* Match the size of regular text */
 }
+
+@media (max-width: 480px){
+  .filter-buttons {
+      margin-bottom: 100px;
+  }
+}
+
 </style>
 {% endblock %}
 
@@ -295,9 +302,8 @@ input[type=date]{
           (All Products)
           {% endif %}
         </p>
-        {% if user_is_logged_in %}
-          <a href="{{ url_for('newListing') }}" class="btn btn-outline">Add New Listing</a>
-        {% endif %}
+        <!-- Always show add listing button but redirect to login page if user is not logged in -->
+        <a href="{{ url_for('newListing') if user_is_logged_in else url_for('login') }}" class="btn-newList btn-outline">Add New Listing</a>
       </div>
 
       <div class="product-list">
