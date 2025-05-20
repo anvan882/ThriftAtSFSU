@@ -37,6 +37,9 @@
           <a href="{{ url_for('newListing') }}">Add Listing</a>
           <a href="{{ url_for('messages') }}">Messages</a>
           <a href="{{ url_for('wishlist') }}">Wishlist</a>
+          {% if session.get('is_admin') %}
+          <a href="{{ url_for('admin_dashboard') }}">Admin Dashboard</a>
+          {% endif %}
           <hr> {# Optional separator #}
           <a href="{{ url_for('logout') }}">Logout</a>
         </div>

@@ -53,6 +53,18 @@ def public_only(f):
         return f(*args, **kwargs)
     return decorated_function
 
+def admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session:
+            flash('Please log in to access this page.', 'error')
+            return redirect(url_for('login'))
+        if not session.get('is_admin', False):
+            flash('You do not have permission to access this page.', 'error')
+            return redirect(url_for('home'))
+        return f(*args, **kwargs)
+    return decorated_function
+
 # === Database Connection Pool ===
 dbconfig = {
     "user": os.getenv("DB_USER"),
@@ -766,13 +778,14 @@ def login():
             connection = cnxpool.get_connection()
             # Fetch user with password hash
             cursor = connection.cursor(dictionary=True)
-            cursor.execute("SELECT user_id, password FROM Users WHERE email = %s", (email,))
+            cursor.execute("SELECT user_id, password, is_admin FROM Users WHERE email = %s", (email,))
             user = cursor.fetchone()
 
             if user and check_password_hash(user['password'], password):
                 # Password matches
                 # TODO: Implement session management (e.g., flask-login)
                 session['user_id'] = user['user_id'] # Set user_id in session
+                session['is_admin'] = user['is_admin'] # Set admin status in session
                 session.permanent = True # Optional: Make session persistent 
                 flash('Login successful! Welcome back.', 'success')
                 return redirect(url_for('home'))
@@ -1963,6 +1976,332 @@ def update_product_title():
             cursor.close()
         if connection:
             connection.close()
+
+# === Admin Routes ===
+@app.route('/admin/dashboard')
+@admin_required
+def admin_dashboard():
+    """Admin dashboard showing users and reports"""
+    connection = None
+    cursor = None
+    users = []
+    reports = []
+    
+    try:
+        connection = cnxpool.get_connection()
+        cursor = connection.cursor(dictionary=True)
+        
+        # Fetch all users
+        cursor.execute("""
+            SELECT user_id, first_name, last_name, email, phone_number, 
+                   created_at, is_admin
+            FROM Users
+            ORDER BY user_id ASC
+        """)
+        users = cursor.fetchall()
+        
+        # Fetch all reports with reporter and reported entity details
+        cursor.execute("""
+            SELECT r.*, 
+                   CONCAT(u1.first_name, ' ', u1.last_name) as reporter_name,
+                   u1.user_id as reporter_id,
+                   CASE 
+                     WHEN r.reported_user_id IS NOT NULL THEN CONCAT(u2.first_name, ' ', u2.last_name)
+                     ELSE NULL 
+                   END as reported_user_name,
+                   CASE 
+                     WHEN r.reported_product_id IS NOT NULL THEN p.title
+                     ELSE NULL 
+                   END as reported_product_title
+            FROM Reports r
+            JOIN Users u1 ON r.reporter_id = u1.user_id
+            LEFT JOIN Users u2 ON r.reported_user_id = u2.user_id
+            LEFT JOIN Products p ON r.reported_product_id = p.product_id
+            ORDER BY 
+                CASE WHEN r.status = 'pending' THEN 0
+                     WHEN r.status = 'resolved' THEN 1
+                     ELSE 2
+                END, 
+                r.created_at DESC
+        """)
+        reports = cursor.fetchall()
+        
+    except Error as db_err:
+        print(f"Database error in admin dashboard: {db_err}")
+        flash("Could not load admin data due to a database error.", "error")
+    except Exception as e:
+        print(f"Unexpected error in admin dashboard: {e}")
+        flash("An unexpected error occurred while loading admin data.", "error")
+    finally:
+        if cursor:
+            cursor.close()
+        if connection and connection.is_connected():
+            connection.close()
+    
+    return render_template('pages/admin/dashboard.html', users=users, reports=reports)
+
+@app.route('/admin/reports/<int:report_id>/update/<status>', methods=['POST'])
+@admin_required
+def update_report_status(report_id, status):
+    """Update the status of a report"""
+    # Always set status to 'dismissed' regardless of input
+    status = 'dismissed'
+    
+    connection = None
+    cursor = None
+    try:
+        connection = cnxpool.get_connection()
+        cursor = connection.cursor()
+        
+        
+        # Update the report status and set resolved_at timestamp
+        cursor.execute("""
+            UPDATE Reports 
+            SET status = %s, resolved_at = CURRENT_TIMESTAMP
+            WHERE report_id = %s
+        """, (status, report_id))
+        
+        connection.commit()
+        flash(f"Report marked as {status}.", "success")
+        
+    except Error as db_err:
+        print(f"Database error updating report status: {db_err}")
+        flash("Could not update report status due to a database error.", "error")
+        if connection: connection.rollback()
+    except Exception as e:
+        print(f"Unexpected error updating report status: {e}")
+        flash("An unexpected error occurred while updating report status.", "error")
+        if connection: connection.rollback()
+    finally:
+        if cursor: cursor.close()
+        if connection and connection.is_connected(): connection.close()
+    
+    return redirect(url_for('admin_dashboard'))
+
+@app.route('/admin/users/delete', methods=['POST'])
+@admin_required
+def admin_delete_user():
+    """Delete a user and all their data"""
+    user_id = request.form.get('user_id')
+    
+    if not user_id:
+        flash("User ID is required.", "error")
+        return redirect(url_for('admin_dashboard'))
+    
+    connection = None
+    cursor = None
+    try:
+        connection = cnxpool.get_connection()
+        cursor = connection.cursor(dictionary=True)
+        
+        # Check if the user exists and is not an admin
+        cursor.execute("SELECT user_id, is_admin, first_name, last_name FROM Users WHERE user_id = %s", (user_id,))
+        user = cursor.fetchone()
+        
+        if not user:
+            flash("User not found.", "error")
+            return redirect(url_for('admin_dashboard'))
+        
+        if user['is_admin']:
+            flash("Cannot delete an admin user.", "error")
+            return redirect(url_for('admin_dashboard'))
+        
+        # Since we have ON DELETE CASCADE for foreign keys,
+        # we can first delete product images to free up large BLOBs
+        cursor.execute("""
+            DELETE FROM ProductImages 
+            WHERE product_id IN (SELECT product_id FROM Products WHERE seller_id = %s)
+        """, (user_id,))
+        
+        # Then disable foreign key checks and delete the user
+        cursor.execute("SET FOREIGN_KEY_CHECKS = 0;")
+        
+        # Remove from wishlist
+        cursor.execute("DELETE FROM Wishlist WHERE user_id = %s", (user_id,))
+        
+        # Remove from UserAvailability
+        cursor.execute("DELETE FROM UserAvailability WHERE user_id = %s", (user_id,))
+        
+        # Remove Reports related to user
+        cursor.execute("DELETE FROM Reports WHERE reporter_id = %s OR reported_user_id = %s", (user_id, user_id))
+        
+        # Remove Reviews related to user
+        cursor.execute("DELETE FROM Reviews WHERE reviewer_id = %s OR reviewed_user_id = %s", (user_id, user_id))
+        
+        # Remove Messages related to user
+        cursor.execute("DELETE FROM Messages WHERE sender_id = %s OR receiver_id = %s", (user_id, user_id))
+        
+        # Delete user's products
+        cursor.execute("DELETE FROM Products WHERE seller_id = %s", (user_id,))
+        
+        # Finally delete the user
+        cursor.execute("DELETE FROM Users WHERE user_id = %s", (user_id,))
+        
+        # Re-enable foreign key checks
+        cursor.execute("SET FOREIGN_KEY_CHECKS = 1;")
+        
+        connection.commit()
+        flash(f"User {user['first_name']} {user['last_name']} and all associated data deleted successfully.", "success")
+        
+    except Error as db_err:
+        print(f"Database error deleting user: {db_err}")
+        flash("Could not delete user due to a database error.", "error")
+        if connection: connection.rollback()
+    except Exception as e:
+        print(f"Unexpected error deleting user: {e}")
+        flash("An unexpected error occurred while deleting user.", "error")
+        if connection: connection.rollback()
+    finally:
+        if cursor: cursor.close()
+        if connection and connection.is_connected(): connection.close()
+    
+    return redirect(url_for('admin_dashboard'))
+
+@app.route('/admin/products/delete/<int:product_id>', methods=['POST'])
+@admin_required
+def admin_delete_product(product_id):
+    """Delete a product as an admin"""
+    connection = None
+    cursor = None
+    try:
+        connection = cnxpool.get_connection()
+        cursor = connection.cursor(dictionary=True)
+        
+        # Check if the product exists
+        cursor.execute("""
+            SELECT p.product_id, p.title, u.first_name, u.last_name
+            FROM Products p
+            JOIN Users u ON p.seller_id = u.user_id
+            WHERE p.product_id = %s
+        """, (product_id,))
+        product = cursor.fetchone()
+        
+        if not product:
+            flash("Product not found.", "error")
+            return redirect(url_for('admin_dashboard'))
+        
+        # Delete related product images first
+        cursor.execute("DELETE FROM ProductImages WHERE product_id = %s", (product_id,))
+        
+        # Remove from wishlist
+        cursor.execute("DELETE FROM Wishlist WHERE product_id = %s", (product_id,))
+        
+        # Remove related reports
+        cursor.execute("DELETE FROM Reports WHERE reported_product_id = %s", (product_id,))
+        
+        # Delete the product
+        cursor.execute("DELETE FROM Products WHERE product_id = %s", (product_id,))
+        
+        connection.commit()
+        flash(f"Product '{product['title']}' by {product['first_name']} {product['last_name']} deleted successfully.", "success")
+        
+    except Error as db_err:
+        print(f"Database error deleting product: {db_err}")
+        flash("Could not delete product due to a database error.", "error")
+        if connection: connection.rollback()
+    except Exception as e:
+        print(f"Unexpected error deleting product: {e}")
+        flash("An unexpected error occurred while deleting product.", "error")
+        if connection: connection.rollback()
+    finally:
+        if cursor: cursor.close()
+        if connection and connection.is_connected(): connection.close()
+    
+    return redirect(url_for('admin_dashboard'))
+
+# === Reporting Routes ===
+@app.route('/report/user/<int:user_id>', methods=['POST'])
+@login_required
+def report_user(user_id):
+    """Report a user for inappropriate behavior"""
+    if user_id == session.get('user_id'):
+        flash("You cannot report yourself.", "error")
+        return redirect(url_for('view_profile', profile_user_id=user_id))
+    
+    reason = request.form.get('reason', '').strip()
+    if not reason:
+        flash("Please provide a reason for your report.", "error")
+        return redirect(url_for('view_profile', profile_user_id=user_id))
+    
+    connection = None
+    cursor = None
+    try:
+        connection = cnxpool.get_connection()
+        cursor = connection.cursor()
+        
+        # Insert report
+        cursor.execute("""
+            INSERT INTO Reports (reporter_id, reported_user_id, reason)
+            VALUES (%s, %s, %s)
+        """, (session['user_id'], user_id, reason))
+        
+        connection.commit()
+        flash("Thank you for your report. Our team will review it shortly.", "success")
+        
+    except Error as db_err:
+        print(f"Database error reporting user: {db_err}")
+        flash("Could not submit report due to a database error.", "error")
+        if connection: connection.rollback()
+    except Exception as e:
+        print(f"Unexpected error reporting user: {e}")
+        flash("An unexpected error occurred while submitting report.", "error")
+        if connection: connection.rollback()
+    finally:
+        if cursor: cursor.close()
+        if connection and connection.is_connected(): connection.close()
+    
+    return redirect(url_for('view_profile', profile_user_id=user_id))
+
+@app.route('/report/product/<int:product_id>', methods=['POST'])
+@login_required
+def report_product(product_id):
+    """Report a product listing for inappropriate content"""
+    reason = request.form.get('reason', '').strip()
+    if not reason:
+        flash("Please provide a reason for your report.", "error")
+        return redirect(url_for('product_detail', product_id=product_id))
+    
+    connection = None
+    cursor = None
+    try:
+        connection = cnxpool.get_connection()
+        cursor = connection.cursor(dictionary=True)
+        
+        # Check if product exists and get seller ID
+        cursor.execute("SELECT seller_id FROM Products WHERE product_id = %s", (product_id,))
+        product = cursor.fetchone()
+        
+        if not product:
+            flash("Product not found.", "error")
+            return redirect(url_for('home'))
+        
+        # Prevent reporting your own products
+        if product['seller_id'] == session['user_id']:
+            flash("You cannot report your own listing.", "error")
+            return redirect(url_for('product_detail', product_id=product_id))
+        
+        # Insert report
+        cursor.execute("""
+            INSERT INTO Reports (reporter_id, reported_product_id, reason)
+            VALUES (%s, %s, %s)
+        """, (session['user_id'], product_id, reason))
+        
+        connection.commit()
+        flash("Thank you for your report. Our team will review it shortly.", "success")
+        
+    except Error as db_err:
+        print(f"Database error reporting product: {db_err}")
+        flash("Could not submit report due to a database error.", "error")
+        if connection: connection.rollback()
+    except Exception as e:
+        print(f"Unexpected error reporting product: {e}")
+        flash("An unexpected error occurred while submitting report.", "error")
+        if connection: connection.rollback()
+    finally:
+        if cursor: cursor.close()
+        if connection and connection.is_connected(): connection.close()
+    
+    return redirect(url_for('product_detail', product_id=product_id))
 
 if __name__ == '__main__':
     socketio.run(app, debug=True, host='0.0.0.0')

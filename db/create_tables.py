@@ -95,22 +95,22 @@ TABLES['Reviews'] = (
     """
 )
 
-TABLES['Transactions'] = (
-    """
-    CREATE TABLE IF NOT EXISTS Transactions (
-        transaction_id INT AUTO_INCREMENT PRIMARY KEY,
-        buyer_id INT,
-        seller_id INT,
-        product_id INT,
-        agreed_price DECIMAL(10,2),
-        status ENUM('completed', 'canceled') DEFAULT 'completed',
-        timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (buyer_id) REFERENCES Users(user_id),
-        FOREIGN KEY (seller_id) REFERENCES Users(user_id),
-        FOREIGN KEY (product_id) REFERENCES Products(product_id)
-    );
-    """
-)
+# TABLES['Transactions'] = (
+#     """
+#     CREATE TABLE IF NOT EXISTS Transactions (
+#         transaction_id INT AUTO_INCREMENT PRIMARY KEY,
+#         buyer_id INT,
+#         seller_id INT,
+#         product_id INT,
+#         agreed_price DECIMAL(10,2),
+#         status ENUM('completed', 'canceled') DEFAULT 'completed',
+#         timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+#         FOREIGN KEY (buyer_id) REFERENCES Users(user_id),
+#         FOREIGN KEY (seller_id) REFERENCES Users(user_id),
+#         FOREIGN KEY (product_id) REFERENCES Products(product_id)
+#     );
+#     """
+# )
 
 TABLES['ProductImages'] = (
     """
@@ -153,12 +153,31 @@ TABLES['UserAvailability'] = (
     """
 )
 
+TABLES['Reports'] = (
+    """
+    CREATE TABLE IF NOT EXISTS Reports (
+        report_id INT AUTO_INCREMENT PRIMARY KEY,
+        reporter_id INT NOT NULL,
+        reported_user_id INT,
+        reported_product_id INT,
+        reason TEXT NOT NULL,
+        status ENUM('pending', 'resolved', 'dismissed') DEFAULT 'pending',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        resolved_at TIMESTAMP NULL,
+        FOREIGN KEY (reporter_id) REFERENCES Users(user_id),
+        FOREIGN KEY (reported_user_id) REFERENCES Users(user_id),
+        FOREIGN KEY (reported_product_id) REFERENCES Products(product_id) ON DELETE CASCADE
+    );
+    """
+)
+
 # Table drop order (reverse of dependency)
 DROP_ORDER = [
+    "Reports",
     "UserAvailability",
     "Wishlist",
     "ProductImages",
-    "Transactions",
+    # "Transactions",
     "Reviews",
     "Messages",
     "Products",
