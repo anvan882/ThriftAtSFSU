@@ -124,6 +124,16 @@
         <button type="submit" class="btn-delete">Delete Listing</button>
       </form>
     </div>
+    {% elif user_is_logged_in %}
+    <div class="owner-actions">
+      <button id="report-product-btn" class="btn-delete">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px; vertical-align: text-bottom;">
+          <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path>
+          <line x1="4" y1="22" x2="4" y2="15"></line>
+        </svg>
+        Report Listing
+      </button>
+    </div>
     {% endif %}
   </div>
 </section>
@@ -131,6 +141,35 @@
   <div class="alert alert-warning" role="alert">
     Product details could not be loaded or the product does not exist.
   </div>
+{% endif %}
+
+<!-- Report Product Modal -->
+{% if product and user_is_logged_in and not is_owner %}
+<div id="report-modal" class="modal" style="display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.4);">
+  <div class="modal-content" style="background-color: white; margin: 15% auto; padding: 20px; border-radius: 10px; width: 500px; max-width: 90%;">
+    <span class="close" id="close-report-modal" style="color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer;">&times;</span>
+    <h2 style="margin-top: 0;">Report Listing</h2>
+    <p>Report "{{ product.title }}" for inappropriate content or scam.</p>
+    
+    <form id="report-form" action="{{ url_for('report_product', product_id=product.product_id) }}" method="POST">
+      <div style="margin-bottom: 15px;">
+        <label for="report-reason" style="display: block; margin-bottom: 5px; font-weight: 500;">Reason for report:</label>
+        <textarea id="report-reason" name="reason" rows="5" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" required></textarea>
+      </div>
+      
+      <div style="text-align: right;">
+        <button type="button" id="cancel-report" class="btn-outline btn-sm" style="margin-right: 10px;">Cancel</button>
+        <button type="submit" class="btn btn-sm" style="background-color: #dc3545; border-color: #dc3545;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px; vertical-align: text-bottom;">
+            <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path>
+            <line x1="4" y1="22" x2="4" y2="15"></line>
+          </svg>
+          Submit Report
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
 {% endif %}
 {% endblock %}
 
@@ -400,6 +439,46 @@
       });
     });
   }
+</script>
+{% endif %}
+
+{% if product and user_is_logged_in and not is_owner %}
+<script>
+  // Report Product Modal Functionality
+  document.addEventListener('DOMContentLoaded', function() {
+    const reportProductBtn = document.getElementById('report-product-btn');
+    const reportModal = document.getElementById('report-modal');
+    const closeReportModal = document.getElementById('close-report-modal');
+    const cancelReport = document.getElementById('cancel-report');
+    
+    if (reportProductBtn && reportModal) {
+      // Open modal
+      reportProductBtn.addEventListener('click', function() {
+        reportModal.style.display = 'block';
+      });
+      
+      // Close modal on X click
+      if (closeReportModal) {
+        closeReportModal.addEventListener('click', function() {
+          reportModal.style.display = 'none';
+        });
+      }
+      
+      // Close modal on Cancel click
+      if (cancelReport) {
+        cancelReport.addEventListener('click', function() {
+          reportModal.style.display = 'none';
+        });
+      }
+      
+      // Close modal when clicking outside
+      window.addEventListener('click', function(event) {
+        if (event.target === reportModal) {
+          reportModal.style.display = 'none';
+        }
+      });
+    }
+  });
 </script>
 {% endif %}
 {% endblock %}

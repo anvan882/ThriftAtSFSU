@@ -1,0 +1,481 @@
+{% extends "base.html" %}
+{% block title %}Admin Dashboard - SFSU Thrift Market{% endblock %}
+
+{% block head %}
+<style>
+  .admin-container {
+    max-width: 1200px;
+    margin: 2rem auto;
+    padding: 1.5rem;
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+  }
+  
+  .admin-header {
+    margin-bottom: 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .admin-tabs {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    border-bottom: 1px solid #eee;
+  }
+  
+  .admin-tab {
+    padding: 0.75rem 1.5rem;
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    font-weight: 500;
+  }
+  
+  .admin-tab.active {
+    border-color: #6a0dad;
+    color: #6a0dad;
+  }
+  
+  .tab-content {
+    display: none;
+  }
+  
+  .tab-content.active {
+    display: block;
+  }
+  
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+  }
+  
+  th, td {
+    padding: 0.75rem 1rem;
+    text-align: left;
+    border-bottom: 1px solid #eee;
+  }
+  
+  th {
+    background-color: #f9f9f9;
+    font-weight: 600;
+  }
+  
+  tr:hover {
+    background-color: #f5f5f5;
+  }
+  
+  .status-badge {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.85rem;
+  }
+  
+  .status-active {
+    background-color: #d4edda;
+    color: #155724;
+  }
+  
+  .status-pending {
+    background-color: #fff3cd;
+    color: #856404;
+  }
+  
+  .status-dismissed {
+    background-color: #d1ecf1;
+    color: #0c5460;
+  }
+  
+  .action-btn {
+    padding: 0.5rem 0.75rem;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    border: none;
+    margin-right: 0.5rem;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    color: white;
+    height: 32px;
+    box-sizing: border-box;
+    font-family: inherit;
+    vertical-align: middle;
+  }
+  
+  .btn-dismiss {
+    background-color: #28a745;
+  }
+  
+  .btn-view {
+    background-color: #007bff;
+  }
+  
+  .btn-delete {
+    background-color: #dc3545;
+  }
+  
+  .report-reason {
+    max-width: 300px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  
+  .search-container {
+    margin-bottom: 1.5rem;
+  }
+  
+  .search-input {
+    padding: 0.5rem 1rem;
+    width: 300px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+  }
+  
+  .action-btn svg {
+    margin-right: 4px;
+  }
+  
+  /* Modal Styles */
+  .modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0,0,0,0.4);
+  }
+  
+  .modal-content {
+    background-color: white;
+    margin: 15% auto;
+    padding: 20px;
+    border-radius: 8px;
+    width: 500px;
+    max-width: 90%;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  }
+  
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 10px;
+  }
+  
+  .modal-header h2 {
+    margin: 0;
+    color: #dc3545;
+  }
+  
+  .close-modal {
+    color: #aaa;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+  }
+  
+  .close-modal:hover {
+    color: #888;
+  }
+  
+  .modal-body {
+    margin-bottom: 20px;
+  }
+  
+  .modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+  }
+  
+  .modal-btn {
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 500;
+    border: none;
+  }
+  
+  .btn-cancel {
+    background-color: #f8f9fa;
+    color: #212529;
+    border: 1px solid #dee2e6;
+  }
+  
+  .btn-confirm {
+    background-color: #dc3545;
+    color: white;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="admin-container">
+  <div class="admin-header">
+    <h1>Admin Dashboard</h1>
+    <div class="search-container">
+      <input type="text" id="searchInput" class="search-input" placeholder="Search users...">
+    </div>
+  </div>
+  
+  <div class="admin-tabs">
+    <div class="admin-tab active" data-tab="users">Users Management</div>
+    <div class="admin-tab" data-tab="reports">Reports</div>
+  </div>
+  
+  <div class="tab-content active" id="users-tab">
+    <table id="users-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Name</th>
+          <th>Email</th>
+          <th>Phone</th>
+          <th>Joined Date</th>
+          <th>Admin Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for user in users %}
+        <tr>
+          <td>{{ user.user_id }}</td>
+          <td>{{ user.first_name }} {{ user.last_name }}</td>
+          <td>{{ user.email }}</td>
+          <td>{{ user.phone_number }}</td>
+          <td>{{ user.created_at.strftime('%Y-%m-%d') }}</td>
+          <td>
+            <span class="status-badge {{ 'status-active' if user.is_admin else '' }}">
+              {{ 'Admin' if user.is_admin else 'User' }}
+            </span>
+          </td>
+          <td>
+            <a href="{{ url_for('view_profile', profile_user_id=user.user_id) }}" class="action-btn btn-view">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+              </svg>
+              View Profile
+            </a>
+            {% if not user.is_admin %}
+            <button type="button" class="action-btn btn-delete" onclick="showDeleteUserModal('{{ user.user_id }}', '{{ user.first_name }} {{ user.last_name }}')">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                <line x1="10" y1="11" x2="10" y2="17"></line>
+                <line x1="14" y1="11" x2="14" y2="17"></line>
+              </svg>
+              Delete
+            </button>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  
+  <div class="tab-content" id="reports-tab">
+    <table id="reports-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Reporter</th>
+          <th>Reported User/Listing</th>
+          <th>Reason</th>
+          <th>Date</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for report in reports %}
+        <tr>
+          <td>{{ report.report_id }}</td>
+          <td>
+            <a href="{{ url_for('view_profile', profile_user_id=report.reporter_id) }}">
+              {{ report.reporter_name }}
+            </a>
+          </td>
+          <td>
+            {% if report.reported_user_id %}
+              <a href="{{ url_for('view_profile', profile_user_id=report.reported_user_id) }}">
+                {{ report.reported_user_name }}
+              </a>
+            {% elif report.reported_product_id %}
+              <a href="{{ url_for('product_detail', product_id=report.reported_product_id) }}">
+                {{ report.reported_product_title }}
+              </a>
+            {% endif %}
+          </td>
+          <td class="report-reason">{{ report.reason }}</td>
+          <td>{{ report.created_at.strftime('%Y-%m-%d') }}</td>
+          <td>
+            <span class="status-badge status-{{ report.status }}">
+              {{ report.status | capitalize }}
+            </span>
+          </td>
+          <td>
+            {% if report.status == 'pending' %}
+            <form method="post" action="{{ url_for('update_report_status', report_id=report.report_id, status='dismissed') }}" style="display:inline;">
+              <button type="submit" class="action-btn btn-dismiss">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+                Dismiss
+              </button>
+            </form>
+            {% if report.reported_product_id %}
+            <form method="post" action="{{ url_for('admin_delete_product', product_id=report.reported_product_id) }}" style="display:inline;" onsubmit="return confirm('Are you sure you want to delete this product?')">
+              <button type="submit" class="action-btn btn-delete">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="3 6 5 6 21 6"></polyline>
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                  <line x1="10" y1="11" x2="10" y2="17"></line>
+                  <line x1="14" y1="11" x2="14" y2="17"></line>
+                </svg>
+                Delete
+              </button>
+            </form>
+            {% endif %}
+            {% if report.reported_user_id %}
+            <button type="button" class="action-btn btn-delete" onclick="showDeleteUserModal('{{ report.reported_user_id }}', '{{ report.reported_user_name }}')">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                <line x1="10" y1="11" x2="10" y2="17"></line>
+                <line x1="14" y1="11" x2="14" y2="17"></line>
+              </svg>
+              Delete User
+            </button>
+            {% endif %}
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Delete User Confirmation Modal -->
+<div id="deleteUserModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2>Delete User</h2>
+      <span class="close-modal" onclick="closeDeleteUserModal()">&times;</span>
+    </div>
+    <div class="modal-body">
+      <p>Are you sure you want to delete user <strong id="deleteUserName"></strong>?</p>
+      <p>This action cannot be undone and will delete all of their listings and data.</p>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="modal-btn btn-cancel" onclick="closeDeleteUserModal()">Cancel</button>
+      <button type="button" class="modal-btn btn-confirm" onclick="confirmDeleteUser()">Delete User</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+  // Track current user to delete
+  let currentDeleteUserId = null;
+  
+  document.addEventListener('DOMContentLoaded', function() {
+    // Tab Switching
+    const tabs = document.querySelectorAll('.admin-tab');
+    const tabContents = document.querySelectorAll('.tab-content');
+    
+    tabs.forEach(tab => {
+      tab.addEventListener('click', function() {
+        // Deactivate all tabs and contents
+        tabs.forEach(t => t.classList.remove('active'));
+        tabContents.forEach(c => c.classList.remove('active'));
+        
+        // Activate clicked tab and corresponding content
+        this.classList.add('active');
+        const tabId = `${this.dataset.tab}-tab`;
+        document.getElementById(tabId).classList.add('active');
+      });
+    });
+    
+    // Search functionality for users table
+    const searchInput = document.getElementById('searchInput');
+    const usersTable = document.getElementById('users-table');
+    
+    if (searchInput && usersTable) {
+      searchInput.addEventListener('keyup', function() {
+        const searchTerm = this.value.toLowerCase();
+        const rows = usersTable.getElementsByTagName('tbody')[0].getElementsByTagName('tr');
+        
+        for (let row of rows) {
+          const name = row.cells[1].textContent.toLowerCase();
+          const email = row.cells[2].textContent.toLowerCase();
+          
+          if (name.includes(searchTerm) || email.includes(searchTerm)) {
+            row.style.display = '';
+          } else {
+            row.style.display = 'none';
+          }
+        }
+      });
+    }
+    
+    // Modal close on click outside
+    const deleteUserModal = document.getElementById('deleteUserModal');
+    window.addEventListener('click', function(event) {
+      if (event.target === deleteUserModal) {
+        closeDeleteUserModal();
+      }
+    });
+  });
+  
+  // Show delete user modal
+  function showDeleteUserModal(userId, userName) {
+    const modal = document.getElementById('deleteUserModal');
+    const userNameEl = document.getElementById('deleteUserName');
+    
+    currentDeleteUserId = userId;
+    userNameEl.textContent = userName;
+    modal.style.display = 'block';
+  }
+  
+  // Close delete user modal
+  function closeDeleteUserModal() {
+    const modal = document.getElementById('deleteUserModal');
+    modal.style.display = 'none';
+    currentDeleteUserId = null;
+  }
+  
+  // Confirm and process user deletion
+  function confirmDeleteUser() {
+    if (!currentDeleteUserId) return;
+    
+    // Create and submit a form to delete the user
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = "{{ url_for('admin_delete_user') }}";
+    
+    const userIdInput = document.createElement('input');
+    userIdInput.type = 'hidden';
+    userIdInput.name = 'user_id';
+    userIdInput.value = currentDeleteUserId;
+    
+    form.appendChild(userIdInput);
+    document.body.appendChild(form);
+    form.submit();
+  }
+</script>
+{% endblock %} 

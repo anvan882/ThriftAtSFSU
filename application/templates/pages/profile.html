@@ -340,6 +340,13 @@ textarea{
     <!-- Edit Profile button removed since bio is now editable inline -->
     {% else %}
     <a href="{{ url_for('start_conversation', user_id=profile_user.user_id) }}" class="contact-btn">Contact</a>
+    <button id="report-user-btn" class="btn-outline btn-sm" style="margin-top: 0.5rem;">
+      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px; vertical-align: text-bottom;">
+        <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path>
+        <line x1="4" y1="22" x2="4" y2="15"></line>
+      </svg>
+      Report User
+    </button>
     {% endif %}
 
     <h3>Bio
@@ -519,6 +526,35 @@ textarea{
 
   </main>
 </div><!-- /layout -->
+
+<!-- Report User Modal -->
+{% if not is_own_profile %}
+<div id="report-modal" class="modal" style="display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.4);">
+  <div class="modal-content" style="background-color: white; margin: 15% auto; padding: 20px; border-radius: 10px; width: 500px; max-width: 90%;">
+    <span class="close" id="close-report-modal" style="color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer;">&times;</span>
+    <h2 style="margin-top: 0;">Report User</h2>
+    <p>Report {{ profile_user.full_name }} for inappropriate behavior or content.</p>
+    
+    <form id="report-form" action="{{ url_for('report_user', user_id=profile_user.user_id) }}" method="POST">
+      <div style="margin-bottom: 15px;">
+        <label for="report-reason" style="display: block; margin-bottom: 5px; font-weight: 500;">Reason for report:</label>
+        <textarea id="report-reason" name="reason" rows="5" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" required></textarea>
+      </div>
+      
+      <div style="text-align: right;">
+        <button type="button" id="cancel-report" class="btn-outline btn-sm" style="margin-right: 10px;">Cancel</button>
+        <button type="submit" class="btn btn-sm" style="background-color: #dc3545; border-color: #dc3545;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px; vertical-align: text-bottom;">
+            <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path>
+            <line x1="4" y1="22" x2="4" y2="15"></line>
+          </svg>
+          Submit Report
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endif %}
 {% endblock %}
 
 {% block scripts %}
@@ -903,5 +939,40 @@ if (editProfilePictureBtn) {
   cards.forEach(c=>track.appendChild(c.cloneNode(true)));   // duplicate for seamless loop
   track.classList.add('is-carousel');
 })();
+
+// Report User Modal Functionality
+const reportUserBtn = document.getElementById('report-user-btn');
+const reportModal = document.getElementById('report-modal');
+const closeReportModal = document.getElementById('close-report-modal');
+const cancelReport = document.getElementById('cancel-report');
+const reportForm = document.getElementById('report-form');
+
+if (reportUserBtn && reportModal) {
+  // Open modal
+  reportUserBtn.addEventListener('click', function() {
+    reportModal.style.display = 'block';
+  });
+  
+  // Close modal on X click
+  if (closeReportModal) {
+    closeReportModal.addEventListener('click', function() {
+      reportModal.style.display = 'none';
+    });
+  }
+  
+  // Close modal on Cancel click
+  if (cancelReport) {
+    cancelReport.addEventListener('click', function() {
+      reportModal.style.display = 'none';
+    });
+  }
+  
+  // Close modal when clicking outside
+  window.addEventListener('click', function(event) {
+    if (event.target === reportModal) {
+      reportModal.style.display = 'none';
+    }
+  });
+}
 </script>
 {% endblock %}
