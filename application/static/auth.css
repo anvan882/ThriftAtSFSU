@@ -1,3 +1,5 @@
+/* Stylesheet for authentication page layout and design */
+
 :root {
   --accent-purple: #6a0dad;
   --accent-purple-dark: #550a9e;
@@ -19,7 +21,7 @@
 }
 
 body {
-  font-family: 'Inter', sans-serif;
+  font-family: "Inter", sans-serif;
   background-color: var(--bg-color);
   color: var(--text-color);
   line-height: 1.6;
@@ -140,14 +142,12 @@ body {
   text-decoration: underline;
 }
 
-/* Styles the custom button label specifically */
 label.custom-upload-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   background-color: var(--accent-purple);
   color: white;
-  /* Set text color to white */
   padding: 0.75rem 1.25rem;
   font-size: 0.95rem;
   border-radius: 6px;
@@ -175,7 +175,6 @@ label.custom-upload-btn svg {
   text-align: center;
 }
 
-/* Responsive adjustments */
 @media (max-width: 576px) {
   body {
     padding: 1rem;
@@ -186,9 +185,7 @@ label.custom-upload-btn svg {
   }
 }
 
-/* ========== Back Link Styles (Copied from style.css) ========== */
 .back-link {
-  /* Position absolutely in the top-left corner */
   position: absolute;
   top: 1rem;
   left: 1rem;
@@ -212,37 +209,27 @@ label.custom-upload-btn svg {
   margin-right: 0.5rem;
 }
 
-/* Remove responsive absolute positioning override */
-
-/* Style for required field indicators */
 .required {
-    color: red;
-    margin-left: 2px; /* Add a small space before the asterisk */
+  color: red;
+  margin-left: 2px;
 }
 
-/* ========== Flash Message Styles ========== */
 .flash-messages-container {
   width: 100%;
-  padding: 0; /* Remove padding if messages have their own */
-  margin-bottom: 1rem; /* Space below messages */
-  position: absolute; /* Position at the top */
+  padding: 0;
+  margin-bottom: 1rem;
+  position: absolute;
   top: 0;
   left: 0;
   right: 0;
-  z-index: 1050; /* Ensure it's above most other content */
-}
-
-/* Specific styling for auth pages flash messages if needed */
-.auth-flash-messages {
-  /* Example: Adjust top position if Back link overlaps */
-  /* top: 4rem;  */
+  z-index: 1050;
 }
 
 .alert {
   padding: 0.75rem 1.25rem;
-  margin-bottom: 0; /* No margin between alerts */
+  margin-bottom: 0;
   border: 1px solid transparent;
-  border-radius: 0; /* No border radius for full width */
+  border-radius: 0;
   width: 100%;
   text-align: center;
   font-weight: 500;
@@ -260,12 +247,10 @@ label.custom-upload-btn svg {
   border-color: #f5c6cb;
 }
 
-/* Style for invalid form inputs */
 .form-control.is-invalid {
-  border-color: #dc3545; /* Bootstrap's danger color */
-  box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25); /* Optional: add a glow effect */
+  border-color: #dc3545;
+  box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
 }
 
-/* Responsive adjustments */
 @media (max-width: 576px) {
 }

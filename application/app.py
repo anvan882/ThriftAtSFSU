@@ -6,36 +6,31 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
 import os
 from datetime import datetime, timedelta
-import base64 # Added for image encoding
-import json   # Added for parsing AI response
-from decimal import Decimal # Import Decimal for accurate price handling
-from openai import OpenAI # Added for OpenAI API call
+import base64
+import json
+from decimal import Decimal
+from openai import OpenAI
 from flask_socketio import SocketIO, emit, join_room, leave_room
 import math
 
 load_dotenv()
 
-# === Configure OpenAI Client ===
 try:
-    client = OpenAI() # Reads OPENAI_API_KEY from environment automatically
+    client = OpenAI()
 except Exception as e:
     print(f"Error initializing OpenAI client: {e}")
-    # Consider how to handle this - maybe disable the autofill feature?
     client = None
 
-# Define allowed conditions centrally
 ALLOWED_CONDITIONS = ["Very Worn", "Used", "Fairly Used", "Good Condition", "Great Condition"]
 
 app = Flask(__name__)
-app.secret_key = os.getenv("FLASK_SECRET_KEY") # Needed for flash messages
+app.secret_key = os.getenv("FLASK_SECRET_KEY")
 if not app.secret_key:
     print("Warning: FLASK_SECRET_KEY is not set. Flashing will not work.")
     raise ValueError("No FLASK_SECRET_KEY set for Flask application")
 
-# Initialize SocketIO
 socketio = SocketIO(app, cors_allowed_origins="*")
 
-# === Decorators ===
 def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
@@ -65,7 +60,6 @@ def admin_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
-# === Database Connection Pool ===
 dbconfig = {
     "user": os.getenv("DB_USER"),
     "host": os.getenv("DB_HOST"),
@@ -75,7 +69,6 @@ dbconfig = {
 }
 cnxpool = pooling.MySQLConnectionPool(pool_name="mypool", pool_size=10, **dbconfig)
 
-# === Context Processors ===
 @app.context_processor
 def inject_user_status():
     user_is_logged_in = ('user_id' in session)
@@ -83,7 +76,7 @@ def inject_user_status():
     if user_is_logged_in:
         profile_pic_url = url_for('serve_profile_picture')
     else:
-        profile_pic_url = url_for('static', filename='pfp/silhouette.png')
+        profile_pic_url = url_for('static', filename='images/silhouette.png')
 
     return dict(
         user_is_logged_in=user_is_logged_in,
@@ -92,7 +85,6 @@ def inject_user_status():
 
 @app.context_processor
 def inject_categories():
-    # Don't inject categories for auth pages
     if request.endpoint in ['login', 'signup']:
         return {}
     
@@ -104,10 +96,9 @@ def inject_categories():
         cursor = connection.cursor(dictionary=True)
         cursor.execute("SELECT name FROM Categories")
         categories = [r['name'] for r in cursor.fetchall()]
-    except Error as db_err: # Catch specific database errors
+    except Error as db_err:
         print(f"Database error fetching categories: {db_err}")
     except Exception as e:
-        # Log the error or handle it appropriately
         print(f"Error fetching categories: {e}")
     finally:
         if cursor:
@@ -115,9 +106,8 @@ def inject_categories():
         if connection and connection.is_connected():
             connection.close()
             
-    return dict(categories=categories) # Return potentially empty list
+    return dict(categories=categories)
 
-# Define TEAM_INFO globally
 TEAM_INFO = {
     'joe': {
         'name': 'Joseph Shur',
@@ -148,8 +138,6 @@ TEAM_INFO = {
 
 @app.context_processor
 def inject_team_members():
-    """Injects team member information for the 'About Us' dropdown."""
-    # Pass only the keys (usernames) and names for the dropdown links
     team_members_for_nav = {
         username: data['name'] for username, data in TEAM_INFO.items()
     }
@@ -157,18 +145,13 @@ def inject_team_members():
 
 @app.route("/", methods=["GET"])
 def home():
-    """Combined Home Page + Search Page"""
-    # Basic filters
     category = request.args.get('category', '')
     keyword = request.args.get('keyword', '')
-    
-    # Advanced filters from the sidebar
-    min_price_str = request.args.get('min_price', '') # Keep as string initially
-    max_price_str = request.args.get('max_price', '') # Keep as string initially
+    min_price_str = request.args.get('min_price', '')
+    max_price_str = request.args.get('max_price', '')
     condition = request.args.get('condition', '')
-    rating_str = request.args.get('rating', '') # Keep as string initially
+    rating_str = request.args.get('rating', '')
     posted_after = request.args.get('posted_after', '')
-    
     connection = None
     cursor = None
     results = []
@@ -177,61 +160,39 @@ def home():
     min_price = 0
     max_price = 2000
     rating = None
-    wishlisted_ids = set() # Initialize empty set for wishlist IDs
-
-    user_id = session.get('user_id') # Get user_id if logged in
-
+    wishlisted_ids = set()
+    user_id = session.get('user_id')
     try:
         connection = cnxpool.get_connection()
         cursor = connection.cursor(dictionary=True)
-
-        # If user is logged in, fetch their wishlist IDs
         if user_id:
             cursor.execute("SELECT product_id FROM Wishlist WHERE user_id = %s", (user_id,))
             wishlisted_ids = {row['product_id'] for row in cursor.fetchall()}
-
-        # Get global min/max prices for the slider range
         cursor.execute("SELECT MIN(price) as min_price, MAX(price) as max_price FROM Products WHERE status = 'available'")
         price_range = cursor.fetchone()
-        min_db_price = price_range.get('min_price', 0) or 0 # Default to 0 if None or 0
-        max_db_price = price_range.get('max_price', 2000) or 2000 # Default to 2000 if None or 0
-        
-        # Round up max_db_price to avoid truncation issues
-        # This prevents issues where 1399 might be shown as 1398.01 due to floating point precision
+        min_db_price = price_range.get('min_price', 0) or 0
+        max_db_price = price_range.get('max_price', 2000) or 2000
         max_db_price = math.ceil(max_db_price)
-
-        # --- Determine filter defaults ---
-        # Default min_price filter to actual min_db_price
         default_min_filter = min_db_price 
-        # Default max_price filter to actual max_db_price
         default_max_filter = max_db_price 
-
-        # --- Convert filter inputs ---
         try:
             min_price = float(min_price_str) if min_price_str else default_min_filter
         except (ValueError, TypeError):
             min_price = default_min_filter
-            
         try:
-            # For max_price, if the string is empty (not provided in URL), use default_max_filter
             if not max_price_str:
                 max_price = default_max_filter
-                # Print debug info for default max value
                 print(f"DEBUG - Using default max_price: {max_price}")
             else:
                 max_price = float(max_price_str)
-                # Print debug info for explicit max value
                 print(f"DEBUG - Using explicit max_price from URL: {max_price}")
         except (ValueError, TypeError):
             max_price = default_max_filter
             print(f"DEBUG - Using default max_price after error: {max_price}")
-
         try:
             rating = float(rating_str) if rating_str else None
         except (ValueError, TypeError):
             rating = None
-
-        # --- Build Query ---
         query = """
             SELECT 
                 p.product_id, p.title, p.price, p.description, 
@@ -241,11 +202,8 @@ def home():
             JOIN Categories c ON p.category_id = c.category_id
             LEFT JOIN ProductImages pi ON p.product_id = pi.product_id AND pi.image_order = 0
         """
-        
-        params = [] # Initialize parameter list
-        
-        # For seller rating, we need to join with Reviews if that filter is active
-        if rating is not None: # Check if rating filter is active
+        params = []
+        if rating is not None:
             query += """
             LEFT JOIN (
                 SELECT reviewed_user_id, AVG(rating) as avg_rating
@@ -253,8 +211,6 @@ def home():
                 GROUP BY reviewed_user_id
             ) r ON p.seller_id = r.reviewed_user_id
             """
-        
-        # --- WHERE clauses ---
         where_clauses = [
             "(%s = '' OR c.name = %s)",
             "(p.title LIKE %s OR p.description LIKE %s)",
@@ -262,16 +218,9 @@ def home():
             "p.price >= %s"
         ]
         params = [category, category, f"%{keyword}%", f"%{keyword}%", min_price]
-        
-        # For max price, ensure we're using the ceiling to include all items
-        # Use CEILING in SQL to avoid floating point precision issues
         where_clauses.append("p.price <= CEILING(%s)")
         params.append(max_price)
-        
-        # Log the actual values for debugging
         print(f"DEBUG - Price filter values: min={min_price}, max={max_price}, max_db_price={max_db_price}")
-
-        # Add condition filter if selected
         condition_param = None
         if condition:
             where_clauses.append("p.`condition` = %s")
@@ -284,58 +233,42 @@ def home():
             }
             condition_param = condition_map.get(condition, condition)
             params.append(condition_param)
-        
-        # Add rating filter if selected
-        if rating is not None: # Check if rating filter is active
+        if rating is not None:
             where_clauses.append("r.avg_rating >= %s")
             params.append(rating)
-        
-        # Add posted after date filter if selected
         if posted_after:
             where_clauses.append("DATE(p.created_at) >= %s")
             params.append(posted_after)
-        
         query += " WHERE " + " AND ".join(where_clauses)
-        
-        # Add ORDER BY clause to sort by creation date in descending order
         query += " ORDER BY p.created_at DESC"
-        
-        # --- Execute Query ---
         cursor.execute(query, params)
         results = cursor.fetchall()
-
     except Error as db_err:
         print(f"Database error in home route: {db_err}")
         flash('An error occurred while fetching products.', 'error')
-        # Keep default values for render_template in case of DB error before fetch
     except Exception as e:
         print(f"Unexpected error in home route: {e}")
         flash('An unexpected error occurred.', 'error')
-        # Keep default values for render_template
     finally:
         if cursor:
             cursor.close()
         if connection and connection.is_connected():
             connection.close()
-
-    # --- Render Template ---
-    # Use the filter values actually applied (or defaults)
-    # Use db values for slider range, actual filter values for slider value
     return render_template(
         'pages/index.html',
         items=results,
         keyword=keyword,
         category=category,
-        min_db_price=min_db_price,  # For slider range
-        max_db_price=max_db_price,  # For slider range
-        min_price=min_price,        # For slider current value
-        max_price=max_price,        # For slider current value
-        condition=condition,        # For filter state
-        rating=rating_str,          # Pass original string back for radio state
-        posted_after=posted_after,  # For filter state
+        min_db_price=min_db_price,
+        max_db_price=max_db_price,
+        min_price=min_price,
+        max_price=max_price,
+        condition=condition,
+        rating=rating_str,
+        posted_after=posted_after,
         count=len(results),
         show_filters=True,
-        wishlisted_ids=wishlisted_ids # Pass wishlisted IDs to template
+        wishlisted_ids=wishlisted_ids
     )
 
 @app.route('/image/<int:image_id>')
@@ -347,45 +280,32 @@ def serve_image(image_id):
         cursor = connection.cursor(dictionary=True)
         cursor.execute("SELECT image_data FROM ProductImages WHERE image_id = %s", (image_id,))
         row = cursor.fetchone()
-        
         if row and row.get('image_data'):
             img = row['image_data']
-            # MIME type detection remains the same
             if img.startswith(b'\x89PNG'):
                 mime = 'image/png'
             elif img.startswith(b'\xff\xd8'):
                 mime = 'image/jpeg'
             else:
                 mime = 'application/octet-stream'
-            
-            # Add caching headers
             response = Response(img, mimetype=mime)
-            # Cache for 1 day (86400 seconds)
             response.headers['Cache-Control'] = 'public, max-age=86400'
             response.headers['Expires'] = (datetime.now() + timedelta(days=1)).strftime('%a, %d %b %Y %H:%M:%S GMT')
             return response
         else:
-             # If image data not found in DB, fall through to serve placeholder
-            pass # Explicitly pass to make flow clear
-
+            pass
     except Error as db_err:
         print(f"Database error serving image {image_id}: {db_err}")
-        # Fall through to serve placeholder on DB error
     except Exception as e:
         print(f"Unexpected error serving image {image_id}: {e}")
-        # Fall through to serve placeholder on other errors
     finally:
         if cursor:
             cursor.close()
         if connection and connection.is_connected():
             connection.close()
-    
-    # --- Serve Placeholder Image --- 
-    # This code runs if DB query fails or image data is None
     default_image_path = os.path.join(app.static_folder, 'templatephotos', 'placeholder_img.png')
     try:
         response = send_file(default_image_path, mimetype='image/png')
-        # Cache for 1 week (604800 seconds)
         response.headers['Cache-Control'] = 'public, max-age=604800'
         response.headers['Expires'] = (datetime.now() + timedelta(days=7)).strftime('%a, %d %b %Y %H:%M:%S GMT')
         return response
@@ -394,13 +314,11 @@ def serve_image(image_id):
         abort(404)
 
 @app.route('/profile_picture')
-@login_required # User must be logged in to view their picture
+@login_required
 def serve_profile_picture():
     user_id = session.get('user_id')
     if not user_id:
-        # Should not happen due to @login_required, but belt-and-suspenders
         abort(401) 
-
     connection = None
     cursor = None
     try:
@@ -408,35 +326,28 @@ def serve_profile_picture():
         cursor = connection.cursor(dictionary=True)
         cursor.execute("SELECT profile_picture FROM Users WHERE user_id = %s", (user_id,))
         user = cursor.fetchone()
-
         if user and user.get('profile_picture'):
             img = user['profile_picture']
-            # Basic MIME type detection (same as serve_image)
             if img.startswith(b'\x89PNG'):
                 mime = 'image/png'
             elif img.startswith(b'\xff\xd8'):
                 mime = 'image/jpeg'
             else:
                 mime = 'application/octet-stream'
-            
             response = Response(img, mimetype=mime)
-            # Cache for 1 day (86400 seconds)
             response.headers['Cache-Control'] = 'public, max-age=86400'
             response.headers['Expires'] = (datetime.now() + timedelta(days=1)).strftime('%a, %d %b %Y %H:%M:%S GMT')
             return response
         else:
-            default_avatar_path = os.path.join(app.static_folder, 'pfp', 'silhouette.png')
+            default_avatar_path = os.path.join(app.static_folder, 'images', 'silhouette.png')
             try:
                 response = send_file(default_avatar_path, mimetype='image/png')
-                # Cache for 1 week (604800 seconds)
                 response.headers['Cache-Control'] = 'public, max-age=604800'
                 response.headers['Expires'] = (datetime.now() + timedelta(days=7)).strftime('%a, %d %b %Y %H:%M:%S GMT')
                 return response
             except FileNotFoundError:
-                 # Fallback if default avatar is missing
-                print("Error: Default avatar not found at static/pfp/silhouette.png")
+                print("Error: Default avatar not found at static/images/silhouette.png")
                 abort(404)
-
     except Error as db_err:
         print(f"Database error serving profile picture: {db_err}")
         abort(500)
@@ -458,34 +369,28 @@ def serve_user_picture(user_id):
         cursor = connection.cursor(dictionary=True)
         cursor.execute("SELECT profile_picture FROM Users WHERE user_id = %s", (user_id,))
         user = cursor.fetchone()
-
         if user and user.get('profile_picture'):
             img = user['profile_picture']
-            # Basic MIME type detection
             if img.startswith(b'\x89PNG'):
                 mime = 'image/png'
             elif img.startswith(b'\xff\xd8'):
                 mime = 'image/jpeg'
             else:
                 mime = 'application/octet-stream'
-            
             response = Response(img, mimetype=mime)
-            # Cache for 1 day (86400 seconds)
             response.headers['Cache-Control'] = 'public, max-age=86400'
             response.headers['Expires'] = (datetime.now() + timedelta(days=1)).strftime('%a, %d %b %Y %H:%M:%S GMT')
             return response
         else:
-            default_avatar_path = os.path.join(app.static_folder, 'pfp', 'silhouette.png')
+            default_avatar_path = os.path.join(app.static_folder, 'images', 'silhouette.png')
             try:
                 response = send_file(default_avatar_path, mimetype='image/png')
-                # Cache for 1 week (604800 seconds)
                 response.headers['Cache-Control'] = 'public, max-age=604800'
                 response.headers['Expires'] = (datetime.now() + timedelta(days=7)).strftime('%a, %d %b %Y %H:%M:%S GMT')
                 return response
             except FileNotFoundError:
-                print("Error: Default avatar not found at static/pfp/silhouette.png")
+                print("Error: Default avatar not found at static/images/silhouette.png")
                 abort(404)
-
     except Error as db_err:
         print(f"Database error serving user picture: {db_err}")
         abort(500)
@@ -498,25 +403,19 @@ def serve_user_picture(user_id):
         if connection and connection.is_connected():
             connection.close()
 
-# === About Pages ===
 @app.route('/about/<username>')
 def about(username):
     info = TEAM_INFO.get(username)
     if not info:
         abort(404)
-
-    # this will load templates/about_<username>.html
     template_name = f'about_team/{username}.html'
     return render_template(template_name, **info)
 
-# === Profile Routes ===
-
 @app.route("/profile/<int:profile_user_id>")
-@login_required # User must be logged in to view any profile
+@login_required
 def view_profile(profile_user_id):
     viewer_user_id = session.get('user_id')
     is_own_profile = (viewer_user_id == profile_user_id)
-
     connection = None
     cursor = None
     profile_user = None
@@ -524,35 +423,27 @@ def view_profile(profile_user_id):
     reviews = []
     avg_rating = None
     review_count = 0
-    has_reviewed = False  # Flag to track if viewer has already reviewed this user
-
+    has_reviewed = False
     try:
         connection = cnxpool.get_connection()
-        cursor = connection.cursor(dictionary=True, buffered=True) # Use buffered cursor for multiple queries
-
-        # Fetch profile user details
+        cursor = connection.cursor(dictionary=True, buffered=True)
         cursor.execute("""
             SELECT user_id, first_name, last_name, email, phone_number, bio, created_at
             FROM Users WHERE user_id = %s
         """, (profile_user_id,))
         profile_user = cursor.fetchone()
-
         if not profile_user:
             flash('User profile not found.', 'error')
             abort(404)
-
-        # Fetch user's listings
         cursor.execute("""
             SELECT p.product_id, p.title, p.price, pi.image_id AS first_image_id
             FROM Products p
             LEFT JOIN ProductImages pi ON p.product_id = pi.product_id AND pi.image_order = 0
             WHERE p.seller_id = %s AND p.status = 'available'
             ORDER BY p.created_at DESC
-            LIMIT 10 -- Limit number of listings shown initially
+            LIMIT 10
         """, (profile_user_id,))
         listings = cursor.fetchall()
-
-        # Fetch reviews about the user
         cursor.execute("""
             SELECT r.review_id, r.rating, r.comment, 
                    u.user_id as reviewer_id, u.first_name as reviewer_first_name, u.last_name as reviewer_last_name
@@ -562,26 +453,19 @@ def view_profile(profile_user_id):
             ORDER BY r.review_id DESC
         """, (profile_user_id,))
         reviews = cursor.fetchall()
-
-        # Calculate average rating
         if reviews:
             review_count = len(reviews)
             total_rating = sum(r['rating'] for r in reviews)
             avg_rating = round(total_rating / review_count, 1) if review_count > 0 else None
-            
-        # Check if the current user has already reviewed this profile
-        if not is_own_profile:  # No need to check if viewing own profile
+        if not is_own_profile:
             cursor.execute("""
                 SELECT review_id FROM Reviews 
                 WHERE reviewer_id = %s AND reviewed_user_id = %s
             """, (viewer_user_id, profile_user_id))
             has_reviewed = cursor.fetchone() is not None
-
-
     except Error as db_err:
         print(f"Database error fetching profile for user {profile_user_id}: {db_err}")
         flash("Could not load profile due to a database error.", "error")
-        # Redirect or show generic error? Redirect home for now.
         return redirect(url_for('home'))
     except Exception as e:
         print(f"Unexpected error fetching profile for user {profile_user_id}: {e}")
@@ -590,10 +474,7 @@ def view_profile(profile_user_id):
     finally:
         if cursor: cursor.close()
         if connection and connection.is_connected(): connection.close()
-
-    # Combine first and last name for display
     profile_user['full_name'] = f"{profile_user['first_name']} {profile_user['last_name']}"
-
     return render_template(
         'pages/profile.html',
         profile_user=profile_user,
@@ -602,8 +483,8 @@ def view_profile(profile_user_id):
         avg_rating=avg_rating,
         review_count=review_count,
         is_own_profile=is_own_profile,
-        viewer_user_id=viewer_user_id, # Pass viewer ID for review form action
-        has_reviewed=has_reviewed  # Pass the flag to indicate if user has already reviewed
+        viewer_user_id=viewer_user_id,
+        has_reviewed=has_reviewed
     )
 
 @app.route('/profile/update_bio', methods=['POST'])
@@ -611,23 +492,16 @@ def view_profile(profile_user_id):
 def update_bio():
     user_id = session['user_id']
     bio = request.form.get('bio', '').strip()
-    
-    # Validation
-    if len(bio) > 1000:  # Example limit
+    if len(bio) > 1000:
         return jsonify({'success': False, 'message': 'Bio cannot exceed 1000 characters.'}), 400
-    
     connection = None
     cursor = None
     try:
         connection = cnxpool.get_connection()
         cursor = connection.cursor()
-        
-        # Update only bio
         cursor.execute("UPDATE Users SET bio = %s WHERE user_id = %s", (bio, user_id))
         connection.commit()
-        
         return jsonify({'success': True, 'message': 'Bio updated successfully!'})
-        
     except Error as db_err:
         print(f"Database error updating bio for user {user_id}: {db_err}")
         if connection: connection.rollback()
@@ -644,38 +518,24 @@ def update_bio():
 @login_required
 def update_profile_picture():
     user_id = session['user_id']
-    
-    # Check if profile picture was included in the request
     if 'profile_picture' not in request.files:
         return jsonify({'success': False, 'message': 'No profile picture provided.'}), 400
-    
     profile_picture = request.files['profile_picture']
-    
-    # Check if a file was selected
     if profile_picture.filename == '':
         return jsonify({'success': False, 'message': 'No file selected.'}), 400
-    
-    # Check file type (simple check based on extension)
     allowed_extensions = {'png', 'jpg', 'jpeg'}
     if '.' not in profile_picture.filename or \
        profile_picture.filename.rsplit('.', 1)[1].lower() not in allowed_extensions:
         return jsonify({'success': False, 'message': 'Invalid file type. Please use PNG, JPG, or JPEG.'}), 400
-    
-    # Read the file content
     picture_blob = profile_picture.read()
-    
     connection = None
     cursor = None
     try:
         connection = cnxpool.get_connection()
         cursor = connection.cursor()
-        
-        # Update the profile picture
         cursor.execute("UPDATE Users SET profile_picture = %s WHERE user_id = %s", (picture_blob, user_id))
         connection.commit()
-        
         return jsonify({'success': True, 'message': 'Profile picture updated successfully!'})
-        
     except Error as db_err:
         print(f"Database error updating profile picture for user {user_id}: {db_err}")
         if connection: connection.rollback()
@@ -693,7 +553,6 @@ def update_profile_picture():
 def add_review(reviewed_user_id):
     reviewer_user_id = session['user_id']
 
-    # Prevent self-review
     if reviewer_user_id == reviewed_user_id:
         flash("You cannot review yourself.", 'warning')
         return redirect(url_for('view_profile', profile_user_id=reviewed_user_id))
@@ -701,7 +560,6 @@ def add_review(reviewed_user_id):
     rating_str = request.form.get('rating')
     comment = request.form.get('comment', '').strip()
 
-    # --- Validation ---
     if not rating_str or not comment:
         flash("Rating and comment are required to submit a review.", 'error')
         return redirect(url_for('view_profile', profile_user_id=reviewed_user_id))
@@ -714,10 +572,9 @@ def add_review(reviewed_user_id):
         flash("Invalid rating value. Please select 1-5 stars.", 'error')
         return redirect(url_for('view_profile', profile_user_id=reviewed_user_id))
 
-    if len(comment) > 500: # Example limit
+    if len(comment) > 500:
         flash("Review comment cannot exceed 500 characters.", 'error')
         return redirect(url_for('view_profile', profile_user_id=reviewed_user_id))
-    # --- End Validation ---
 
     connection = None
     cursor = None
@@ -725,13 +582,6 @@ def add_review(reviewed_user_id):
         connection = cnxpool.get_connection()
         cursor = connection.cursor()
 
-        # Check if user has already reviewed this user (optional, decide business logic)
-        # cursor.execute("SELECT review_id FROM Reviews WHERE reviewer_id = %s AND reviewed_user_id = %s", (reviewer_user_id, reviewed_user_id))
-        # if cursor.fetchone():
-        #     flash("You have already reviewed this user.", 'warning')
-        #     return redirect(url_for('view_profile', profile_user_id=reviewed_user_id))
-
-        # Insert the review
         insert_query = """
         INSERT INTO Reviews (reviewer_id, reviewed_user_id, rating, comment)
         VALUES (%s, %s, %s, %s)
@@ -755,7 +605,6 @@ def add_review(reviewed_user_id):
     return redirect(url_for('view_profile', profile_user_id=reviewed_user_id))
 
 
-# === Other Routes ===
 @app.route("/profile")
 @login_required
 def profile():
@@ -776,22 +625,18 @@ def login():
         cursor = None
         try:
             connection = cnxpool.get_connection()
-            # Fetch user with password hash
             cursor = connection.cursor(dictionary=True)
             cursor.execute("SELECT user_id, password, is_admin FROM Users WHERE email = %s", (email,))
             user = cursor.fetchone()
 
             if user and check_password_hash(user['password'], password):
-                # Password matches
-                # TODO: Implement session management (e.g., flask-login)
-                session['user_id'] = user['user_id'] # Set user_id in session
-                session['is_admin'] = user['is_admin'] # Set admin status in session
-                session.permanent = True # Optional: Make session persistent 
+                session['user_id'] = user['user_id']
+                session['is_admin'] = user['is_admin']
+                session.permanent = True
                 flash('Login successful! Welcome back.', 'success')
                 return redirect(url_for('home'))
             else:
-                # Invalid credentials
-                flash("Couldn't login. Please check your email and password.", 'error') # Updated message
+                flash("Couldn't login. Please check your email and password.", 'error')
                 return render_template('pages/auth/login.html')
 
         except Error as db_err:
@@ -808,7 +653,6 @@ def login():
             if connection and connection.is_connected():
                 connection.close()
 
-    # For GET requests
     return render_template('pages/auth/login.html')
 
 @app.route('/signup', methods=['GET', 'POST'])
@@ -822,17 +666,14 @@ def signup():
         phone_number = request.form.get('phone_number')
         profile_picture = request.files.get('profile_picture')
 
-        # --- Validation --- 
         if not all([first_name, last_name, email, password, phone_number]):
             flash('All text fields are required.', 'error')
-            return render_template('pages/auth/signup.html', form_data=request.form) # Pass form data
+            return render_template('pages/auth/signup.html', form_data=request.form)
         
-        # SFSU Email Validation
         if not email.lower().endswith('@sfsu.edu'):
             flash('Please use a valid SFSU email address (ending in @sfsu.edu).', 'error')
-            return render_template('pages/auth/signup.html', form_data=request.form) # Pass form data
+            return render_template('pages/auth/signup.html', form_data=request.form)
 
-        # Phone Number Validation (10 digits)
         digits_only = ''.join(filter(str.isdigit, phone_number))
         if not digits_only.isdigit() or len(digits_only) != 10:
              flash('Please enter a valid 10-digit phone number.', 'error')
@@ -840,15 +681,13 @@ def signup():
 
         if not profile_picture or profile_picture.filename == '':
             flash('Profile picture is required.', 'error')
-            return render_template('pages/auth/signup.html', form_data=request.form) # Pass form data
+            return render_template('pages/auth/signup.html', form_data=request.form)
 
-        # Check file type (simple check based on extension)
         allowed_extensions = {'png', 'jpg', 'jpeg'}
         if '.' not in profile_picture.filename or \
            profile_picture.filename.rsplit('.', 1)[1].lower() not in allowed_extensions:
             flash('Invalid file type for profile picture. Please use PNG, JPG, or JPEG.', 'error')
-            return render_template('pages/auth/signup.html', form_data=request.form) # Pass form data
-        # --- End Validation ---
+            return render_template('pages/auth/signup.html', form_data=request.form)
 
         hashed_password = generate_password_hash(password)
         picture_blob = profile_picture.read()
@@ -859,13 +698,11 @@ def signup():
             connection = cnxpool.get_connection()
             cursor = connection.cursor()
 
-            # Check if email already exists
             cursor.execute("SELECT user_id FROM Users WHERE email = %s", (email,))
             if cursor.fetchone():
                 flash('Email address already registered.', 'error')
-                return render_template('pages/auth/signup.html', form_data=request.form) # Pass form data
+                return render_template('pages/auth/signup.html', form_data=request.form)
 
-            # Insert new user
             insert_query = """
             INSERT INTO Users (first_name, last_name, email, password, phone_number, profile_picture)
             VALUES (%s, %s, %s, %s, %s, %s)
@@ -874,28 +711,26 @@ def signup():
             cursor.execute(insert_query, user_data)
             connection.commit()
 
-            flash('Account created successfully! Please log in.', 'success') # Updated message
-            return redirect(url_for('login')) # Redirect to login on success
+            flash('Account created successfully! Please log in.', 'success')
+            return redirect(url_for('login'))
 
         except Error as db_err:
             print(f"Database error: {db_err}")
-            flash('Signup unsuccessful. A database error occurred.', 'error') # Updated message
-            # Optional: Rollback transaction if something went wrong
+            flash('Signup unsuccessful. A database error occurred.', 'error')
             if connection and connection.is_connected():
                 connection.rollback()
-            return render_template('pages/auth/signup.html', form_data=request.form) # Pass form data
+            return render_template('pages/auth/signup.html', form_data=request.form)
         except Exception as e:
             print(f"An unexpected error occurred: {e}")
-            flash('Signup unsuccessful. An unexpected error occurred.', 'error') # Updated message
-            return render_template('pages/auth/signup.html', form_data=request.form) # Pass form data
+            flash('Signup unsuccessful. An unexpected error occurred.', 'error')
+            return render_template('pages/auth/signup.html', form_data=request.form)
         finally:
             if cursor:
                 cursor.close()
             if connection and connection.is_connected():
                 connection.close()
 
-    # For GET requests
-    return render_template('pages/auth/signup.html', form_data={}) # Pass empty dict for GET
+    return render_template('pages/auth/signup.html', form_data={})
 
 @app.route('/listingIndie')
 @login_required
@@ -906,7 +741,6 @@ def listingIndie():
 @login_required
 def newListing():
     if request.method == 'POST':
-        # Get form data
         title = request.form.get('title')
         price = request.form.get('price')
         category = request.form.get('category')
@@ -914,15 +748,12 @@ def newListing():
         description = request.form.get('description')
         images = request.files.getlist('images')
         
-        # Validation
         errors = False
         
-        # Required fields validation
         if not all([title, price, category, condition, description]):
             flash('All fields are required.', 'error')
             errors = True
             
-        # Price validation
         try:
             price_decimal = float(price)
             if price_decimal <= 0:
@@ -932,18 +763,15 @@ def newListing():
             flash('Price must be a valid decimal value.', 'error')
             errors = True
             
-        # Description length validation (assuming 500 chars max)
         max_desc_length = 500
         if len(description) > max_desc_length:
             flash(f'Description must be less than {max_desc_length} characters.', 'error')
             errors = True
             
-        # Images validation
         if not images or images[0].filename == '':
             flash('At least one image is required.', 'error')
             errors = True
         else:
-            # Check file types
             allowed_extensions = {'png', 'jpg', 'jpeg'}
             for img in images:
                 if '.' not in img.filename or \
@@ -952,7 +780,6 @@ def newListing():
                     errors = True
                     break
         
-        # If validation fails, return form with existing data
         if errors:
             form_data = {
                 'title': title,
@@ -963,12 +790,10 @@ def newListing():
             }
             return render_template('pages/listings/new_listing.html', form_data=form_data)
         
-        # Process the form data and save to database
         try:
             connection = cnxpool.get_connection()
             cursor = connection.cursor()
             
-            # Get category_id from category name
             cursor.execute("SELECT category_id FROM Categories WHERE name = %s", (category,))
             category_result = cursor.fetchone()
             if not category_result:
@@ -984,17 +809,19 @@ def newListing():
             
             category_id = category_result[0]
             
-            # Insert product
+            seller_id = session.get('user_id')
+            is_admin = session.get('is_admin', False)
+            
+            status = 'available' if is_admin else 'pending-approval'
+            
             insert_product_query = """
             INSERT INTO Products (title, description, price, category_id, seller_id, status, `condition`)
             VALUES (%s, %s, %s, %s, %s, %s, %s)
             """
-            seller_id = session.get('user_id')
-            product_data = (title, description, price_decimal, category_id, seller_id, 'available', condition)
+            product_data = (title, description, price_decimal, category_id, seller_id, status, condition)
             cursor.execute(insert_product_query, product_data)
             product_id = cursor.lastrowid
             
-            # Insert images
             for i, img in enumerate(images):
                 img_data = img.read()
                 insert_image_query = """
@@ -1004,7 +831,12 @@ def newListing():
                 cursor.execute(insert_image_query, (product_id, img_data, i))
             
             connection.commit()
-            flash('Listing created successfully!', 'success')
+            
+            if status == 'available':
+                flash('Listing created successfully!', 'success')
+            else:
+                flash('Listing created successfully! It will be visible after admin approval.', 'success')
+                
             return redirect(url_for('home'))
             
         except Error as db_err:
@@ -1037,15 +869,13 @@ def newListing():
             if connection and connection.is_connected():
                 connection.close()
     
-    # For GET requests
     return render_template('pages/listings/new_listing.html', form_data={})
 
-# === Autofill Listing Endpoint (Real AI) ===
 @app.route('/autofill_listing', methods=['POST'])
 @login_required
 def autofill_listing():
     if not client:
-        return jsonify({'success': False, 'message': 'Autofill feature is currently unavailable (config error).'}), 503 # 503 Service Unavailable
+        return jsonify({'success': False, 'message': 'Autofill feature is currently unavailable (config error).'}), 503
 
     if 'image' not in request.files:
         return jsonify({'success': False, 'message': 'No image file provided.'}), 400
@@ -1053,19 +883,16 @@ def autofill_listing():
     image_file = request.files['image']
     image_filename = image_file.filename
 
-    # Basic check if file seems like an image (based on filename)
     allowed_extensions = {'png', 'jpg', 'jpeg'}
     if '.' not in image_filename or \
        image_filename.rsplit('.', 1)[1].lower() not in allowed_extensions:
         return jsonify({'success': False, 'message': 'Invalid file type. Please use PNG, JPG, or JPEG.'}), 400
 
     try:
-        # 1. Read and encode the image
         image_data = image_file.read()
         base64_image = base64.b64encode(image_data).decode('utf-8')
-        mime_type = image_file.mimetype # Get MIME type from Flask file object
+        mime_type = image_file.mimetype
 
-        # Fetch categories dynamically from DB
         possible_categories = []
         connection = None
         cursor = None
@@ -1076,8 +903,6 @@ def autofill_listing():
             possible_categories = [r['name'] for r in cursor.fetchall()]
         except Error as db_err:
             print(f"Database error fetching categories for autofill: {db_err}")
-            # Proceed with empty list, AI might guess, or return error?
-            # Returning error seems safer if categories are crucial.
             return jsonify({'success': False, 'message': 'Could not fetch categories for autofill.'}), 500
         finally:
             if cursor: cursor.close()
@@ -1085,13 +910,10 @@ def autofill_listing():
 
         if not possible_categories:
              print("Warning: No categories found in the database for autofill prompt.")
-             # Handle this case - maybe default to a basic list or error out?
-             possible_categories = ["Other"] # Default if DB fetch fails but we don't error out
+             possible_categories = ["Other"]
 
-        # Use centrally defined conditions
         possible_conditions = ALLOWED_CONDITIONS
 
-        # 2. Construct the prompt for OpenAI Vision API
         prompt = f"""
 Analyze the provided image of an item for sale and generate a JSON object containing suggested values for the following fields: 'title', 'price', 'category', 'condition', and 'description'.
 
@@ -1114,9 +936,8 @@ Example JSON format:
 }}
 """
 
-        # 3. Make the API call
         response = client.chat.completions.create(
-            model="gpt-4o", # Or use "gpt-4o" if available and preferred
+            model="gpt-4o",
             messages=[
                 {
                     "role": "user",
@@ -1131,34 +952,29 @@ Example JSON format:
                     ],
                 }
             ],
-            max_tokens=300 # Adjust as needed
+            max_tokens=300
         )
 
-        # 4. Parse the response
         ai_response_content = response.choices[0].message.content.strip()
         print(f"AI response content: {ai_response_content}")
 
-        # Clean potential markdown code block fences
         if ai_response_content.startswith("```json"):
             ai_response_content = ai_response_content[7:]
         if ai_response_content.endswith("```"):
             ai_response_content = ai_response_content[:-3]
         ai_response_content = ai_response_content.strip()
 
-
         try:
             extracted_data = json.loads(ai_response_content)
-            # Basic validation of expected keys
             required_keys = {"title", "price", "category", "condition", "description"}
             if not required_keys.issubset(extracted_data.keys()):
                  print(f"AI response missing keys. Got: {extracted_data}")
                  raise ValueError("AI response missing required keys.")
-            # Ensure price is a number, convert if string
             if isinstance(extracted_data.get('price'), str):
                 try:
                     extracted_data['price'] = float(extracted_data['price'])
                 except ValueError:
-                    extracted_data['price'] = 0.0 # Default to 0 if conversion fails
+                    extracted_data['price'] = 0.0
 
             return jsonify({'success': True, 'data': extracted_data})
 
@@ -1171,11 +987,8 @@ Example JSON format:
              print(f"Raw AI response content: {ai_response_content}")
              return jsonify({'success': False, 'message': f'AI response validation failed: {val_err}'}), 500
 
-
     except Exception as e:
-        # Catch potential errors during file processing or API call
         print(f"Error during autofill API call: {e}")
-        # Check if it's an OpenAI API error
         if hasattr(e, 'status_code'):
             error_message = f"OpenAI API error ({e.status_code}): {getattr(e, 'message', str(e))}"
             status_code = e.status_code
@@ -1184,7 +997,6 @@ Example JSON format:
             status_code = 500
         return jsonify({'success': False, 'message': error_message}), status_code
 
-# Messages
 @app.route('/messages')
 @app.route('/messages/<int:user_id>')
 @login_required
@@ -1201,7 +1013,6 @@ def messages(user_id=None):
         connection = cnxpool.get_connection()
         cursor = connection.cursor(dictionary=True)
         
-        # Get all conversations, regardless of who initiated them
         conversations_query = """
         SELECT 
             u.user_id, u.first_name, u.last_name,
@@ -1228,7 +1039,6 @@ def messages(user_id=None):
         cursor.execute(conversations_query, (current_user_id, current_user_id, current_user_id, current_user_id, current_user_id))
         conversations_raw = cursor.fetchall()
         
-        # Process conversations
         for convo in conversations_raw:
             conversations.append({
                 "id": convo['user_id'],
@@ -1238,22 +1048,17 @@ def messages(user_id=None):
                 "last_message": convo['last_message']
             })
         
-        # Get active user (user we're chatting with)
         active_user_id = user_id
         
-        # Log for debugging
         print(f"Initial active_user_id from URL: {active_user_id}")
         
-        # If no specific user is provided in URL, use the first available user
         if not active_user_id and conversations:
             active_user_id = conversations[0]['id']
             print(f"Using first conversation user: {active_user_id}")
             
         print(f"Final active_user_id: {active_user_id}")
         
-        # If we have an active user, get their details and messages
         if active_user_id:
-            # Get user details
             cursor.execute("""
                 SELECT user_id, first_name, last_name
                 FROM Users WHERE user_id = %s
@@ -1268,7 +1073,6 @@ def messages(user_id=None):
                     "status_text": ""
                 }
                 
-                # Get messages between current user and active user
                 cursor.execute("""
                     SELECT sender_id, content, timestamp
                     FROM Messages
@@ -1286,13 +1090,11 @@ def messages(user_id=None):
                         "is_sent": msg['sender_id'] == current_user_id
                     })
             
-            # Set active status in conversations list
             for convo in conversations:
                 if convo['id'] == active_user_id:
                     convo['active'] = True
                     break
         else:
-            # Explicitly handle no active user
             active_user_id = None
             print("No active user ID set")
         
@@ -1308,9 +1110,7 @@ def messages(user_id=None):
         if connection and connection.is_connected():
             connection.close()
     
-    # If no chat_user is set but we have conversations, use the first one
     if not chat_user and conversations:
-        # Use the first user as default
         first_user = conversations[0]
         chat_user = {
             "name": first_user['name'],
@@ -1336,7 +1136,6 @@ def messages(user_id=None):
 @app.route('/start_conversation/<int:user_id>/product/<int:product_id>')
 @login_required
 def start_conversation(user_id, product_id=None):
-    # If product_id is provided, we'll send an initial message about the product
     if product_id is not None:
         connection = None
         cursor = None
@@ -1344,18 +1143,15 @@ def start_conversation(user_id, product_id=None):
             connection = cnxpool.get_connection()
             cursor = connection.cursor(dictionary=True)
             
-            # Get product details
             cursor.execute("""
                 SELECT title, price FROM Products WHERE product_id = %s
             """, (product_id,))
             product_data = cursor.fetchone()
             
             if product_data:
-                # Create initial message about the product
                 sender_id = session.get('user_id')
                 message_content = f"I'm interested in your listing: {product_data['title']} (${product_data['price']})"
                 
-                # Insert message into database
                 cursor.execute("""
                     INSERT INTO Messages (sender_id, receiver_id, product_id, content)
                     VALUES (%s, %s, %s, %s)
@@ -1376,15 +1172,12 @@ def start_conversation(user_id, product_id=None):
     
     return redirect(url_for('messages', user_id=user_id))
 
-# Socket.IO event handlers
 @socketio.on('connect')
 def handle_connect():
     print(f"Socket connection attempt. Session data: {session}")
     if 'user_id' in session:
         user_id = session['user_id']
-        # Add user to their own room (user_id as room name)
         join_room(str(user_id))
-        # Access socket ID properly
         socket_id = request.sid if hasattr(request, 'sid') else 'unknown'
         print(f"User {user_id} connected to socket with SID: {socket_id}")
     else:
@@ -1410,9 +1203,9 @@ def handle_send_message(data):
     
     try:
         sender_id = session['user_id']
-        receiver_id = int(data['receiver_id'])  # Ensure it's an integer
+        receiver_id = int(data['receiver_id'])
         content = data['message']
-        product_id = data.get('product_id')  # Optional product reference
+        product_id = data.get('product_id')
         
         print(f"Processing message from user {sender_id} to user {receiver_id}: {content}")
         
@@ -1422,7 +1215,6 @@ def handle_send_message(data):
             connection = cnxpool.get_connection()
             cursor = connection.cursor()
             
-            # Insert message into database
             insert_query = """
             INSERT INTO Messages (sender_id, receiver_id, product_id, content)
             VALUES (%s, %s, %s, %s)
@@ -1430,19 +1222,16 @@ def handle_send_message(data):
             cursor.execute(insert_query, (sender_id, receiver_id, product_id, content))
             connection.commit()
             
-            # Get message timestamp and ID
             cursor.execute("SELECT LAST_INSERT_ID() as message_id")
             message_id = cursor.fetchone()[0]
             
             cursor.execute("SELECT timestamp FROM Messages WHERE message_id = %s", (message_id,))
             timestamp = cursor.fetchone()[0]
             
-            # Format message for real-time delivery
             formatted_timestamp = timestamp.strftime("%I:%M %p")
             
             print(f"Message saved to database with ID {message_id}")
             
-            # Get sender info for the receiver
             cursor.execute("""
                 SELECT first_name, last_name 
                 FROM Users 
@@ -1451,7 +1240,6 @@ def handle_send_message(data):
             sender_info = cursor.fetchone()
             sender_name = f"{sender_info[0]} {sender_info[1]}" if sender_info else "Unknown User"
             
-            # Create message payload for sender
             sender_payload = {
                 'sender_id': sender_id,
                 'receiver_id': receiver_id,
@@ -1461,11 +1249,9 @@ def handle_send_message(data):
                 'message_id': message_id
             }
             
-            # Emit message to sender's room (for multiple tabs/windows)
             print(f"Emitting message to sender's room: {sender_id}")
             emit('new_message', sender_payload, room=str(sender_id))
             
-            # Create message payload for receiver
             receiver_payload = {
                 'sender_id': sender_id,
                 'receiver_id': receiver_id,
@@ -1476,7 +1262,6 @@ def handle_send_message(data):
                 'sender_name': sender_name
             }
             
-            # Emit message to receiver's room
             print(f"Emitting message to receiver's room: {receiver_id}")
             emit('new_message', receiver_payload, room=str(receiver_id))
             
@@ -1504,7 +1289,6 @@ def handle_send_message(data):
         if 'user_id' in session:
             emit('message_error', {'error': 'An unexpected error occurred'}, room=str(session['user_id']))
 
-# Wishlist Page
 @app.route('/wishlist')
 @login_required
 def wishlist():
@@ -1516,8 +1300,6 @@ def wishlist():
         connection = cnxpool.get_connection()
         cursor = connection.cursor(dictionary=True)
         
-        # Fetch wishlisted items details for the user
-        # Join Wishlist, Products, and optionally ProductImages to get the first image
         query = """
             SELECT 
                 p.product_id, p.title, p.price, p.description,
@@ -1526,7 +1308,7 @@ def wishlist():
             JOIN Products p ON w.product_id = p.product_id
             LEFT JOIN ProductImages pi ON p.product_id = pi.product_id AND pi.image_order = 0
             WHERE w.user_id = %s AND p.status = 'available' 
-        """ # Added check for p.status = 'available'
+        """
         cursor.execute(query, (user_id,))
         items = cursor.fetchall()
 
@@ -1554,17 +1336,14 @@ def add_to_wishlist(product_id):
         connection = cnxpool.get_connection()
         cursor = connection.cursor()
 
-        # Check if product exists and is available
         cursor.execute("SELECT product_id FROM Products WHERE product_id = %s AND status = 'available'", (product_id,))
         if not cursor.fetchone():
              return jsonify({'success': False, 'message': 'Product not found or unavailable.'}), 404
 
-        # Check if already in wishlist
         cursor.execute("SELECT wishlist_id FROM Wishlist WHERE user_id = %s AND product_id = %s", (user_id, product_id))
         if cursor.fetchone():
-            return jsonify({'success': False, 'message': 'Item already in wishlist.'}), 409 # 409 Conflict
+            return jsonify({'success': False, 'message': 'Item already in wishlist.'}), 409
 
-        # Add to wishlist
         insert_query = "INSERT INTO Wishlist (user_id, product_id) VALUES (%s, %s)"
         cursor.execute(insert_query, (user_id, product_id))
         connection.commit()
@@ -1592,24 +1371,18 @@ def remove_from_wishlist(product_id):
         connection = cnxpool.get_connection()
         cursor = connection.cursor()
 
-        # Delete from wishlist
         delete_query = "DELETE FROM Wishlist WHERE user_id = %s AND product_id = %s"
         cursor.execute(delete_query, (user_id, product_id))
         
-        # Check if any row was actually deleted
         if cursor.rowcount == 0:
-             # Optionally, you could check if the product exists first, but 
-             # simply attempting deletion and checking rowcount is often sufficient.
-             # This handles cases where the item was already removed or never existed for this user.
              return jsonify({'success': False, 'message': 'Item not found in wishlist.'}), 404
 
         connection.commit()
         
-        # Check if the request came from the wishlist page to redirect
         referer = request.headers.get("Referer")
         if referer and url_for('wishlist') in referer:
              flash('Item removed from wishlist.', 'success')
-             return redirect(url_for('wishlist')) # Redirect only if removing from wishlist page
+             return redirect(url_for('wishlist'))
         else:
              return jsonify({'success': True, 'message': 'Item removed from wishlist.'})
 
@@ -1627,7 +1400,7 @@ def remove_from_wishlist(product_id):
         if connection and connection.is_connected(): connection.close()
 
 @app.route('/logout')
-@login_required # Must be logged in to log out
+@login_required
 def logout():
     session.clear()
     flash('You have been logged out successfully.', 'success')
@@ -1642,7 +1415,6 @@ def delete_product(product_id):
         connection = cnxpool.get_connection()
         cursor = connection.cursor(dictionary=True)
         
-        # First check if the product exists and belongs to the current user
         query = """
             SELECT seller_id FROM Products 
             WHERE product_id = %s
@@ -1654,21 +1426,16 @@ def delete_product(product_id):
             flash("Product not found.", "error")
             return redirect(url_for('home'))
             
-        # Verify ownership
         if product['seller_id'] != session['user_id']:
             flash("You can only delete your own listings.", "error")
             return redirect(url_for('product_detail', product_id=product_id))
         
-        # Delete related images first (due to foreign key constraints)
         cursor.execute("DELETE FROM ProductImages WHERE product_id = %s", (product_id,))
         
-        # Remove from any wishlists
         cursor.execute("DELETE FROM Wishlist WHERE product_id = %s", (product_id,))
         
-        # Remove any messages related to the product
         cursor.execute("DELETE FROM Messages WHERE product_id = %s", (product_id,))
         
-        # Delete the product
         cursor.execute("DELETE FROM Products WHERE product_id = %s", (product_id,))
         
         connection.commit()
@@ -1699,7 +1466,6 @@ def product_detail(product_id):
         connection = cnxpool.get_connection()
         cursor = connection.cursor(dictionary=True)
 
-        # Fetch product details including seller info and condition
         query_product = """
             SELECT
                 p.product_id, p.title, p.description, p.price, p.status,
@@ -1715,7 +1481,6 @@ def product_detail(product_id):
         product = cursor.fetchone()
 
         if product:
-             # Fetch image IDs
             query_images = """
                 SELECT image_id
                 FROM ProductImages
@@ -1725,7 +1490,6 @@ def product_detail(product_id):
             cursor.execute(query_images, (product_id,))
             image_ids = [row['image_id'] for row in cursor.fetchall()]
 
-            # Convert price to Decimal for accurate formatting if needed, though Jinja handles it well
             if product.get('price') is not None:
                  product['price'] = Decimal(product['price'])
 
@@ -1743,19 +1507,26 @@ def product_detail(product_id):
         if connection and connection.is_connected(): connection.close()
 
     if product:
-        # Check if the current user is the owner of the listing
         current_user_id = session.get('user_id')
         is_owner = current_user_id and current_user_id == product['seller_id']
         
-        # Pass the necessary data to the template
+        is_admin = session.get('is_admin', False)
+        
+        pending_approval = product['status'] == 'pending-approval'
+        
+        if pending_approval and not (is_owner or is_admin):
+            flash("This listing is pending approval and not yet visible to the public.", "warning")
+            return redirect(url_for('home'))
+        
         return render_template('pages/listings/listing_indie.html', 
                               product=product, 
                               image_ids=image_ids, 
-                              is_owner=is_owner)
+                              is_owner=is_owner,
+                              is_admin=is_admin,
+                              pending_approval=pending_approval)
     else:
-        abort(404) # Product not found
+        abort(404)
 
-# === Availability Routes ===
 @app.route('/get_availability/<int:user_id>')
 def get_availability(user_id):
     connection = None
@@ -1766,7 +1537,6 @@ def get_availability(user_id):
         connection = cnxpool.get_connection()
         cursor = connection.cursor(dictionary=True)
         
-        # Fetch all availability time slots for the user
         query = """
             SELECT day_of_week, time_slot
             FROM UserAvailability
@@ -1775,7 +1545,6 @@ def get_availability(user_id):
         cursor.execute(query, (user_id,))
         results = cursor.fetchall()
         
-        # Format the results into a dictionary for easier handling in JavaScript
         for row in results:
             day = row['day_of_week']
             time_slot = row['time_slot']
@@ -1800,18 +1569,15 @@ def get_availability(user_id):
 @app.route('/update_availability/<int:user_id>', methods=['POST'])
 @login_required
 def update_availability(user_id):
-    # Verify user is updating their own availability
     if session.get('user_id') != user_id:
         return jsonify({'success': False, 'message': 'You can only update your own availability.'}), 403
     
     try:
-        # Get the availability data from the request
         data = request.json
         if not data or 'availability' not in data:
             return jsonify({'success': False, 'message': 'No availability data provided.'}), 400
         
         availability_data = data['availability']
-        # Format should be: {day: [time_slots], day: [time_slots], ...}
         
         connection = None
         cursor = None
@@ -1820,22 +1586,18 @@ def update_availability(user_id):
             connection = cnxpool.get_connection()
             cursor = connection.cursor()
             
-            # First, delete all existing availability for this user
             cursor.execute("DELETE FROM UserAvailability WHERE user_id = %s", (user_id,))
             
-            # Insert new availability data
             insert_query = """
                 INSERT INTO UserAvailability (user_id, day_of_week, time_slot, is_available)
                 VALUES (%s, %s, %s, TRUE)
             """
             
-            # Prepare the insert data
             insert_data = []
             for day, time_slots in availability_data.items():
                 for time_slot in time_slots:
                     insert_data.append((user_id, day, time_slot))
             
-            # Execute the insert query for all records
             if insert_data:
                 cursor.executemany(insert_query, insert_data)
             
@@ -1856,7 +1618,6 @@ def update_availability(user_id):
 
 @app.route('/update_product_description', methods=['POST'])
 def update_product_description():
-    """Update a product's description via AJAX"""
     if 'user_id' not in session:
         return jsonify({'success': False, 'message': 'You must be logged in to perform this action'}), 401
     
@@ -1879,7 +1640,6 @@ def update_product_description():
         connection = cnxpool.get_connection()
         cursor = connection.cursor(dictionary=True)
         
-        # First check if the current user is the owner of the product
         cursor.execute(
             "SELECT seller_id FROM Products WHERE product_id = %s",
             (product_id,)
@@ -1892,7 +1652,6 @@ def update_product_description():
         if product['seller_id'] != user_id:
             return jsonify({'success': False, 'message': 'You do not have permission to edit this product'}), 403
         
-        # Update the product description
         cursor.execute(
             "UPDATE Products SET description = %s WHERE product_id = %s",
             (description, product_id)
@@ -1916,7 +1675,6 @@ def update_product_description():
 
 @app.route('/update_product_title', methods=['POST'])
 def update_product_title():
-    """Update a product's title via AJAX"""
     if 'user_id' not in session:
         return jsonify({'success': False, 'message': 'You must be logged in to perform this action'}), 401
     
@@ -1942,7 +1700,6 @@ def update_product_title():
         connection = cnxpool.get_connection()
         cursor = connection.cursor(dictionary=True)
         
-        # First check if the current user is the owner of the product
         cursor.execute(
             "SELECT seller_id FROM Products WHERE product_id = %s",
             (product_id,)
@@ -1955,7 +1712,6 @@ def update_product_title():
         if product['seller_id'] != user_id:
             return jsonify({'success': False, 'message': 'You do not have permission to edit this product'}), 403
         
-        # Update the product title
         cursor.execute(
             "UPDATE Products SET title = %s WHERE product_id = %s",
             (title, product_id)
@@ -1977,21 +1733,19 @@ def update_product_title():
         if connection:
             connection.close()
 
-# === Admin Routes ===
 @app.route('/admin/dashboard')
 @admin_required
 def admin_dashboard():
-    """Admin dashboard showing users and reports"""
     connection = None
     cursor = None
     users = []
     reports = []
+    pending_posts = []
     
     try:
         connection = cnxpool.get_connection()
         cursor = connection.cursor(dictionary=True)
         
-        # Fetch all users
         cursor.execute("""
             SELECT user_id, first_name, last_name, email, phone_number, 
                    created_at, is_admin
@@ -2000,7 +1754,6 @@ def admin_dashboard():
         """)
         users = cursor.fetchall()
         
-        # Fetch all reports with reporter and reported entity details
         cursor.execute("""
             SELECT r.*, 
                    CONCAT(u1.first_name, ' ', u1.last_name) as reporter_name,
@@ -2026,6 +1779,16 @@ def admin_dashboard():
         """)
         reports = cursor.fetchall()
         
+        cursor.execute("""
+            SELECT p.product_id, p.title, p.price, p.status, p.created_at,
+                   p.seller_id, CONCAT(u.first_name, ' ', u.last_name) as seller_name
+            FROM Products p
+            JOIN Users u ON p.seller_id = u.user_id
+            WHERE p.status = 'pending-approval'
+            ORDER BY p.created_at DESC
+        """)
+        pending_posts = cursor.fetchall()
+        
     except Error as db_err:
         print(f"Database error in admin dashboard: {db_err}")
         flash("Could not load admin data due to a database error.", "error")
@@ -2038,13 +1801,55 @@ def admin_dashboard():
         if connection and connection.is_connected():
             connection.close()
     
-    return render_template('pages/admin/dashboard.html', users=users, reports=reports)
+    return render_template('pages/admin/dashboard.html', users=users, reports=reports, pending_posts=pending_posts)
+
+@app.route('/admin/products/approve/<int:product_id>', methods=['POST'])
+@admin_required
+def admin_approve_product(product_id):
+    connection = None
+    cursor = None
+    try:
+        connection = cnxpool.get_connection()
+        cursor = connection.cursor(dictionary=True)
+        
+        cursor.execute("""
+            SELECT p.product_id, p.title, p.status, u.first_name, u.last_name
+            FROM Products p
+            JOIN Users u ON p.seller_id = u.user_id
+            WHERE p.product_id = %s
+        """, (product_id,))
+        product = cursor.fetchone()
+        
+        if not product:
+            flash("Product not found.", "error")
+            return redirect(url_for('admin_dashboard'))
+        
+        if product['status'] != 'pending-approval':
+            flash("This product is not pending approval.", "warning")
+            return redirect(url_for('admin_dashboard'))
+        
+        cursor.execute("UPDATE Products SET status = 'available' WHERE product_id = %s", (product_id,))
+        
+        connection.commit()
+        flash(f"Product '{product['title']}' by {product['first_name']} {product['last_name']} has been approved.", "success")
+        
+    except Error as db_err:
+        print(f"Database error approving product: {db_err}")
+        flash("Could not approve product due to a database error.", "error")
+        if connection: connection.rollback()
+    except Exception as e:
+        print(f"Unexpected error approving product: {e}")
+        flash("An unexpected error occurred while approving product.", "error")
+        if connection: connection.rollback()
+    finally:
+        if cursor: cursor.close()
+        if connection and connection.is_connected(): connection.close()
+    
+    return redirect(url_for('admin_dashboard'))
 
 @app.route('/admin/reports/<int:report_id>/update/<status>', methods=['POST'])
 @admin_required
 def update_report_status(report_id, status):
-    """Update the status of a report"""
-    # Always set status to 'dismissed' regardless of input
     status = 'dismissed'
     
     connection = None
@@ -2053,8 +1858,6 @@ def update_report_status(report_id, status):
         connection = cnxpool.get_connection()
         cursor = connection.cursor()
         
-        
-        # Update the report status and set resolved_at timestamp
         cursor.execute("""
             UPDATE Reports 
             SET status = %s, resolved_at = CURRENT_TIMESTAMP
@@ -2081,7 +1884,6 @@ def update_report_status(report_id, status):
 @app.route('/admin/users/delete', methods=['POST'])
 @admin_required
 def admin_delete_user():
-    """Delete a user and all their data"""
     user_id = request.form.get('user_id')
     
     if not user_id:
@@ -2094,7 +1896,6 @@ def admin_delete_user():
         connection = cnxpool.get_connection()
         cursor = connection.cursor(dictionary=True)
         
-        # Check if the user exists and is not an admin
         cursor.execute("SELECT user_id, is_admin, first_name, last_name FROM Users WHERE user_id = %s", (user_id,))
         user = cursor.fetchone()
         
@@ -2106,38 +1907,40 @@ def admin_delete_user():
             flash("Cannot delete an admin user.", "error")
             return redirect(url_for('admin_dashboard'))
         
-        # Since we have ON DELETE CASCADE for foreign keys,
-        # we can first delete product images to free up large BLOBs
         cursor.execute("""
             DELETE FROM ProductImages 
             WHERE product_id IN (SELECT product_id FROM Products WHERE seller_id = %s)
         """, (user_id,))
+
+        cursor.execute("SELECT product_id FROM Products WHERE seller_id = %s", (user_id,))
+        user_products = [row['product_id'] for row in cursor.fetchall()]
         
-        # Then disable foreign key checks and delete the user
         cursor.execute("SET FOREIGN_KEY_CHECKS = 0;")
         
-        # Remove from wishlist
         cursor.execute("DELETE FROM Wishlist WHERE user_id = %s", (user_id,))
+        if user_products:
+            placeholders = ', '.join(['%s'] * len(user_products))
+            cursor.execute(f"DELETE FROM Wishlist WHERE product_id IN ({placeholders})", user_products)
         
-        # Remove from UserAvailability
         cursor.execute("DELETE FROM UserAvailability WHERE user_id = %s", (user_id,))
         
-        # Remove Reports related to user
         cursor.execute("DELETE FROM Reports WHERE reporter_id = %s OR reported_user_id = %s", (user_id, user_id))
         
-        # Remove Reviews related to user
+        if user_products:
+            placeholders = ', '.join(['%s'] * len(user_products))
+            cursor.execute(f"DELETE FROM Reports WHERE reported_product_id IN ({placeholders})", user_products)
+        
         cursor.execute("DELETE FROM Reviews WHERE reviewer_id = %s OR reviewed_user_id = %s", (user_id, user_id))
         
-        # Remove Messages related to user
         cursor.execute("DELETE FROM Messages WHERE sender_id = %s OR receiver_id = %s", (user_id, user_id))
+        if user_products:
+            placeholders = ', '.join(['%s'] * len(user_products))
+            cursor.execute(f"DELETE FROM Messages WHERE product_id IN ({placeholders})", user_products)
         
-        # Delete user's products
         cursor.execute("DELETE FROM Products WHERE seller_id = %s", (user_id,))
         
-        # Finally delete the user
         cursor.execute("DELETE FROM Users WHERE user_id = %s", (user_id,))
         
-        # Re-enable foreign key checks
         cursor.execute("SET FOREIGN_KEY_CHECKS = 1;")
         
         connection.commit()
@@ -2160,14 +1963,12 @@ def admin_delete_user():
 @app.route('/admin/products/delete/<int:product_id>', methods=['POST'])
 @admin_required
 def admin_delete_product(product_id):
-    """Delete a product as an admin"""
     connection = None
     cursor = None
     try:
         connection = cnxpool.get_connection()
         cursor = connection.cursor(dictionary=True)
         
-        # Check if the product exists
         cursor.execute("""
             SELECT p.product_id, p.title, u.first_name, u.last_name
             FROM Products p
@@ -2180,17 +1981,19 @@ def admin_delete_product(product_id):
             flash("Product not found.", "error")
             return redirect(url_for('admin_dashboard'))
         
-        # Delete related product images first
+        cursor.execute("SET FOREIGN_KEY_CHECKS = 0;")
+        
         cursor.execute("DELETE FROM ProductImages WHERE product_id = %s", (product_id,))
         
-        # Remove from wishlist
         cursor.execute("DELETE FROM Wishlist WHERE product_id = %s", (product_id,))
         
-        # Remove related reports
+        cursor.execute("DELETE FROM Messages WHERE product_id = %s", (product_id,))
+        
         cursor.execute("DELETE FROM Reports WHERE reported_product_id = %s", (product_id,))
         
-        # Delete the product
         cursor.execute("DELETE FROM Products WHERE product_id = %s", (product_id,))
+        
+        cursor.execute("SET FOREIGN_KEY_CHECKS = 1;")
         
         connection.commit()
         flash(f"Product '{product['title']}' by {product['first_name']} {product['last_name']} deleted successfully.", "success")
@@ -2209,11 +2012,9 @@ def admin_delete_product(product_id):
     
     return redirect(url_for('admin_dashboard'))
 
-# === Reporting Routes ===
 @app.route('/report/user/<int:user_id>', methods=['POST'])
 @login_required
 def report_user(user_id):
-    """Report a user for inappropriate behavior"""
     if user_id == session.get('user_id'):
         flash("You cannot report yourself.", "error")
         return redirect(url_for('view_profile', profile_user_id=user_id))
@@ -2229,7 +2030,6 @@ def report_user(user_id):
         connection = cnxpool.get_connection()
         cursor = connection.cursor()
         
-        # Insert report
         cursor.execute("""
             INSERT INTO Reports (reporter_id, reported_user_id, reason)
             VALUES (%s, %s, %s)
@@ -2255,7 +2055,6 @@ def report_user(user_id):
 @app.route('/report/product/<int:product_id>', methods=['POST'])
 @login_required
 def report_product(product_id):
-    """Report a product listing for inappropriate content"""
     reason = request.form.get('reason', '').strip()
     if not reason:
         flash("Please provide a reason for your report.", "error")
@@ -2267,7 +2066,6 @@ def report_product(product_id):
         connection = cnxpool.get_connection()
         cursor = connection.cursor(dictionary=True)
         
-        # Check if product exists and get seller ID
         cursor.execute("SELECT seller_id FROM Products WHERE product_id = %s", (product_id,))
         product = cursor.fetchone()
         
@@ -2275,12 +2073,10 @@ def report_product(product_id):
             flash("Product not found.", "error")
             return redirect(url_for('home'))
         
-        # Prevent reporting your own products
         if product['seller_id'] == session['user_id']:
             flash("You cannot report your own listing.", "error")
             return redirect(url_for('product_detail', product_id=product_id))
         
-        # Insert report
         cursor.execute("""
             INSERT INTO Reports (reporter_id, reported_product_id, reason)
             VALUES (%s, %s, %s)

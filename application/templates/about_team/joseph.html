@@ -1,9 +1,13 @@
-{# templates/about_pages/joseph.html #}
-{% extends "_about.html" %}
+<!-- This HTML file is a template for Joseph Alhambra's about page, extending the base about template -->
 
-{% block person_content %}
-<img src="{{ url_for('static', filename='pfp/joseph.png') }}" alt="Joseph Alhambra" class="about-image">
+{% extends "_about.html" %} {% block person_content %}
+<img
+  src="{{ url_for('static', filename='images/joseph.png') }}"
+  alt="Joseph Alhambra"
+  class="about-image"
+/>
 <p>
-  Hi, my name is Joseph Alhambra and I am the front‑end developer of this project.
+  Hi, my name is Joseph Alhambra and I am the front‑end developer of this
+  project.
 </p>
 {% endblock %}

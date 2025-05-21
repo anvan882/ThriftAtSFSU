@@ -1,3 +1,5 @@
+<!-- This file defines the navigation bar for the Thrift@SFSU website, including logo, search form, and authentication buttons. -->
+
 <nav class="navbar">
   <div class="navbar-left">
     <a href="{{ url_for('home') }}" class="logo">
@@ -18,7 +20,6 @@
     <input type="text" name="keyword" placeholder="Search products..." value="{{ keyword }}">
 
     <button type="submit" aria-label="Search">
-      <!-- search icon SVG -->
       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"
         stroke-linecap="round" stroke-linejoin="round">
         <circle cx="11" cy="11" r="8" />
@@ -29,7 +30,6 @@
 
   <div class="auth-buttons">
     {% if user_is_logged_in %}
-      {# Show profile dropdown for logged-in users #}
       <div class="profile-dropdown">
         <img src="{{ profile_pic_url }}" alt="My Profile" class="navbar-profile-pic">
         <div class="dropdown-menu">
@@ -40,12 +40,11 @@
           {% if session.get('is_admin') %}
           <a href="{{ url_for('admin_dashboard') }}">Admin Dashboard</a>
           {% endif %}
-          <hr> {# Optional separator #}
+          <hr>
           <a href="{{ url_for('logout') }}">Logout</a>
         </div>
       </div>
     {% else %}
-      {# Show links for logged-out users #}
       <a href="{{ url_for('login') }}" class="btn btn-outline">Login</a>
       <a href="{{ url_for('signup') }}" class="btn btn-outline">Sign Up</a>
     {% endif %}

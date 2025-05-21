@@ -1,81 +1,98 @@
+<!-- This HTML file is for the login page of the SFSU Thrift Market, including form handling and flash message display. -->
 <!DOCTYPE html>
 <html lang="en">
-
-<head>
-    <meta charset="UTF-8">
+  <head>
+    <meta charset="UTF-8" />
     <title>Login - SFSU Thrift Market</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="{{ url_for('static', filename='auth.css') }}">
-</head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='auth.css') }}"
+    />
+  </head>
 
-<body>
-    {# --- Flash Messages --- #}
-    {% with messages = get_flashed_messages(with_categories=true) %}
-      {% if messages %}
-        <div class="flash-messages-container auth-flash-messages">
-        {% for category, message in messages %}
-          <div class="alert alert-{{ category }}">{{ message }}</div>
-        {% endfor %}
-        </div>
-      {% endif %}
-    {% endwith %}
-    {# --- End Flash Messages --- #}
+  <body>
+    {% with messages = get_flashed_messages(with_categories=true) %} {% if
+    messages %}
+    <div class="flash-messages-container auth-flash-messages">
+      {% for category, message in messages %}
+      <div class="alert alert-{{ category }}">{{ message }}</div>
+      {% endfor %}
+    </div>
+    {% endif %} {% endwith %}
 
-    <!-- Back to Home Link -->
     <a href="{{ url_for('home') }}" class="back-link">
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-            <path fill-rule="evenodd"
-                d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8z" />
-        </svg>
-        Back to Home
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="16"
+        height="16"
+        fill="currentColor"
+        viewBox="0 0 16 16"
+      >
+        <path
+          fill-rule="evenodd"
+          d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8z"
+        />
+      </svg>
+      Back to Home
     </a>
 
     <div class="auth-container">
-        <div class="auth-header">
-            <h2>Welcome Back</h2>
-            <p>Sign in to your SFSU Thrift Market account</p>
+      <div class="auth-header">
+        <h2>Welcome Back</h2>
+        <p>Sign in to your SFSU Thrift Market account</p>
+      </div>
+
+      <form method="POST" action="{{ url_for('login') }}" class="auth-form">
+        <div class="form-group">
+          <label for="email">Email</label>
+          <input
+            type="email"
+            id="email"
+            name="email"
+            class="form-control"
+            placeholder="Enter your email"
+            required
+          />
         </div>
 
-        <form method="POST" action="{{ url_for('login') }}" class="auth-form">
-            <div class="form-group">
-                <label for="email">Email</label>
-                <input type="email" id="email" name="email" class="form-control" placeholder="Enter your email"
-                    required>
-            </div>
-
-            <div class="form-group">
-                <label for="password">Password</label>
-                <input type="password" id="password" name="password" class="form-control"
-                    placeholder="Enter your password" required>
-            </div>
-
-            <button type="submit" class="btn-primary">Log In</button>
-        </form>
-
-        <div class="auth-footer">
-            Not already a user? <a href="{{ url_for('signup') }}">Sign up here</a>
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input
+            type="password"
+            id="password"
+            name="password"
+            class="form-control"
+            placeholder="Enter your password"
+            required
+          />
         </div>
+
+        <button type="submit" class="btn-primary">Log In</button>
+      </form>
+
+      <div class="auth-footer">
+        Not already a user? <a href="{{ url_for('signup') }}">Sign up here</a>
+      </div>
     </div>
 
-  <script>
-    // Auto-hide flash messages after 5 seconds
-    document.addEventListener('DOMContentLoaded', () => {
-      // Note: Selector might need adjustment if specific container class is used
-      const flashContainers = document.querySelectorAll('.flash-messages-container.auth-flash-messages'); 
-      flashContainers.forEach(container => {
-        if (container) { // Check if the container exists
-          setTimeout(() => {
-            container.style.transition = 'opacity 0.5s ease-out';
-            container.style.opacity = '0';
-            // Wait for fade out to complete, then hide fully
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        const flashContainers = document.querySelectorAll(
+          ".flash-messages-container.auth-flash-messages"
+        );
+        flashContainers.forEach((container) => {
+          if (container) {
             setTimeout(() => {
-              container.style.display = 'none';
-            }, 500); // Match transition duration
-          }, 5000); // 5 seconds
-        }
+              container.style.transition = "opacity 0.5s ease-out";
+              container.style.opacity = "0";
+              setTimeout(() => {
+                container.style.display = "none";
+              }, 500);
+            }, 5000);
+          }
+        });
       });
-    });
-  </script>
-</body>
-
+    </script>
+  </body>
 </html>

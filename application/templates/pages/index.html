@@ -1,760 +1,796 @@
-{% extends "base.html" %}
+<!-- This HTML file is for the SFSU Thrift Market homepage, including CSS for styling filters and JavaScript for interactive elements like filter toggles and wishlist management. -->
 
-{% block title %}Home - SFSU Thrift Market{% endblock %}
-
-{% block head %}
-<!-- CSS for filter styling -->
+{% extends "base.html" %} {% block title %}Home - SFSU Thrift Market{% endblock
+%} {% block head %}
 <style>
-/* Additional filter styling from newFilters.html */
-:root{
-  --purple: var(--accent-purple);
-  --gray-50: #f3f4f6;
-  --gray-200: #e5e7eb;
-  --gray-300: #d1d5db;
-  --gray-600: #4b5563;
-  --gray-900: #111827;
-  --accent-red: #e53e3e; /* Define red for wishlist */
-}
-
-/* Make filters container scrollable */
-.containerFixed {
-  overflow-y: auto !important; /* Override any existing styles */
-  max-height: calc(100vh - 150px) !important; /* Account for header space */
-  position: relative; /* Added for absolute positioning of toggle button */
-  transition: width 0.5s ease, opacity 0.5s ease;
-  width: 280px; /* Wider filters pane */
-  opacity: 1;
-}
-
-.containerFixed.collapsed {
-  width: 0;
-  opacity: 0;
-  overflow: hidden;
-}
-
-.containerGrid {
-  display: grid;
-  grid-template-columns: 280px 1fr; /* Match the wider filters pane */
-  gap: 20px;
-  transition: grid-template-columns 0.5s ease;
-}
-
-.containerGrid.filters-collapsed {
-  grid-template-columns: 0 1fr; /* Collapsed grid */
-}
-
-/* Filters container wrapper */
-.filters-wrapper {
-  position: relative; /* Added to contain both filters and toggle button */
-}
-
-/* Vertical Filters Toggle Button */
-.vertical-toggle-btn {
-  position: absolute;
-  right: -25px; /* Position it at the right edge of filters container */
-  top: 36px; /* Lower the position */
-  width: 25px; /* Slightly wider for text */
-  height: 90px;
-  background: var(--purple);
-  border: none;
-  border-radius: 0 8px 8px 0;
-  color: white;
-  cursor: pointer;
-  z-index: 1000; /* Higher z-index to ensure it's clickable */
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: right 0.5s ease; /* Changed from left to right for relative positioning */
-}
-
-/* No transition class for initial state */
-.no-transition {
-  transition: none !important;
-}
-
-.vertical-toggle-btn .filter-text {
-  transform: rotate(-90deg);
-  white-space: nowrap;
-  font-size: 14px;
-  font-weight: 600;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-}
-
-/* Price Range Slider */
-.slider-wrap{position:relative;height:36px;margin-top:15px;margin-bottom:15px;}
-.track,
-.fill{position:absolute;height:6px;top:14px;border-radius:3px}
-.track{width:100%;background:var(--gray-200)}
-.fill {background:var(--purple)}
-
-input[type=range]{
-  -webkit-appearance:none;
-  position:absolute;width:100%;top:14px;height:6px;
-  background:transparent;pointer-events:none;
-}
-input[type=range]::-webkit-slider-thumb{
-  -webkit-appearance:none;
-  width:28px;height:22px;border-radius:6px;
-  border:2px solid var(--gray-200);background:#fff;
-  box-shadow:0 2px 5px rgba(0,0,0,.12);
-  cursor:pointer;pointer-events:auto;margin-top:-8px;
-}
-input[type=range]::-moz-range-track{background:transparent}
-input[type=range]::-moz-range-thumb{
-  width:28px;height:22px;border:2px solid var(--gray-200);
-  border-radius:6px;background:#fff;cursor:pointer;pointer-events:auto;
-}
-
-.values{display:flex;justify-content:space-between;font-weight:600;font-size:16px;margin-top:12px}
-
-/* Condition Radio */
-.radio-group{display:flex;flex-direction:column;gap:14px;margin-top:15px;}
-.radio-group label{display:flex;align-items:center;font-weight:500;font-size:16px;cursor:pointer}
-.radio-group input{
-  appearance:none;width:20px;height:20px;border:2px solid var(--gray-300);
-  border-radius:50%;margin-right:10px;position:relative;cursor:pointer
-}
-.radio-group input:checked{border-color:var(--purple)}
-.radio-group input:checked::after{
-  content:'';position:absolute;inset:4px;background:var(--purple);border-radius:50%
-}
-
-/* Stars Rating */
-.new-stars{
-  display:flex;
-  flex-direction:row-reverse;
-  gap:6px;
-  cursor:pointer;
-  justify-content:flex-start;
-  width:max-content;
-  margin-top:15px;
-}
-.new-stars input[type="radio"] {
-  display:none;
-}
-.new-stars label {
-  color: var(--gray-300);
-  font-size:24px;
-  cursor:pointer;
-}
-.new-stars input:checked ~ label,
-.new-stars label:hover, 
-.new-stars label:hover ~ label {
-  color: var(--purple);
-}
-
-/* Date Picker */
-input[type=date]{
-  width:100%;padding:12px 16px;font-weight:500;font-size:16px;
-  border:1px solid var(--gray-200);border-radius:8px;color:var(--gray-600);
-  margin-top:15px;
-}
-
-/* Filter Buttons */
-.filter-buttons {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin-top: 20px;
-  padding-bottom: 20px; /* Add bottom padding for better spacing when scrolling */
-}
-
-.apply-button{
-  padding:14px 0;background:var(--purple);color:#fff;
-  font-weight:600;font-size:16px;border:none;border-radius:8px;
-  cursor:pointer;width:100%;
-}
-
-.clear-button{
-  background:none;color:var(--gray-900);
-  font-weight:600;font-size:16px;
-  border:none;border-radius:8px;cursor:pointer;width:100%;
-}
-
-/* Wishlist Button Styling */
-.wishlist-button {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  background: rgba(255, 255, 255, 0.7); /* Semi-transparent background */
-  border: none;
-  border-radius: 50%;
-  width: 35px;
-  height: 35px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  font-size: 1.2rem;
-  color: #ccc; /* Default empty heart color */
-  transition: color 0.2s ease-in-out, background-color 0.2s ease-in-out;
-  z-index: 10; /* Ensure it's above the image */
-}
-
-.wishlist-button:hover {
-  background: rgba(255, 255, 255, 0.9);
-}
-
-.wishlist-button.active {
-  color: var(--accent-red); /* Filled heart color */
-}
-
-.product-card {
-  position: relative; /* Needed for absolute positioning of the button */
-}
-
-.product-card-link {
-  display: block; /* Ensure link takes up space for positioning */
-  position: relative;
-}
-
-/* Add styles for the product title and price */
-.product-title {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  margin-bottom: 5px;
-}
-
-.product-price {
-  display: block;
-  margin-bottom: 10px; /* Add padding between price and image */
-  font-weight: 600;
-  font-size: 1em; /* Match the size of regular text */
-}
-
-@media (max-width: 480px){
-  .filter-buttons {
-      margin-bottom: 100px;
+  :root {
+    --purple: var(--accent-purple);
+    --gray-50: #f3f4f6;
+    --gray-200: #e5e7eb;
+    --gray-300: #d1d5db;
+    --gray-600: #4b5563;
+    --gray-900: #111827;
+    --accent-red: #e53e3e;
   }
-}
 
+  .containerFixed {
+    overflow-y: auto !important;
+    max-height: calc(100vh - 150px) !important;
+    position: relative;
+    transition: width 0.5s ease, opacity 0.5s ease;
+    width: 280px;
+    opacity: 1;
+  }
+
+  .containerFixed.collapsed {
+    width: 0;
+    opacity: 0;
+    overflow: hidden;
+  }
+
+  .containerGrid {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: 20px;
+    transition: grid-template-columns 0.5s ease;
+  }
+
+  .containerGrid.filters-collapsed {
+    grid-template-columns: 0 1fr;
+  }
+
+  .filters-wrapper {
+    position: relative;
+  }
+
+  .vertical-toggle-btn {
+    position: absolute;
+    right: -25px;
+    top: 36px;
+    width: 25px;
+    height: 90px;
+    background: var(--purple);
+    border: none;
+    border-radius: 0 8px 8px 0;
+    color: white;
+    cursor: pointer;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: right 0.5s ease;
+  }
+
+  .no-transition {
+    transition: none !important;
+  }
+
+  .vertical-toggle-btn .filter-text {
+    transform: rotate(-90deg);
+    white-space: nowrap;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  .slider-wrap {
+    position: relative;
+    height: 36px;
+    margin-top: 15px;
+    margin-bottom: 15px;
+  }
+  .track,
+  .fill {
+    position: absolute;
+    height: 6px;
+    top: 14px;
+    border-radius: 3px;
+  }
+  .track {
+    width: 100%;
+    background: var(--gray-200);
+  }
+  .fill {
+    background: var(--purple);
+  }
+
+  input[type="range"] {
+    -webkit-appearance: none;
+    position: absolute;
+    width: 100%;
+    top: 14px;
+    height: 6px;
+    background: transparent;
+    pointer-events: none;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 28px;
+    height: 22px;
+    border-radius: 6px;
+    border: 2px solid var(--gray-200);
+    background: #fff;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.12);
+    cursor: pointer;
+    pointer-events: auto;
+    margin-top: -8px;
+  }
+  input[type="range"]::-moz-range-track {
+    background: transparent;
+  }
+  input[type="range"]::-moz-range-thumb {
+    width: 28px;
+    height: 22px;
+    border: 2px solid var(--gray-200);
+    border-radius: 6px;
+    background: #fff;
+    cursor: pointer;
+    pointer-events: auto;
+  }
+
+  .values {
+    display: flex;
+    justify-content: space-between;
+    font-weight: 600;
+    font-size: 16px;
+    margin-top: 12px;
+  }
+
+  .radio-group {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    margin-top: 15px;
+  }
+  .radio-group label {
+    display: flex;
+    align-items: center;
+    font-weight: 500;
+    font-size: 16px;
+    cursor: pointer;
+  }
+  .radio-group input {
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--gray-300);
+    border-radius: 50%;
+    margin-right: 10px;
+    position: relative;
+    cursor: pointer;
+  }
+  .radio-group input:checked {
+    border-color: var(--purple);
+  }
+  .radio-group input:checked::after {
+    content: "";
+    position: absolute;
+    inset: 4px;
+    background: var(--purple);
+    border-radius: 50%;
+  }
+
+  .new-stars {
+    display: flex;
+    flex-direction: row-reverse;
+    gap: 6px;
+    cursor: pointer;
+    justify-content: flex-start;
+    width: max-content;
+    margin-top: 15px;
+  }
+  .new-stars input[type="radio"] {
+    display: none;
+  }
+  .new-stars label {
+    color: var(--gray-300);
+    font-size: 24px;
+    cursor: pointer;
+  }
+  .new-stars input:checked ~ label,
+  .new-stars label:hover,
+  .new-stars label:hover ~ label {
+    color: var(--purple);
+  }
+
+  input[type="date"] {
+    width: 100%;
+    padding: 12px 16px;
+    font-weight: 500;
+    font-size: 16px;
+    border: 1px solid var(--gray-200);
+    border-radius: 8px;
+    color: var(--gray-600);
+    margin-top: 15px;
+  }
+
+  .filter-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 20px;
+    padding-bottom: 20px;
+  }
+
+  .apply-button {
+    padding: 14px 0;
+    background: var(--purple);
+    color: #fff;
+    font-weight: 600;
+    font-size: 16px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    width: 100%;
+  }
+
+  .clear-button {
+    background: none;
+    color: var(--gray-900);
+    font-weight: 600;
+    font-size: 16px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    width: 100%;
+  }
+
+  .wishlist-button {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: rgba(255, 255, 255, 0.7);
+    border: none;
+    border-radius: 50%;
+    width: 35px;
+    height: 35px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 1.2rem;
+    color: #ccc;
+    transition: color 0.2s ease-in-out, background-color 0.2s ease-in-out;
+    z-index: 10;
+  }
+
+  .wishlist-button:hover {
+    background: rgba(255, 255, 255, 0.9);
+  }
+
+  .wishlist-button.active {
+    color: var(--accent-red);
+  }
+
+  .product-card {
+    position: relative;
+  }
+
+  .product-card-link {
+    display: block;
+    position: relative;
+  }
+
+  .product-title {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 5px;
+  }
+
+  .product-price {
+    display: block;
+    margin-bottom: 10px;
+    font-weight: 600;
+    font-size: 1em;
+  }
+
+  @media (max-width: 480px) {
+    .filter-buttons {
+      margin-bottom: 100px;
+    }
+  }
 </style>
-{% endblock %}
-
-{% block content %}
-<section style="display: flex; justify-content: center;">
+{% endblock %} {% block content %}
+<section style="display: flex; justify-content: center">
   <div class="containerGrid">
-    
-    <!-- Filters Sidebar with toggle button inside wrapper -->
     <div class="filters-wrapper">
       <div class="containerFixed" id="filtersContainer">
         <div class="filters">
-          <!-- Price Range -->
           <h4>Price Range</h4>
           <div class="slider-wrap">
             <div class="track"></div>
             <div class="fill" id="fill"></div>
-            <input type="range" id="min" min="{{ min_db_price }}" max="{{ max_db_price }}" step="1" value="{{ min_price }}">
-            <input type="range" id="max" min="{{ min_db_price }}" max="{{ max_db_price }}" step="1" value="{{ max_price }}">
+            <input
+              type="range"
+              id="min"
+              min="{{ min_db_price }}"
+              max="{{ max_db_price }}"
+              step="1"
+              value="{{ min_price }}"
+            />
+            <input
+              type="range"
+              id="max"
+              min="{{ min_db_price }}"
+              max="{{ max_db_price }}"
+              step="1"
+              value="{{ max_price }}"
+            />
           </div>
-          <div class="values"><span id="vmin">$ {{ min_price }}</span><span id="vmax">$ {{ max_price }}</span></div>
+          <div class="values">
+            <span id="vmin">$ {{ min_price }}</span
+            ><span id="vmax">$ {{ max_price }}</span>
+          </div>
 
-          <!-- Condition -->
-          <h4 style="margin-top:25px;">Condition</h4>
+          <h4 style="margin-top: 25px">Condition</h4>
           <div class="radio-group">
-            <label><input type="radio" name="condition" value="very-worn"><span>Very Worn</span></label>
-            <label><input type="radio" name="condition" value="used"><span>Used</span></label>
-            <label><input type="radio" name="condition" value="fairly-used"><span>Fairly Used</span></label>
-            <label><input type="radio" name="condition" value="good-condition"><span>Good Condition</span></label>
-            <label><input type="radio" name="condition" value="great-condition"><span>Great Condition</span></label>
+            <label
+              ><input type="radio" name="condition" value="very-worn" /><span
+                >Very Worn</span
+              ></label
+            >
+            <label
+              ><input type="radio" name="condition" value="used" /><span
+                >Used</span
+              ></label
+            >
+            <label
+              ><input type="radio" name="condition" value="fairly-used" /><span
+                >Fairly Used</span
+              ></label
+            >
+            <label
+              ><input
+                type="radio"
+                name="condition"
+                value="good-condition"
+              /><span>Good Condition</span></label
+            >
+            <label
+              ><input
+                type="radio"
+                name="condition"
+                value="great-condition"
+              /><span>Great Condition</span></label
+            >
           </div>
 
-          <!-- Seller Rating -->
-          <h4 style="margin-top:25px;">Seller Rating</h4>
+          <h4 style="margin-top: 25px">Seller Rating</h4>
           <div class="new-stars">
-            <input type="radio" id="s5" name="rating" value="5"><label for="s5">&#9733;</label>
-            <input type="radio" id="s4" name="rating" value="4"><label for="s4">&#9733;</label>
-            <input type="radio" id="s3" name="rating" value="3"><label for="s3">&#9733;</label>
-            <input type="radio" id="s2" name="rating" value="2"><label for="s2">&#9733;</label>
-            <input type="radio" id="s1" name="rating" value="1"><label for="s1">&#9733;</label>
+            <input type="radio" id="s5" name="rating" value="5" /><label
+              for="s5"
+              >&#9733;</label
+            >
+            <input type="radio" id="s4" name="rating" value="4" /><label
+              for="s4"
+              >&#9733;</label
+            >
+            <input type="radio" id="s3" name="rating" value="3" /><label
+              for="s3"
+              >&#9733;</label
+            >
+            <input type="radio" id="s2" name="rating" value="2" /><label
+              for="s2"
+              >&#9733;</label
+            >
+            <input type="radio" id="s1" name="rating" value="1" /><label
+              for="s1"
+              >&#9733;</label
+            >
           </div>
 
-          <!-- Posted Since -->
-          <h4 style="margin-top:25px;">Posted After</h4>
-          <input type="date" id="postedDate">
+          <h4 style="margin-top: 25px">Posted After</h4>
+          <input type="date" id="postedDate" />
 
-          <!-- Filter Buttons -->
           <div class="filter-buttons">
             <button class="apply-button" id="applyFilters">Apply</button>
             <button class="clear-button" id="clearFilters">Clear all</button>
           </div>
         </div>
       </div>
-      
-      <!-- Toggle button inside wrapper so it moves with the filters -->
+
       <button id="toggleFiltersBtn" class="vertical-toggle-btn">
         <span class="filter-text">Filters</span>
       </button>
     </div>
 
-    <!-- Search Results -->
     <div class="container">
       <div class="search-info">
         <p>
-          Showing <strong>{{ count }}</strong> result{{ 's' if count != 1 else '' }}
-          {% if category or keyword %}
-          for
-          {% if category %}Category: <strong>{{ category }}</strong>{% endif %}
-          {% if keyword %}Keyword: <strong>{{ keyword }}</strong>{% endif %}
-          {% else %}
-          (All Products)
-          {% endif %}
+          Showing <strong>{{ count }}</strong> result{{ 's' if count != 1 else
+          '' }} {% if category or keyword %} for {% if category %}Category:
+          <strong>{{ category }}</strong>{% endif %} {% if keyword %}Keyword:
+          <strong>{{ keyword }}</strong>{% endif %} {% else %} (All Products) {%
+          endif %}
         </p>
-        <!-- Always show add listing button but redirect to login page if user is not logged in -->
-        <a href="{{ url_for('newListing') if user_is_logged_in else url_for('login') }}" class="btn-newList btn-outline">Add New Listing</a>
+        <a
+          href="{{ url_for('newListing') if user_is_logged_in else url_for('login') }}"
+          class="btn-newList btn-outline"
+          >Add New Listing</a
+        >
       </div>
 
       <div class="product-list">
         {% for item in items %}
         <div class="product-card">
-            {# Add Wishlist button only if user is logged in #}
-            {% if user_is_logged_in %}
-                {# Check if item.product_id is in the wishlisted_ids set passed from backend #}
-                {% set is_wishlisted = item.product_id in wishlisted_ids %}
-                <button 
-                    class="wishlist-button {{ 'active' if is_wishlisted else '' }}"
-                    data-product-id="{{ item.product_id }}"
-                    aria-label="{{ 'Remove from Wishlist' if is_wishlisted else 'Add to Wishlist' }}"
-                    title="{{ 'Remove from Wishlist' if is_wishlisted else 'Add to Wishlist' }}"
-                >
-                    {# Use a heart symbol. Could also use an icon font like Font Awesome #}
-                    &#x2665; 
-                </button>
+          {% if user_is_logged_in %} {% set is_wishlisted = item.product_id in
+          wishlisted_ids %}
+          <button
+            class="wishlist-button {{ 'active' if is_wishlisted else '' }}"
+            data-product-id="{{ item.product_id }}"
+            aria-label="{{ 'Remove from Wishlist' if is_wishlisted else 'Add to Wishlist' }}"
+            title="{{ 'Remove from Wishlist' if is_wishlisted else 'Add to Wishlist' }}"
+          >
+            &#x2665;
+          </button>
+          {% endif %}
+          <a
+            href="{{ url_for('product_detail', product_id=item.product_id) }}"
+            class="product-card-link"
+          >
+            <h3 class="product-title">{{ item.title }}</h3>
+            <span class="product-price">${{ "%.2f"|format(item.price) }}</span>
+            {% if item.first_image_id %}
+            <img
+              src="{{ url_for('serve_image', image_id=item.first_image_id) }}"
+              alt="{{ item.title }}"
+              class="product-image"
+            />
+            {% else %}
+            <img
+              src="{{ url_for('static', filename='templatephotos/placeholder_img.png') }}"
+              alt="Placeholder Image"
+              class="product-image placeholder"
+            />
             {% endif %}
-            <a href="{{ url_for('product_detail', product_id=item.product_id) }}" class="product-card-link">
-                <h3 class="product-title">{{ item.title }}</h3>
-                <span class="product-price">${{ "%.2f"|format(item.price) }}</span>
-                {# Check if first_image_id exists and is not None #}
-                {% if item.first_image_id %}
-                <img src="{{ url_for('serve_image', image_id=item.first_image_id) }}" alt="{{ item.title }}"
-                    class="product-image">
-                {% else %}
-                {# Show placeholder if no image ID exists #}
-                <img src="{{ url_for('static', filename='templatephotos/placeholder_img.png') }}" alt="Placeholder Image" class="product-image placeholder">
-                {% endif %}
-            </a>
+          </a>
         </div>
         {% else %}
         <p>No items found matching your search.</p>
         {% endfor %}
       </div>
     </div>
-
   </div>
 </section>
-{% endblock %}
+{% endblock %} {% block scripts %} {{ super() }}
 
-{% block scripts %}
-{{ super() }} {# Include scripts from base.html (e.g., flash message hider) #}
-
-<!-- Filter toggle script -->
 <script>
-  document.addEventListener('DOMContentLoaded', () => {
-    const toggleBtn = document.getElementById('toggleFiltersBtn');
-    const filtersContainer = document.getElementById('filtersContainer');
-    const filtersWrapper = document.querySelector('.filters-wrapper');
-    const gridContainer = document.querySelector('.containerGrid');
-    
-    // Apply no-transition class on page load
-    gridContainer.classList.add('no-transition');
-    filtersContainer.classList.add('no-transition');
-    filtersWrapper.classList.add('no-transition');
-    toggleBtn.classList.add('no-transition');
-    
-    // Check localStorage for saved state (default to expanded/false if not set)
-    const shouldBeCollapsed = localStorage.getItem('filtersCollapsed') === 'true';
-    
-    // Set initial state
+  document.addEventListener("DOMContentLoaded", () => {
+    const toggleBtn = document.getElementById("toggleFiltersBtn");
+    const filtersContainer = document.getElementById("filtersContainer");
+    const filtersWrapper = document.querySelector(".filters-wrapper");
+    const gridContainer = document.querySelector(".containerGrid");
+
+    gridContainer.classList.add("no-transition");
+    filtersContainer.classList.add("no-transition");
+    filtersWrapper.classList.add("no-transition");
+    toggleBtn.classList.add("no-transition");
+
+    const shouldBeCollapsed =
+      localStorage.getItem("filtersCollapsed") === "true";
+
     if (shouldBeCollapsed) {
-      // Initial collapsed state without animation
-      filtersContainer.classList.add('collapsed');
-      gridContainer.classList.add('filters-collapsed');
-      toggleBtn.classList.add('active');
+      filtersContainer.classList.add("collapsed");
+      gridContainer.classList.add("filters-collapsed");
+      toggleBtn.classList.add("active");
     }
-    
-    // Remove no-transition class after a short delay to enable animations for user interactions
+
     setTimeout(() => {
-      gridContainer.classList.remove('no-transition');
-      filtersContainer.classList.remove('no-transition');
-      filtersWrapper.classList.remove('no-transition');
-      toggleBtn.classList.remove('no-transition');
+      gridContainer.classList.remove("no-transition");
+      filtersContainer.classList.remove("no-transition");
+      filtersWrapper.classList.remove("no-transition");
+      toggleBtn.classList.remove("no-transition");
     }, 50);
-  
-    toggleBtn.addEventListener('click', () => {
-      const isCurrentlyCollapsed = filtersContainer.classList.contains('collapsed');
-  
-      // Toggle button active state
-      toggleBtn.classList.toggle('active');
-  
+
+    toggleBtn.addEventListener("click", () => {
+      const isCurrentlyCollapsed =
+        filtersContainer.classList.contains("collapsed");
+
+      toggleBtn.classList.toggle("active");
+
       if (isCurrentlyCollapsed) {
-        // === Expand Sequence ===
-        // Expand both grid and filters at the same time
-        filtersContainer.classList.remove('collapsed');
-        gridContainer.classList.remove('filters-collapsed');
-        
-        // Save state to localStorage
-        localStorage.setItem('filtersCollapsed', 'false');
+        filtersContainer.classList.remove("collapsed");
+        gridContainer.classList.remove("filters-collapsed");
+
+        localStorage.setItem("filtersCollapsed", "false");
       } else {
-        // === Collapse Sequence ===
-        // Collapse both grid and filters at the same time
-        filtersContainer.classList.add('collapsed');
-        gridContainer.classList.add('filters-collapsed');
-        
-        // Save state to localStorage
-        localStorage.setItem('filtersCollapsed', 'true');
+        filtersContainer.classList.add("collapsed");
+        gridContainer.classList.add("filters-collapsed");
+
+        localStorage.setItem("filtersCollapsed", "true");
       }
     });
   });
 </script>
 
-<!-- Price range slider script from newFilters.html -->
 <script>
-  /* -------- price slider with conditional logarithmic/linear scale -------- */
-  const minR = document.getElementById('min'),
-        maxR = document.getElementById('max'),
-        fill  = document.getElementById('fill'),
-        vMin  = document.getElementById('vmin'),
-        vMax  = document.getElementById('vmax');
+  const minR = document.getElementById("min"),
+    maxR = document.getElementById("max"),
+    fill = document.getElementById("fill"),
+    vMin = document.getElementById("vmin"),
+    vMax = document.getElementById("vmax");
 
-  // Get min/max values from the sliders (from backend)
   const minDbPrice = parseFloat(minR.min);
   const maxDbPrice = parseFloat(maxR.max);
-  
-  // Debugging to verify we have correct values
-  console.log("Slider DB values:", {minDbPrice, maxDbPrice});
-  
-  // Set slider step to 1 for smoother movement
+
+  console.log("Slider DB values:", { minDbPrice, maxDbPrice });
+
   minR.step = "1";
   maxR.step = "1";
-  
-  // Determine if we should use logarithmic scale (only if max price > 3000)
+
   const useLogarithmic = maxDbPrice > 3000;
-  console.log(`Using ${useLogarithmic ? 'logarithmic' : 'linear'} slider (max price: ${maxDbPrice})`);
-  
-  // For sliders, internally use 0-100 range for simplicity
+  console.log(
+    `Using ${
+      useLogarithmic ? "logarithmic" : "linear"
+    } slider (max price: ${maxDbPrice})`
+  );
+
   const SLIDER_MIN = 0;
   const SLIDER_MAX = 100;
-  
-  // Function to convert slider percentage (0-100) to price value
+
   function percentToPrice(percent, minVal, maxVal) {
-    // Ensure percent is within 0-100 range
     percent = Math.max(0, Math.min(100, percent));
-    
+
     if (!useLogarithmic) {
-      // Simple linear mapping
       return minVal + (percent / 100) * (maxVal - minVal);
     } else {
-      // Early returns for extremes
       if (percent <= 0) return minVal;
       if (percent >= 100) return maxVal;
-      
-      // COMPLETELY DIFFERENT APPROACH:
-      // Use a power function approach instead of logarithmic
-      // This gives more control over the curve shape
-      
-      // For a wide price range (0-5000+), a power between 2-3 works well
+
       const power = 2.5;
-      
-      // Calculate normalized value with power function
-      // This makes lower slider values increase faster than higher values
+
       const normalizedValue = Math.pow(percent / 100, power);
-      
-      // Apply this to the price range
+
       return minVal + normalizedValue * (maxVal - minVal);
     }
   }
-  
-  // Function to convert price to slider percentage (0-100)
+
   function priceToPercent(price, minVal, maxVal) {
-    // Ensure price is within valid range
     price = Math.max(minVal, Math.min(maxVal, price));
-    
+
     if (!useLogarithmic) {
-      // Simple linear mapping
       return ((price - minVal) / (maxVal - minVal)) * 100;
     } else {
-      // Early returns for extremes
       if (price <= minVal) return 0;
       if (price >= maxVal) return 100;
-      
-      // Inverse of the power function used in percentToPrice
+
       const power = 2.5;
-      
-      // Calculate normalized price position
+
       const normalizedPrice = (price - minVal) / (maxVal - minVal);
-      
-      // Apply inverse power function
-      return Math.pow(normalizedPrice, 1/power) * 100;
+
+      return Math.pow(normalizedPrice, 1 / power) * 100;
     }
   }
-  
-  // Function to set a slider to a specific price
+
   function setSliderToPrice(slider, price, minVal, maxVal) {
-    // Convert price to percent
     const percent = priceToPercent(price, minVal, maxVal);
-    
-    // Normalize percent to slider range
-    const sliderVal = SLIDER_MIN + ((SLIDER_MAX - SLIDER_MIN) * (percent / 100));
-    
-    // Set slider value
+
+    const sliderVal = SLIDER_MIN + (SLIDER_MAX - SLIDER_MIN) * (percent / 100);
+
     slider.value = sliderVal;
   }
 
-  // Initialize slider values from URL parameters or backend values
   const urlParams = new URLSearchParams(window.location.search);
-  
-  // Parse the initial values from backend
-  const initialMinPrice = urlParams.get('min_price') ? parseFloat(urlParams.get('min_price')) : minDbPrice;
-  const initialMaxPrice = urlParams.get('max_price') ? parseFloat(urlParams.get('max_price')) : maxDbPrice;
-  
-  // Override HTML min/max values with our 0-100 scale
+
+  const initialMinPrice = urlParams.get("min_price")
+    ? parseFloat(urlParams.get("min_price"))
+    : minDbPrice;
+  const initialMaxPrice = urlParams.get("max_price")
+    ? parseFloat(urlParams.get("max_price"))
+    : maxDbPrice;
+
   minR.min = SLIDER_MIN;
   minR.max = SLIDER_MAX;
   maxR.min = SLIDER_MIN;
   maxR.max = SLIDER_MAX;
-  
-  // Set the initial slider positions based on prices
+
   setSliderToPrice(minR, initialMinPrice, minDbPrice, maxDbPrice);
   setSliderToPrice(maxR, initialMaxPrice, minDbPrice, maxDbPrice);
 
-  // Main update function for the sliders
   function update() {
-    // Get current slider positions (0-100 scale)
     const minPos = parseFloat(minR.value);
     const maxPos = parseFloat(maxR.value);
-    
-    // Ensure min doesn't exceed max
+
     if (minPos >= maxPos) {
       minR.value = Math.max(SLIDER_MIN, maxPos - 1);
     }
-    
-    // Convert slider positions to prices
+
     const minPrice = percentToPrice(minPos, minDbPrice, maxDbPrice);
     const maxPrice = percentToPrice(maxPos, minDbPrice, maxDbPrice);
-    
-    // DEBUG - Log all values to diagnose issues
+
     console.log("Slider update:", {
-      minPos, maxPos,
-      minPrice, maxPrice,
+      minPos,
+      maxPos,
+      minPrice,
+      maxPrice,
       sliderMax: maxR.max,
       sliderMaxValue: maxR.value,
-      isAtMax: maxPos >= SLIDER_MAX - 0.1
+      isAtMax: maxPos >= SLIDER_MAX - 0.1,
     });
-    
-    // Update fill visualization
+
     const minPct = (minPos / SLIDER_MAX) * 100;
     const maxPct = (maxPos / SLIDER_MAX) * 100;
-    fill.style.left = minPct + '%';
-    fill.style.width = (maxPct - minPct) + '%';
+    fill.style.left = minPct + "%";
+    fill.style.width = maxPct - minPct + "%";
 
-    // Format prices
     vMin.textContent = `$ ${Math.floor(minPrice)}`;
-    
-    // Special handling for max price - ALWAYS show max DB price when slider is at max
-    if (maxPos >= SLIDER_MAX - 0.1) { // Tolerance for being at max
+
+    if (maxPos >= SLIDER_MAX - 0.1) {
       vMax.textContent = `$ ${Math.ceil(maxDbPrice)}`;
     } else {
       vMax.textContent = `$ ${Math.ceil(maxPrice)}`;
     }
   }
-  
-  // Add input event listeners to both sliders
-  [minR, maxR].forEach(i => i.addEventListener('input', update));
-  
-  // Initial update to set display values
+
+  [minR, maxR].forEach((i) => i.addEventListener("input", update));
+
   update();
 
-  // Set condition radio button based on URL parameter
-  const conditionParam = urlParams.get('condition') || '{{ condition|default("") }}';
+  const conditionParam =
+    urlParams.get("condition") || '{{ condition|default("") }}';
   if (conditionParam) {
-    const conditionRadio = document.querySelector(`input[name="condition"][value="${conditionParam}"]`);
+    const conditionRadio = document.querySelector(
+      `input[name="condition"][value="${conditionParam}"]`
+    );
     if (conditionRadio) conditionRadio.checked = true;
   }
 
-  // Set rating stars based on URL parameter
-  const ratingParam = urlParams.get('rating') || '{{ rating|default("") }}';
+  const ratingParam = urlParams.get("rating") || '{{ rating|default("") }}';
   if (ratingParam) {
-    const ratingRadio = document.querySelector(`input[name="rating"][value="${ratingParam}"]`);
+    const ratingRadio = document.querySelector(
+      `input[name="rating"][value="${ratingParam}"]`
+    );
     if (ratingRadio) ratingRadio.checked = true;
   }
 
-  // Set date input based on URL parameter
-  const dateParam = urlParams.get('posted_after') || '{{ posted_after|default("") }}';
+  const dateParam =
+    urlParams.get("posted_after") || '{{ posted_after|default("") }}';
   if (dateParam) {
-    document.getElementById('postedDate').value = dateParam;
+    document.getElementById("postedDate").value = dateParam;
   }
 
-  /* -------- clear all button -------- */
-  document.getElementById('clearFilters').addEventListener('click', () => {
-    // Reset sliders to min/max
+  document.getElementById("clearFilters").addEventListener("click", () => {
     minR.value = SLIDER_MIN;
     maxR.value = SLIDER_MAX;
-    update(); // Update visual display
+    update();
 
-    /* uncheck condition radios */
-    document.querySelectorAll('input[name="condition"]').forEach(r=>r.checked=false);
-    
-    /* uncheck rating stars */
-    document.querySelectorAll('input[name="rating"]').forEach(r=>r.checked=false);
+    document
+      .querySelectorAll('input[name="condition"]')
+      .forEach((r) => (r.checked = false));
 
-    /* clear date */
-    document.getElementById('postedDate').value = '';
-    
-    // Remove all filter query parameters and redirect to the base path
+    document
+      .querySelectorAll('input[name="rating"]')
+      .forEach((r) => (r.checked = false));
+
+    document.getElementById("postedDate").value = "";
+
     const baseUrl = window.location.pathname;
-    // Keep existing category and keyword if present, remove others
     let currentParams = new URLSearchParams(window.location.search);
     let preservedParams = new URLSearchParams();
-    if (currentParams.has('category')) {
-      preservedParams.set('category', currentParams.get('category'));
+    if (currentParams.has("category")) {
+      preservedParams.set("category", currentParams.get("category"));
     }
-    if (currentParams.has('keyword')) {
-      preservedParams.set('keyword', currentParams.get('keyword'));
+    if (currentParams.has("keyword")) {
+      preservedParams.set("keyword", currentParams.get("keyword"));
     }
-    
-    // Redirect to base path potentially with category/keyword preserved
-    window.location.href = baseUrl + (preservedParams.toString() ? '?' + preservedParams.toString() : '');
+
+    window.location.href =
+      baseUrl +
+      (preservedParams.toString() ? "?" + preservedParams.toString() : "");
   });
-  
-  /* -------- apply filters button -------- */
-  document.getElementById('applyFilters').addEventListener('click', () => {
-    // Get price values from slider positions
+
+  document.getElementById("applyFilters").addEventListener("click", () => {
     const minPercent = parseFloat(minR.value);
     const maxPercent = parseFloat(maxR.value);
-    
+
     const minPrice = percentToPrice(minPercent, minDbPrice, maxDbPrice);
     const maxPrice = percentToPrice(maxPercent, minDbPrice, maxDbPrice);
-    
-    // Log values for debugging
+
     console.log("Apply filters:", {
-      minPercent, maxPercent,
-      minPrice, maxPrice,
+      minPercent,
+      maxPercent,
+      minPrice,
+      maxPrice,
       isMinAtMin: minPercent <= 0.1,
-      isMaxAtMax: maxPercent >= 99.9
+      isMaxAtMax: maxPercent >= 99.9,
     });
-    
-    // Get selected condition
-    let condition = '';
-    document.querySelectorAll('input[name="condition"]').forEach(r => {
+
+    let condition = "";
+    document.querySelectorAll('input[name="condition"]').forEach((r) => {
       if (r.checked) condition = r.value;
     });
-    
-    // Get selected rating
-    let rating = '';
-    document.querySelectorAll('input[name="rating"]').forEach(r => {
+
+    let rating = "";
+    document.querySelectorAll('input[name="rating"]').forEach((r) => {
       if (r.checked) rating = r.value;
     });
-    
-    // Get selected date
-    const postedAfter = document.getElementById('postedDate').value;
-    
-    // Create query string with filter parameters
+
+    const postedAfter = document.getElementById("postedDate").value;
+
     let queryParams = new URLSearchParams(window.location.search);
-    
-    // Only set min price if slider isn't at minimum
+
     if (minPercent > 0.1) {
-      queryParams.set('min_price', Math.floor(minPrice));
+      queryParams.set("min_price", Math.floor(minPrice));
     } else {
-      queryParams.delete('min_price');
+      queryParams.delete("min_price");
     }
-    
-    // Only set max price if slider isn't at maximum
+
     if (maxPercent < 99.9) {
-      queryParams.set('max_price', Math.ceil(maxPrice));
+      queryParams.set("max_price", Math.ceil(maxPrice));
     } else {
-      queryParams.delete('max_price');
+      queryParams.delete("max_price");
     }
-    
-    if (condition) queryParams.set('condition', condition);
-    else queryParams.delete('condition');
-    
-    if (rating) queryParams.set('rating', rating);
-    else queryParams.delete('rating');
-    
-    if (postedAfter) queryParams.set('posted_after', postedAfter);
-    else queryParams.delete('posted_after');
-    
-    // Preserve category and keyword parameters (already in queryParams)
-    
-    // Redirect with filter parameters
-    window.location.href = window.location.pathname + '?' + queryParams.toString();
+
+    if (condition) queryParams.set("condition", condition);
+    else queryParams.delete("condition");
+
+    if (rating) queryParams.set("rating", rating);
+    else queryParams.delete("rating");
+
+    if (postedAfter) queryParams.set("posted_after", postedAfter);
+    else queryParams.delete("posted_after");
+
+    window.location.href =
+      window.location.pathname + "?" + queryParams.toString();
   });
 </script>
 
-<!-- Wishlist Interaction Script -->
 <script>
-document.addEventListener('DOMContentLoaded', () => {
-    const wishlistButtons = document.querySelectorAll('.wishlist-button');
+  document.addEventListener("DOMContentLoaded", () => {
+    const wishlistButtons = document.querySelectorAll(".wishlist-button");
 
-    wishlistButtons.forEach(button => {
-        button.addEventListener('click', async (event) => {
-            event.preventDefault(); // Prevent link navigation if button is inside <a>
-            event.stopPropagation(); // Stop event bubbling up
+    wishlistButtons.forEach((button) => {
+      button.addEventListener("click", async (event) => {
+        event.preventDefault();
+        event.stopPropagation();
 
-            // --- Optimization: Disable button on click ---
-            button.disabled = true;
-            // Optional: Add a loading visual state
-            // button.classList.add('wishlist-button--loading'); 
+        button.disabled = true;
 
-            const productId = button.dataset.productId;
-            const isWishlisted = button.classList.contains('active');
-            const url = isWishlisted 
-                ? `/remove_from_wishlist/${productId}` 
-                : `/add_to_wishlist/${productId}`;
+        const productId = button.dataset.productId;
+        const isWishlisted = button.classList.contains("active");
+        const url = isWishlisted
+          ? `/remove_from_wishlist/${productId}`
+          : `/add_to_wishlist/${productId}`;
 
-            try {
-                const response = await fetch(url, {
-                    method: 'POST',
-                    headers: {
-                        // Optional: Add CSRF token if needed
-                        'Content-Type': 'application/json', // Important for Flask jsonify
-                        'Accept': 'application/json'      // Expect JSON response
-                    }
-                });
+        try {
+          const response = await fetch(url, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Accept: "application/json",
+            },
+          });
 
-                // Check if response is JSON before parsing
-                const contentType = response.headers.get("content-type");
-                let data;
-                if (contentType && contentType.indexOf("application/json") !== -1) {
-                    data = await response.json();
-                } else {
-                    // Handle non-JSON response (e.g., error page HTML)
-                    throw new Error('Received non-JSON response from server.');
-                }
+          const contentType = response.headers.get("content-type");
+          let data;
+          if (contentType && contentType.indexOf("application/json") !== -1) {
+            data = await response.json();
+          } else {
+            throw new Error("Received non-JSON response from server.");
+          }
 
-                if (response.ok && data.success) {
-                    // Toggle button state visually ONLY on success
-                    button.classList.toggle('active');
-                    // Update tooltip/aria-label
-                    const newAction = isWishlisted ? 'Add' : 'Remove';
-                    button.setAttribute('aria-label', `${newAction} from Wishlist`);
-                    button.setAttribute('title', `${newAction} from Wishlist`);
-                    
-                    console.log(data.message);
-                    // showFlashMessage(data.message, 'success'); // Example call
-                } else {
-                    // Handle backend errors (e.g., show a flash message)
-                    console.error('Wishlist error:', data.message || `Server responded with status ${response.status}`);
-                    // Revert visual state if the backend failed but UI was toggled optimistically (we moved toggle to success block, so no revert needed)
-                    // showFlashMessage(data.message || 'Could not update wishlist.', 'error'); // Example call
-                } 
-            } catch (error) {
-                // Handle network errors or non-JSON responses
-                console.error('Wishlist interaction failed:', error);
-                // showFlashMessage('Could not reach server. Please try again.', 'error'); // Example call
-            } finally {
-                // --- Optimization: Re-enable button regardless of outcome ---
-                button.disabled = false;
-                // Optional: Remove loading visual state
-                // button.classList.remove('wishlist-button--loading');
-            }
-        });
+          if (response.ok && data.success) {
+            button.classList.toggle("active");
+            const newAction = isWishlisted ? "Add" : "Remove";
+            button.setAttribute("aria-label", `${newAction} from Wishlist`);
+            button.setAttribute("title", `${newAction} from Wishlist`);
+
+            console.log(data.message);
+          } else {
+            console.error(
+              "Wishlist error:",
+              data.message || `Server responded with status ${response.status}`
+            );
+          }
+        } catch (error) {
+          console.error("Wishlist interaction failed:", error);
+        } finally {
+          button.disabled = false;
+        }
+      });
     });
-    
-    // Example function to show flash messages dynamically (requires a target element)
-    // function showFlashMessage(message, category) { ... }
-});
+  });
 </script>
 {% endblock %}
