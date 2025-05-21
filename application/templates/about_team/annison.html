@@ -1,8 +1,11 @@
-{# templates/about_pages/annison.html #}
-{% extends "_about.html" %}
+<!-- This HTML file is a template for the 'About' page of Annison Van, extending the base '_about.html' template. -->
 
-{% block person_content %}
-<img src="{{ url_for('static', filename='pfp/annison.jpg') }}" alt="Annison Van" class="about-image">
+{% extends "_about.html" %} {% block person_content %}
+<img
+  src="{{ url_for('static', filename='images/annison.jpg') }}"
+  alt="Annison Van"
+  class="about-image"
+/>
 
 <p>Student at San Francisco State University</p>
 {% endblock %}

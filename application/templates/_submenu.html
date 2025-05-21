@@ -1,16 +1,28 @@
+<!-- This file defines a navigation submenu with dropdowns and conditional content based on Jinja templating -->
+
 <nav class="submenu">
   <ul>
-    {% if show_filters %}
-    <!-- Removing the filter button from here -->
-    {% endif %}
+    {% if show_filters %} {% endif %}
     <li class="dropdown">
       <a href="#">About the Team ▾</a>
       <ul class="dropdown-menu">
-        <li><a href="{{ url_for('about', username='joe') }}">Joseph Shur</a></li>
-        <li><a href="{{ url_for('about', username='sid') }}">Sid Padmanabhuni</a></li>
-        <li><a href="{{ url_for('about', username='hilary') }}">Hilary Lui</a></li>
-        <li><a href="{{ url_for('about', username='annison') }}">Annison Van</a></li>
-        <li><a href="{{ url_for('about', username='joseph') }}">Joseph Alhambra</a></li>
+        <li>
+          <a href="{{ url_for('about', username='joe') }}">Joseph Shur</a>
+        </li>
+        <li>
+          <a href="{{ url_for('about', username='sid') }}">Sid Padmanabhuni</a>
+        </li>
+        <li>
+          <a href="{{ url_for('about', username='hilary') }}">Hilary Lui</a>
+        </li>
+        <li>
+          <a href="{{ url_for('about', username='annison') }}">Annison Van</a>
+        </li>
+        <li>
+          <a href="{{ url_for('about', username='joseph') }}"
+            >Joseph Alhambra</a
+          >
+        </li>
       </ul>
     </li>
   </ul>

@@ -1,55 +1,370 @@
-{% extends "base.html" %}
+<!-- This HTML file defines the messaging interface for the SFSU Thrift Market, including the sidebar for conversations, chat area, and embedded JavaScript for handling real-time messaging functionality. -->
 
-{% block title %}Messages - SFSU Thrift Market{% endblock %}
+{% extends "base.html" %} {% block title %}Messages - SFSU Thrift Market{%
+endblock %} {% block head %} {{ super() }}
+<style>
+  :root {
+    --sent-bubble-bg: #6a0dad;
+    --received-bubble-bg: #e4e6eb;
+    --sidebar-bg: #f0f2f5;
+    --header-bg: #f6f6f6;
+    --text-color: #333;
+    --secondary-text-color: #666;
+    --site-header-height: 60px;
+    --site-footer-height: 50px;
+    --sidebar-width: 300px;
+    --avatar-size: 40px;
+    --status-size: 10px;
+    --input-height: 60px;
+  }
 
-{% block head %}
-  {{ super() }}
-  <link rel="stylesheet" href="{{ url_for('static', filename='messaging.css') }}">
-  <style>
-    body {
-      overflow: hidden;
-      padding-bottom: 0 !important;
+  body {
+    overflow: hidden;
+    padding-bottom: 0 !important;
+  }
+
+  .avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .sidebar .avatar,
+  .chat-header .avatar {
+    border-radius: 50%;
+    overflow: hidden;
+  }
+
+  .sidebar .avatar {
+    width: 40px;
+    height: 40px;
+  }
+
+  .chat-header .avatar {
+    width: 45px;
+    height: 45px;
+  }
+
+  .messaging-interface {
+    display: flex;
+    height: calc(100vh - var(--site-header-height) - var(--site-footer-height));
+    overflow: visible;
+    background: #fff;
+    color: var(--text-color);
+  }
+
+  .messaging-interface .sidebar {
+    flex: 0 0 var(--sidebar-width);
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background: var(--sidebar-bg);
+    border-right: 1px solid #ccc;
+    overflow-y: auto;
+  }
+
+  .messaging-interface .sidebar .chat-search {
+    margin: 1rem;
+    padding: 0.5rem 1rem;
+    border: 1px solid #ccc;
+    border-radius: 1.5rem;
+    outline: none;
+  }
+
+  .messaging-interface .sidebar .section {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .messaging-interface .sidebar .section h4 {
+    margin: 0;
+    padding: 0.75rem 1rem;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-color);
+    background: var(--header-bg);
+    border-bottom: 1px solid #ddd;
+  }
+
+  .messaging-interface .sidebar .conversation-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .messaging-interface .sidebar .conversation-list li {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid #ddd;
+    cursor: pointer;
+  }
+
+  .messaging-interface .sidebar .conversation-list li:hover {
+    background: #eaeaea;
+  }
+
+  .messaging-interface .sidebar .conversation-list li.active {
+    background: #d8e3ff;
+  }
+
+  .messaging-interface .sidebar .avatar {
+    position: relative;
+    flex: 0 0 var(--avatar-size);
+    width: var(--avatar-size);
+    height: var(--avatar-size);
+    margin-right: 0.75rem;
+  }
+
+  .messaging-interface .sidebar .avatar img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+  }
+
+  .messaging-interface .sidebar .avatar .status {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: var(--status-size);
+    height: var(--status-size);
+    background: #44c552;
+    border: 2px solid var(--sidebar-bg);
+    border-radius: 50%;
+  }
+
+  .messaging-interface .sidebar .avatar .status.offline {
+    background: #aaa;
+  }
+
+  .messaging-interface .sidebar .conversation-info {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  .messaging-interface .sidebar .conversation-info .name {
+    margin: 0;
+    font-size: 0.95rem;
+    font-weight: 600;
+  }
+
+  .messaging-interface .sidebar .conversation-info .snippet {
+    margin-top: 0.25rem;
+    font-size: 0.85rem;
+    color: var(--secondary-text-color);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .messaging-interface .chat-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
+
+  .messaging-interface .chat-area .chat-header {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    background: var(--header-bg);
+    border-bottom: 1px solid #ccc;
+  }
+
+  .messaging-interface .chat-area .chat-header .avatar {
+    position: relative;
+    flex: 0 0 var(--avatar-size);
+    width: var(--avatar-size);
+    height: var(--avatar-size);
+  }
+
+  .messaging-interface .chat-area .chat-header .avatar img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+  }
+
+  .messaging-interface .chat-area .chat-header .avatar .status {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: var(--status-size);
+    height: var(--status-size);
+    background: #44c552;
+    border: 2px solid var(--header-bg);
+    border-radius: 50%;
+  }
+
+  .messaging-interface .chat-area .chat-header .contact-name {
+    font-size: 1.1rem;
+    font-weight: 600;
+  }
+
+  .messaging-interface .chat-area .chat-header .contact-status {
+    margin-left: auto;
+    font-size: 0.9rem;
+    color: var(--secondary-text-color);
+  }
+
+  .messaging-interface .chat-area .chat-history {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 1rem;
+    padding-bottom: calc(var(--input-height) + 1rem);
+    overflow-y: auto;
+  }
+
+  .messaging-interface .chat-area .message {
+    max-width: 60%;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.95rem;
+    line-height: 1.4;
+    color: #000;
+    background: var(--received-bubble-bg);
+    border-radius: 1rem;
+    word-wrap: break-word;
+    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.06);
+  }
+
+  .messaging-interface .chat-area .message.sent {
+    align-self: flex-end;
+    color: #fff;
+    background: var(--sent-bubble-bg);
+    border-top-right-radius: 0.8rem;
+    border-bottom-right-radius: 0.8rem;
+  }
+
+  .messaging-interface .chat-area .message.received {
+    align-self: flex-start;
+    background: var(--received-bubble-bg);
+    border-top-left-radius: 0.8rem;
+    border-bottom-left-radius: 0.8rem;
+  }
+
+  .messaging-interface .chat-area .message .timestamp {
+    display: block;
+    margin-top: 0.25rem;
+    font-size: 0.75rem;
+    color: var(--secondary-text-color);
+    text-align: right;
+  }
+
+  .messaging-interface .chat-area .chat-input {
+    position: sticky;
+    bottom: 0;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    background: var(--header-bg);
+    border-top: 1px solid #ccc;
+  }
+
+  .messaging-interface .chat-area .chat-input input[type="text"],
+  .messaging-interface .chat-area .chat-input textarea {
+    flex: 1;
+    padding: 0.5rem 0.75rem;
+    font-size: 1rem;
+    background: #fff;
+    color: var(--text-color);
+    border: 1px solid #ccc;
+    border-radius: 1.5rem;
+    outline: none;
+  }
+
+  .messaging-interface .chat-area .chat-input ::placeholder {
+    color: #999;
+  }
+
+  .messaging-interface .chat-area .chat-input .send-btn,
+  .messaging-interface .chat-area .chat-input .attach-btn,
+  .messaging-interface .chat-area .chat-input .emoji-btn {
+    padding: 0.25rem;
+    font-size: 1.2rem;
+    line-height: 1;
+    color: #666;
+    background: none;
+    border: none;
+    cursor: pointer;
+  }
+
+  .messaging-interface .chat-area .chat-input .send-btn:hover,
+  .messaging-interface .chat-area .chat-input .attach-btn:hover,
+  .messaging-interface .chat-area .chat-input .emoji-btn:hover {
+    color: var(--sent-bubble-bg);
+  }
+
+  .no-messages {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: var(--secondary-text-color);
+    text-align: center;
+    padding: 2rem;
+  }
+
+  .no-messages svg {
+    width: 80px;
+    height: 80px;
+    margin-bottom: 1rem;
+    opacity: 0.3;
+  }
+
+  .no-messages h3 {
+    font-size: 1.2rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .no-messages p {
+    font-size: 0.9rem;
+    max-width: 360px;
+  }
+
+  @media (max-width: 600px) {
+    .messaging-interface {
+      flex-direction: column;
     }
-    
-    /* Fix for stretched avatar images */
-    .avatar img {
-      object-fit: cover; /* Maintain aspect ratio while covering container */
+
+    .messaging-interface .sidebar {
       width: 100%;
-      height: 100%;
+      max-height: 40vh;
+      border-right: none;
+      border-bottom: 1px solid #ccc;
     }
-    
-    /* Ensure avatar containers are properly sized */
-    .sidebar .avatar {
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      overflow: hidden;
-    }
-    
-    .chat-header .avatar {
-      width: 45px;
-      height: 45px;
-      border-radius: 50%;
-      overflow: hidden;
-    }
-  </style>
-  <script src="https://cdn.socket.io/4.6.0/socket.io.min.js"></script>
-{% endblock %}
 
-{% block content %}
+    .messaging-interface .chat-area {
+      width: 100%;
+    }
+  }
+</style>
+<script src="https://cdn.socket.io/4.6.0/socket.io.min.js"></script>
+{% endblock %} {% block content %}
 <div class="messaging-interface">
-
-  <!-- Sidebar / conversation list -->
   <aside class="sidebar">
-
-    <!-- Conversations section -->
     <div class="section conversations">
       <h4>Messages</h4>
       <ul class="conversation-list" id="conversations">
         {% for convo in conversations %}
-        <li class="{% if convo.id == active_user_id %}active{% endif %}" data-user-id="{{ convo.id }}">
+        <li
+          class="{% if convo.id == active_user_id %}active{% endif %}"
+          data-user-id="{{ convo.id }}"
+        >
           <div class="avatar">
-            <img src="{{ convo.avatar_url }}" alt="{{ convo.name }}">
+            <img src="{{ convo.avatar_url }}" alt="{{ convo.name }}" />
           </div>
           <div class="conversation-info">
             <p class="name">{{ convo.name }}</p>
@@ -59,236 +374,294 @@
         {% endfor %}
       </ul>
     </div>
-
   </aside>
 
-
-  <!-- Chat area -->
   <section class="chat-area">
-
-    <!-- Chat header -->
     <header class="chat-header">
       {% if chat_user %}
       <div class="avatar">
-        <img src="{{ chat_user.avatar_url }}" alt="{{ chat_user.name }}">
+        <img src="{{ chat_user.avatar_url }}" alt="{{ chat_user.name }}" />
       </div>
       <div class="contact-name">{{ chat_user.name }}</div>
       {% endif %}
     </header>
 
-    <!-- Message history -->
     <div class="chat-history" id="message-container">
-      {% if messages %}
-        {% for msg in messages %}
-        <div class="message {{ 'sent' if msg.is_sent else 'received' }}">
-          {{ msg.text }}
-          <span class="timestamp">{{ msg.timestamp }}</span>
-        </div>
-        {% endfor %}
-      {% elif chat_user %}
-        <div class="no-messages">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-          </svg>
-          <h3>No messages yet</h3>
-          <p>Start the conversation by sending a message below</p>
-        </div>
+      {% if messages %} {% for msg in messages %}
+      <div class="message {{ 'sent' if msg.is_sent else 'received' }}">
+        {{ msg.text }}
+        <span class="timestamp">{{ msg.timestamp }}</span>
+      </div>
+      {% endfor %} {% elif chat_user %}
+      <div class="no-messages">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path
+            d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
+          ></path>
+        </svg>
+        <h3>No messages yet</h3>
+        <p>Start the conversation by sending a message below</p>
+      </div>
       {% else %}
-        <div class="no-messages">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
-          </svg>
-          <h3>No conversations yet</h3>
-          <p>You can start a conversation by visiting a product listing and clicking "Contact Seller" or visiting a user's profile.</p>
-          <p>Or <a href="/" style="color: #6a0dad; text-decoration: underline;">browse products</a> to find something you're interested in.</p>
-        </div>
+      <div class="no-messages">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path
+            d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"
+          ></path>
+        </svg>
+        <h3>No conversations yet</h3>
+        <p>
+          You can start a conversation by visiting a product listing and
+          clicking "Contact Seller" or visiting a user's profile.
+        </p>
+        <p>
+          Or
+          <a href="/" style="color: #6a0dad; text-decoration: underline"
+            >browse products</a
+          >
+          to find something you're interested in.
+        </p>
+      </div>
       {% endif %}
     </div>
 
-    <!-- Input composer -->
     <footer class="chat-input">
       <input
         type="text"
         id="message-input"
         placeholder="{% if chat_user %}Type a message…{% else %}Select a conversation first{% endif %}"
         aria-label="Type a message"
-        {% if not chat_user %}disabled{% endif %}
+        {%
+        if
+        not
+        chat_user
+        %}disabled{%
+        endif
+        %}
       />
-      <button 
-        type="button" 
-        class="send-btn" 
+      <button
+        type="button"
+        class="send-btn"
         id="send-button"
-        {% if not chat_user %}disabled{% endif %}
-      >Send</button>
+        {%
+        if
+        not
+        chat_user
+        %}disabled{%
+        endif
+        %}
+      >
+        Send
+      </button>
     </footer>
-    
-    <!-- Debug panel (initially hidden) -->
-    <div id="debug-panel" style="display: none; position: fixed; bottom: 0; left: 0; background: rgba(0,0,0,0.7); color: white; padding: 10px; font-size: 12px; max-width: 400px; max-height: 200px; overflow: auto;">
-      <div><strong>Socket Status:</strong> <span id="socket-status">Disconnected</span></div>
-      <div><strong>Socket ID:</strong> <span id="socket-id">None</span></div>
-      <div><strong>Active User:</strong> <span id="debug-active-user">None</span></div>
-      <div><strong>Log:</strong></div>
-      <div id="debug-log" style="font-family: monospace;"></div>
-      <button id="toggle-debug" style="position: absolute; top: 5px; right: 5px;">Hide</button>
-    </div>
-    
-    <!-- Debug toggle button -->
-    <button id="show-debug" style="position: fixed; bottom: 5px; left: 5px; z-index: 1000; background: #6a0dad; color: white; border: none; border-radius: 4px; padding: 5px 10px; cursor: pointer;">Debug</button>
 
+    <div
+      id="debug-panel"
+      style="
+        display: none;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        background: rgba(0, 0, 0, 0.7);
+        color: white;
+        padding: 10px;
+        font-size: 12px;
+        max-width: 400px;
+        max-height: 200px;
+        overflow: auto;
+      "
+    >
+      <div>
+        <strong>Socket Status:</strong>
+        <span id="socket-status">Disconnected</span>
+      </div>
+      <div><strong>Socket ID:</strong> <span id="socket-id">None</span></div>
+      <div>
+        <strong>Active User:</strong> <span id="debug-active-user">None</span>
+      </div>
+      <div><strong>Log:</strong></div>
+      <div id="debug-log" style="font-family: monospace"></div>
+      <button
+        id="toggle-debug"
+        style="position: absolute; top: 5px; right: 5px"
+      >
+        Hide
+      </button>
+    </div>
+
+    <button
+      id="show-debug"
+      style="
+        position: fixed;
+        bottom: 5px;
+        left: 5px;
+        z-index: 1000;
+        background: #6a0dad;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        padding: 5px 10px;
+        cursor: pointer;
+      "
+    >
+      Debug
+    </button>
   </section>
 </div>
 
 <script>
-  document.addEventListener('DOMContentLoaded', function() {
-    // Debug elements
-    const debugPanel = document.getElementById('debug-panel');
-    const debugLog = document.getElementById('debug-log');
-    const socketStatus = document.getElementById('socket-status');
-    const socketId = document.getElementById('socket-id');
-    const debugActiveUser = document.getElementById('debug-active-user');
-    const showDebugBtn = document.getElementById('show-debug');
-    const toggleDebugBtn = document.getElementById('toggle-debug');
-    
+  document.addEventListener("DOMContentLoaded", function () {
+    const debugPanel = document.getElementById("debug-panel");
+    const debugLog = document.getElementById("debug-log");
+    const socketStatus = document.getElementById("socket-status");
+    const socketId = document.getElementById("socket-id");
+    const debugActiveUser = document.getElementById("debug-active-user");
+    const showDebugBtn = document.getElementById("show-debug");
+    const toggleDebugBtn = document.getElementById("toggle-debug");
+
     // Debug functions
     function log(message) {
       console.log(message);
       if (debugLog) {
-        const logLine = document.createElement('div');
+        const logLine = document.createElement("div");
         logLine.textContent = `${new Date().toLocaleTimeString()}: ${message}`;
         debugLog.appendChild(logLine);
         debugLog.scrollTop = debugLog.scrollHeight;
       }
     }
-    
-    // Debug panel toggle
+
     if (showDebugBtn) {
-      showDebugBtn.addEventListener('click', function() {
-        debugPanel.style.display = 'block';
-        showDebugBtn.style.display = 'none';
+      showDebugBtn.addEventListener("click", function () {
+        debugPanel.style.display = "block";
+        showDebugBtn.style.display = "none";
       });
     }
-    
+
     if (toggleDebugBtn) {
-      toggleDebugBtn.addEventListener('click', function() {
-        debugPanel.style.display = 'none';
-        showDebugBtn.style.display = 'block';
+      toggleDebugBtn.addEventListener("click", function () {
+        debugPanel.style.display = "none";
+        showDebugBtn.style.display = "block";
       });
     }
-    
-    // Socket.io connection
+
     const socket = io({
       reconnectionAttempts: 3,
-      timeout: 10000
+      timeout: 10000,
     });
-    log('Socket.io initialized');
-    
-    // Debug socket connection status
-    socket.on('connect', function() {
-      log('Socket connected successfully: ' + socket.id);
-      socketStatus.textContent = 'Connected';
+    log("Socket.io initialized");
+
+    socket.on("connect", function () {
+      log("Socket connected successfully: " + socket.id);
+      socketStatus.textContent = "Connected";
       socketId.textContent = socket.id;
     });
-    
-    socket.on('connect_error', function(error) {
-      log('Socket connection error: ' + error);
-      socketStatus.textContent = 'Error: ' + error;
+
+    socket.on("connect_error", function (error) {
+      log("Socket connection error: " + error);
+      socketStatus.textContent = "Error: " + error;
     });
-    
-    socket.on('disconnect', function(reason) {
-      log('Socket disconnected: ' + reason);
-      socketStatus.textContent = 'Disconnected: ' + reason;
+
+    socket.on("disconnect", function (reason) {
+      log("Socket disconnected: " + reason);
+      socketStatus.textContent = "Disconnected: " + reason;
     });
-    
-    // Get active user ID from the active conversation or URL
+
     let activeUserId = null;
-    
-    // First check URL - if URL has format /messages/{user_id}
-    const pathParts = window.location.pathname.split('/');
-    if (pathParts.length > 2 && pathParts[1] === 'messages' && !isNaN(pathParts[2])) {
+
+    const pathParts = window.location.pathname.split("/");
+    if (
+      pathParts.length > 2 &&
+      pathParts[1] === "messages" &&
+      !isNaN(pathParts[2])
+    ) {
       activeUserId = pathParts[2];
-      log('Got active user ID from URL: ' + activeUserId);
+      log("Got active user ID from URL: " + activeUserId);
     }
-    
-    // Then check active conversation item if we didn't get it from URL
+
     if (!activeUserId) {
-      const activeItem = document.querySelector('.conversation-list li.active');
+      const activeItem = document.querySelector(".conversation-list li.active");
       if (activeItem) {
-        activeUserId = activeItem.getAttribute('data-user-id');
-        log('Got active user ID from active conversation item: ' + activeUserId);
+        activeUserId = activeItem.getAttribute("data-user-id");
+        log(
+          "Got active user ID from active conversation item: " + activeUserId
+        );
       }
     }
-    
-    // Check if we have a chat_user from server (for initial state)
-    const hasChatUser = document.querySelector('.chat-header .contact-name') !== null;
+
+    const hasChatUser =
+      document.querySelector(".chat-header .contact-name") !== null;
     if (hasChatUser) {
-      log('Found chat user in the header');
+      log("Found chat user in the header");
     }
-    
-    // Update debug panel
+
     if (debugActiveUser) {
-      debugActiveUser.textContent = activeUserId || 'None';
+      debugActiveUser.textContent = activeUserId || "None";
     }
-    
-    // DOM elements
-    const messageInput = document.getElementById('message-input');
-    const sendButton = document.getElementById('send-button');
-    const messageContainer = document.getElementById('message-container');
-    const conversationsList = document.getElementById('conversations');
-    
-    // Check if we have an active user and toggle input state
+
+    const messageInput = document.getElementById("message-input");
+    const sendButton = document.getElementById("send-button");
+    const messageContainer = document.getElementById("message-container");
+    const conversationsList = document.getElementById("conversations");
+
     function updateInputState() {
-      // If we have a chat_user (from server) OR activeUserId (from client)
       if (hasChatUser || activeUserId) {
         messageInput.disabled = false;
         sendButton.disabled = false;
         messageInput.placeholder = "Type a message…";
-        log('Input enabled: We have a conversation partner');
+        log("Input enabled: We have a conversation partner");
       } else {
         messageInput.disabled = true;
         sendButton.disabled = true;
         messageInput.placeholder = "Select a conversation first";
-        log('Input disabled: No conversation partner');
+        log("Input disabled: No conversation partner");
       }
     }
-    
-    // Initial update of input state
+
     updateInputState();
-    
-    // Update conversation list with new message
+
     function updateOrCreateConversation(userId, text, senderName, msgData) {
       userId = parseInt(userId);
       const list = conversationsList;
-      
+
       if (!list) return;
-      
-      // Try to find existing conversation item
+
       let existingItem = null;
-      const items = list.querySelectorAll('li');
-      items.forEach(item => {
-        const itemUserId = parseInt(item.getAttribute('data-user-id'));
+      const items = list.querySelectorAll("li");
+      items.forEach((item) => {
+        const itemUserId = parseInt(item.getAttribute("data-user-id"));
         if (itemUserId === userId) {
           existingItem = item;
         }
       });
-      
-      // If conversation exists, update it
+
       if (existingItem) {
-        // Update message preview
-        const snippet = existingItem.querySelector('.snippet');
+        const snippet = existingItem.querySelector(".snippet");
         if (snippet) {
           snippet.textContent = text;
         }
-        
-        // Move to top of list if not already
+
         if (existingItem !== list.firstChild) {
           list.insertBefore(existingItem, list.firstChild);
         }
-      } 
-      // If it's a new conversation, create it
-      else if (senderName) {
-        // Create new conversation item
-        const newItem = document.createElement('li');
-        newItem.setAttribute('data-user-id', userId);
+      } else if (senderName) {
+        const newItem = document.createElement("li");
+        newItem.setAttribute("data-user-id", userId);
         newItem.innerHTML = `
           <div class="avatar">
             <img src="/user_picture/${userId}" alt="${senderName}">
@@ -298,103 +671,88 @@
             <p class="snippet">${text}</p>
           </div>
         `;
-        
-        // Add click handler
-        newItem.addEventListener('click', function() {
+
+        newItem.addEventListener("click", function () {
           window.location.href = `/messages/${userId}`;
         });
-        
-        // Add to list (at top)
+
         list.insertBefore(newItem, list.firstChild);
       }
     }
-    
-    // Make conversation items clickable
+
     function setupConversationClicks(list) {
       if (!list) return;
-      
-      const items = list.querySelectorAll('li');
-      items.forEach(item => {
-        item.addEventListener('click', function() {
-          const userId = this.getAttribute('data-user-id');
+
+      const items = list.querySelectorAll("li");
+      items.forEach((item) => {
+        item.addEventListener("click", function () {
+          const userId = this.getAttribute("data-user-id");
           window.location.href = `/messages/${userId}`;
         });
       });
     }
-    
-    // Set up click handlers for the conversation list
+
     setupConversationClicks(conversationsList);
-    
-    // Scroll to bottom of chat on load
+
     messageContainer.scrollTop = messageContainer.scrollHeight;
 
-    // Send button and Enter key
     if (sendButton && messageInput) {
-      // Function to send message
       function sendMessage() {
         const message = messageInput.value.trim();
         if (!message || !activeUserId) return;
-        
+
         log(`Sending message to user ${activeUserId}: ${message}`);
-        
-        socket.emit('send_message', {
+
+        socket.emit("send_message", {
           receiver_id: activeUserId,
-          message: message
+          message: message,
         });
-        
-        // Clear input
-        messageInput.value = '';
+
+        messageInput.value = "";
       }
-      
-      // Send on button click
-      sendButton.addEventListener('click', sendMessage);
-      
-      // Send on Enter (but not with Shift+Enter)
-      messageInput.addEventListener('keydown', function(e) {
-        if (e.key === 'Enter' && !e.shiftKey) {
+
+      sendButton.addEventListener("click", sendMessage);
+
+      messageInput.addEventListener("keydown", function (e) {
+        if (e.key === "Enter" && !e.shiftKey) {
           e.preventDefault();
           sendMessage();
         }
       });
     }
-    
-    // Socket event handlers
-    socket.on('new_message', function(data) {
+
+    socket.on("new_message", function (data) {
       log(`Received message event: ${JSON.stringify(data)}`);
-      
-      const isSent = data.sender_id === parseInt("{{ session.user_id if session.user_id else 'null' }}");
+
+      const isSent =
+        data.sender_id ===
+        parseInt("{{ session.user_id if session.user_id else 'null' }}");
       const otherUserId = isSent ? data.receiver_id : data.sender_id;
-      
-      // If this message is for the active conversation, append to chat
+
       if (activeUserId && parseInt(activeUserId) === otherUserId) {
-        // Create message element
-        const messageElement = document.createElement('div');
-        messageElement.className = `message ${isSent ? 'sent' : 'received'}`;
-        messageElement.innerHTML = data.text +
-          '<span class="timestamp">' + data.timestamp + '</span>';
-        
-        // Append to chat
+        const messageElement = document.createElement("div");
+        messageElement.className = `message ${isSent ? "sent" : "received"}`;
+        messageElement.innerHTML =
+          data.text + '<span class="timestamp">' + data.timestamp + "</span>";
+
         messageContainer.appendChild(messageElement);
-        
-        // Scroll to bottom
+
         messageContainer.scrollTop = messageContainer.scrollHeight;
       }
-      
-      // Update conversation list
+
       updateOrCreateConversation(
-        otherUserId, 
-        data.text, 
-        data.sender_name, 
+        otherUserId,
+        data.text,
+        data.sender_name,
         data
       );
     });
-    
-    socket.on('message_error', function(data) {
+
+    socket.on("message_error", function (data) {
       log(`Error sending message: ${data.error}`);
       alert(`Error sending message: ${data.error}`);
     });
-    
-    // Initial state
+
     updateInputState();
   });
 </script>

@@ -5,7 +5,7 @@ import re
 from decimal import Decimal
 from dotenv import load_dotenv
 
-load_dotenv() # Load environment variables from .env file
+load_dotenv()
 
 def get_image_filename(title, ext='jpg'):
     """
@@ -14,12 +14,10 @@ def get_image_filename(title, ext='jpg'):
     """
     return re.sub(r'\W+', '', title.lower()) + f".{ext}"
 
-# Path to your images folder - using relative path based on script location
 image_folder = os.path.join(os.path.dirname(__file__), "images")
 
 db_name = input("Enter the name of the database to connect to: ").strip()
 
-# Database connection config
 db = mysql.connector.connect(
     user=os.getenv("DB_USER"),
     host=os.getenv("DB_HOST"),
@@ -28,7 +26,6 @@ db = mysql.connector.connect(
     port=os.getenv("DB_PORT"),
 )
 
-# Sample Users and Categories with bio field added
 sample_users = [
     ('Alice', 'Smith', 'alice@example.com', 'hashed_password1', '1234567890', 'SFSU student selling items I no longer need. Looking for good homes for my stuff!'),
     ('Bob', 'Johnson', 'bob@example.com', 'hashed_password2', '0987654321', 'Grad student at SFSU. I buy and sell tech and books. Quick responses and fair prices.')
@@ -56,7 +53,6 @@ sample_categories = [
     ('Handmade Crafts', 'Student-made items and crafts')
 ]
 
-# Product sample data with condition field added
 sample_products = [
     ('iPhone 12', 'A used iPhone 12 in good condition.', 599.99, 'Electronics', 'alice@example.com', 'Good Condition'),
     ('Harry Potter Book Set', 'All 7 books, hardcover.', 75.00, 'Books', 'bob@example.com', 'Great Condition'),
@@ -79,16 +75,15 @@ sample_products = [
 ]
 
 try:
-    cnx = db  # using our already created connection
+    cnx = db
     cursor = cnx.cursor(prepared=True)
 
-    # First, alter the tables to add the new columns if they don't exist
     try:
         cursor.execute("ALTER TABLE Users ADD COLUMN bio TEXT")
         print("Added bio column to Users table")
     except mysql.connector.Error as err:
         if err.errno == errorcode.ER_DUP_FIELDNAME:
-            pass # Column already exists, no action needed
+            pass
         else:
             print(f"Error adding bio column: {err}")
     
@@ -97,40 +92,33 @@ try:
         print("Added condition column to Products table")
     except mysql.connector.Error as err:
         if err.errno == errorcode.ER_DUP_FIELDNAME:
-            pass # Column already exists, no action needed
+            pass
         else:
             print(f"Error adding condition column: {err}")
     
-    # Insert Users with bio
     cursor.executemany("""
         INSERT INTO Users (first_name, last_name, email, password, phone_number, bio)
         VALUES (%s, %s, %s, %s, %s, %s)
     """, sample_users)
 
-    # Insert Categories
     cursor.executemany("""
         INSERT INTO Categories (name, description)
         VALUES (%s, %s)
     """, sample_categories)
 
-    # Commit before selecting IDs
     cnx.commit()
 
-    # Map emails to user_ids
     cursor.execute("SELECT user_id, email FROM Users")
     user_map = {email: user_id for user_id, email in cursor.fetchall()}
 
-    # Map category names to category_ids
     cursor.execute("SELECT category_id, name FROM Categories")
     category_map = {name: category_id for category_id, name in cursor.fetchall()}
 
-    # Prepare product insert with condition
     insert_product_query = """
         INSERT INTO Products (title, description, price, category_id, seller_id, `condition`)
         VALUES (%s, %s, %s, %s, %s, %s)
     """
 
-    # Prepare image insert
     insert_image_query = """
         INSERT INTO ProductImages (product_id, image_data, image_order)
         VALUES (%s, %s, %s)
@@ -144,14 +132,12 @@ try:
 
         print(f"Processing product: {title}, Seller ID: {seller_id}, Category ID: {category_id}")
 
-        # Insert product with condition
         price_decimal = Decimal(str(price))
         product_data = (title, description, price_decimal, category_id, seller_id, condition)
         cursor.execute(insert_product_query, product_data)
-        product_id = cursor.lastrowid # Get the ID of the inserted product
+        product_id = cursor.lastrowid
         print(f"Inserted product {title} with ID: {product_id}")
 
-        # Now handle the image
         image_filename = get_image_filename(title)
         image_path = os.path.join(image_folder, image_filename)
         print(f"Image path: {image_path}")
@@ -159,14 +145,12 @@ try:
         try:
             with open(image_path, "rb") as img_file:
                 print(f"Reading image file: {image_path}")
-                image_blob = Binary(img_file.read())  # Wrap binary data explicitly
-                # Insert into ProductImages
-                image_data = (product_id, image_blob, 0) # Assuming order 0 for the first/only image
+                image_blob = Binary(img_file.read())
+                image_data = (product_id, image_blob, 0)
                 cursor.execute(insert_image_query, image_data)
                 print(f"Inserted image for product ID: {product_id}")
         except FileNotFoundError:
             print(f"Warning: Image file not found for product '{title}' at {image_path}. No image inserted.")
-            # image_blob = None # No longer needed here
 
     cnx.commit()
     print("Sample data and product images inserted successfully.")

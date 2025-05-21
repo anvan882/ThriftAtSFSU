@@ -1,14 +1,15 @@
-{# templates/about_hilary.html #}
-{% extends "_about.html" %}
+<!-- This HTML file is a template for displaying information about Hilary Lui, including her role and her cat Seymour. -->
 
-{% block person_content %}
-<img src="{{ url_for('static', filename='pfp/seymour.jpg') }}" alt="Hilary Lui’s cat Seymour" class="about-image">
+{% extends "_about.html" %} {% block person_content %}
+<img
+  src="{{ url_for('static', filename='images/seymour.jpg') }}"
+  alt="Hilary Lui’s cat Seymour"
+  class="about-image"
+/>
 <p>
-  This is Hilary Lui. She is a student at SFSU studying Computer Science.
-  She is the team lead of Team 15 and is excited to work with her team
-  to create a great project.
+  This is Hilary Lui. She is a student at SFSU studying Computer Science. She is
+  the team lead of Team 15 and is excited to work with her team to create a
+  great project.
 </p>
-<p>
-  She has a cat named Seymour. Seymour is… well, kind of silly.
-</p>
+<p>She has a cat named Seymour. Seymour is… well, kind of silly.</p>
 {% endblock %}

@@ -4,9 +4,10 @@ import time
 import os
 from dotenv import load_dotenv
 
-load_dotenv() # Load environment variables from .env file
+load_dotenv()
 
 db_name = input("Enter the name of the database to connect to: ").strip()
+action = input("Enter action (create, drop, or reset): ").strip().lower()
 
 db = mysql.connector.connect(
     user=os.getenv("DB_USER"),
@@ -16,7 +17,6 @@ db = mysql.connector.connect(
     port=os.getenv("DB_PORT"),
 )
 
-# Define table creation SQL
 TABLES = {}
 
 TABLES['Users'] = (
@@ -56,7 +56,7 @@ TABLES['Products'] = (
         price DECIMAL(10,2),
         category_id INT,
         `condition` VARCHAR(50),
-        status ENUM('available', 'sold') DEFAULT 'available',
+        status ENUM('available', 'sold', 'pending-approval') DEFAULT 'available',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (seller_id) REFERENCES Users(user_id),
         FOREIGN KEY (category_id) REFERENCES Categories(category_id)
@@ -95,23 +95,6 @@ TABLES['Reviews'] = (
     """
 )
 
-# TABLES['Transactions'] = (
-#     """
-#     CREATE TABLE IF NOT EXISTS Transactions (
-#         transaction_id INT AUTO_INCREMENT PRIMARY KEY,
-#         buyer_id INT,
-#         seller_id INT,
-#         product_id INT,
-#         agreed_price DECIMAL(10,2),
-#         status ENUM('completed', 'canceled') DEFAULT 'completed',
-#         timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-#         FOREIGN KEY (buyer_id) REFERENCES Users(user_id),
-#         FOREIGN KEY (seller_id) REFERENCES Users(user_id),
-#         FOREIGN KEY (product_id) REFERENCES Products(product_id)
-#     );
-#     """
-# )
-
 TABLES['ProductImages'] = (
     """
     CREATE TABLE IF NOT EXISTS ProductImages (
@@ -119,7 +102,7 @@ TABLES['ProductImages'] = (
         product_id INT,
         image_data LONGBLOB,
         uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        image_order INT DEFAULT 0, -- To maintain image order if needed
+        image_order INT DEFAULT 0,
         FOREIGN KEY (product_id) REFERENCES Products(product_id) ON DELETE CASCADE
     );
     """
@@ -144,7 +127,7 @@ TABLES['UserAvailability'] = (
         availability_id INT AUTO_INCREMENT PRIMARY KEY,
         user_id INT NOT NULL,
         day_of_week ENUM('Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday') NOT NULL,
-        time_slot VARCHAR(10) NOT NULL, -- Format like '6:00', '6:30', etc.
+        time_slot VARCHAR(10) NOT NULL,
         is_available BOOLEAN DEFAULT TRUE,
         last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES Users(user_id) ON DELETE CASCADE,
@@ -171,13 +154,11 @@ TABLES['Reports'] = (
     """
 )
 
-# Table drop order (reverse of dependency)
 DROP_ORDER = [
     "Reports",
     "UserAvailability",
     "Wishlist",
     "ProductImages",
-    # "Transactions",
     "Reviews",
     "Messages",
     "Products",
@@ -185,11 +166,8 @@ DROP_ORDER = [
     "Users"
 ]
 
-# Prompt user for action
-action = input("Enter action (drop, create, reset): ").strip().lower()
-
 try:
-    cnx = db  # using our already created connection
+    cnx = db
     cursor = cnx.cursor()
 
     if action in ['drop', 'reset']:
@@ -199,7 +177,7 @@ try:
         for table in DROP_ORDER:
             print(f"Dropping table `{table}` if it exists...")
             cursor.execute(f"DROP TABLE IF EXISTS {table};")
-            time.sleep(1)  # Pause for 1 second
+            time.sleep(1)
 
         print("Re-enabling foreign key checks...")
         cursor.execute("SET FOREIGN_KEY_CHECKS = 1;")
@@ -210,7 +188,7 @@ try:
         for table_name, table_sql in TABLES.items():
             print(f"Creating table `{table_name}`...")
             cursor.execute(table_sql)
-            time.sleep(1)  # Pause for 1 second
+            time.sleep(1)
         cnx.commit()
         print("Tables created successfully.")
 

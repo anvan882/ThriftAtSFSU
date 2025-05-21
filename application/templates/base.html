@@ -1,15 +1,15 @@
+<!-- This HTML file is for the SFSU Thrift Market webpage, including embedded CSS and JavaScript for dynamic behavior and styling. -->
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="icon" href="{{ url_for('static', filename='logo.png') }}">
+  <link rel="icon" href="{{ url_for('static', filename='images/logo.png') }}">
   <title>{% block title %}SFSU Thrift Market{% endblock %}</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
   {% block head %}{% endblock %}
   
-  <!-- Google tag (gtag.js) -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-CQHER759FR"></script>
   <script>
     window.dataLayer = window.dataLayer || [];
@@ -20,7 +20,6 @@
   </script>
 </head>
 
-<!--
 <body>
   <div id="viewport-warning" class="viewport-warning">
     <div class="viewport-warning-content">
@@ -30,9 +29,7 @@
       <button id="proceed-anyway" class="btn">Proceed Anyway</button>
     </div>
   </div>
--->
 
-  {# --- Global Flash Messages --- #}
   {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
       <div class="flash-messages-container">
@@ -42,7 +39,6 @@
       </div>
     {% endif %}
   {% endwith %}
-  {# --- End Flash Messages --- #}
 
   {% include '_navbar.html' %}
   {% include '_submenu.html' %}
@@ -57,19 +53,17 @@
 
   {% block scripts %}
   <script>
-    // Auto-hide flash messages after 5 seconds
     document.addEventListener('DOMContentLoaded', () => {
       const flashContainers = document.querySelectorAll('.flash-messages-container');
       flashContainers.forEach(container => {
-        if (container) { // Check if the container exists
+        if (container) {
           setTimeout(() => {
             container.style.transition = 'opacity 0.5s ease-out';
             container.style.opacity = '0';
-            // Wait for fade out to complete, then hide fully
             setTimeout(() => {
               container.style.display = 'none';
-            }, 500); // Match transition duration
-          }, 5000); // 5 seconds
+            }, 500);
+          }, 5000);
         }
       });
     });
@@ -77,7 +71,6 @@
 
   <script>
     document.addEventListener('DOMContentLoaded', function() {
-      // ===== Profile Dropdown Toggle =====
       const profileDropdowns = document.querySelectorAll('.profile-dropdown');
       
       profileDropdowns.forEach(dropdown => {
@@ -86,24 +79,21 @@
         
         if (profilePic && menu) {
           profilePic.addEventListener('click', function(event) {
-            event.stopPropagation(); // Prevent click from immediately closing the menu
+            event.stopPropagation();
             menu.classList.toggle('show');
           });
         }
       });
       
-      // Close dropdown if clicked outside
       document.addEventListener('click', function(event) {
         profileDropdowns.forEach(dropdown => {
           const menu = dropdown.querySelector('.dropdown-menu');
-          // Check if the menu exists, is shown, and the click was outside the dropdown container
           if (menu && menu.classList.contains('show') && !dropdown.contains(event.target)) {
             menu.classList.remove('show');
           }
         });
       });
       
-      // ===== Dynamic Category Selector Width =====
       const categorySelector = document.getElementById('category-selector');
       if (categorySelector) {
         // Function to adjust width based on selected option
@@ -111,22 +101,16 @@
           const selectedOption = categorySelector.options[categorySelector.selectedIndex];
           const textLength = selectedOption.textContent.length;
           
-          // Calculate width based on text length (approximate)
-          // Min width of 80px, with adjusted padding for dropdown arrow
           const width = Math.max(80, textLength * 10 - 20);
           
-          // Apply width with limit
           categorySelector.style.width = Math.min(width, 200) + 'px';
         }
         
-        // Run on page load
         adjustSelectWidth();
         
-        // Run when selection changes
         categorySelector.addEventListener('change', adjustSelectWidth);
       }
 
-      // ===== Viewport Warning =====
       const viewportWarning = document.getElementById('viewport-warning');
       const proceedButton = document.getElementById('proceed-anyway');
       const pageContent = document.body;
@@ -144,25 +128,20 @@
         }
       }
       
-      // Check on page load
       checkViewport();
       
-      // Check on window resize
       window.addEventListener('resize', checkViewport);
       
-      // Handle "Proceed Anyway" button click
       if (proceedButton) {
         proceedButton.addEventListener('click', function() {
           viewportWarning.classList.remove('active');
           pageContent.classList.remove('blurred');
           document.documentElement.style.overflow = '';
           
-          // Store user preference in session storage
           sessionStorage.setItem('proceedAnyway', 'true');
         });
       }
       
-      // Check if user has already chosen to proceed
       if (sessionStorage.getItem('proceedAnyway') === 'true') {
         viewportWarning.classList.remove('active');
         pageContent.classList.remove('blurred');
