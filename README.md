@@ -2,6 +2,9 @@
 
 ThriftAtSFSU is a web-based platform for SFSU students to buy and sell secondhand items. Designed with accessibility and campus life in mind, it provides a streamlined experience for posting listings, messaging users, and managing personal wishlists.
 
+**DEMO Video**
+https://github.com/user-attachments/assets/2d2d4285-c5d9-4e3a-bf90-d2602b5c8f32
+
 🔧 **Tech Stack**
 
 	Frontend: HTML5, CSS3, Flask (Jinja templates)
@@ -41,8 +44,6 @@ Frontend Lead Developer
 
 	  Collected and implemented UI feedback for usability
 
-**DEMO Video**
-https://github.com/user-attachments/assets/2d2d4285-c5d9-4e3a-bf90-d2602b5c8f32
 
 
 | Student Name | School Email | GitHub Username | Roles | 
