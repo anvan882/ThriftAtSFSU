@@ -3,42 +3,46 @@
 ThriftAtSFSU is a web-based platform for SFSU students to buy and sell secondhand items. Designed with accessibility and campus life in mind, it provides a streamlined experience for posting listings, messaging users, and managing personal wishlists.
 
 🔧 **Tech Stack**
-Frontend: HTML5, CSS3, Flask (Jinja templates)
 
-  Backend: Python (Flask), SQLite
+	Frontend: HTML5, CSS3, Flask (Jinja templates)
 
-  Hosting: AWS EC2
+  	Backend: Python (Flask), SQLite
 
-  Version Control: Git + GitHub
+  	Hosting: AWS EC2
+
+  	Version Control: Git + GitHub
 
 🎯 **Key Features**
-Student Listings: Post, edit, and view resale items
 
-  Messaging System: Direct message between buyers and sellers
+	Student Listings: Post, edit, and view resale items
 
-  Wishlist: Save items for later
+	Messaging System: Direct message between buyers and sellers
 
-  Availability Scheduling: Users show availability for meet-ups
+ 	 Wishlist: Save items for later
 
-  Campus Map Integration: Location-based context for listings
+  	Availability Scheduling: Users show availability for meet-ups
 
-  No payment integration – in-person exchanges only
+ 	 Campus Map Integration: Location-based context for listings
+
+ 	 No payment integration – in-person exchanges only
 
 👨‍💻 **My Role** (Annison Van)
 Frontend Lead Developer
 
-  Converted Figma wireframes into responsive HTML/CSS + Flask templates
+ 	 Converted Figma wireframes into responsive HTML/CSS + Flask templates
 
-  Built messaging and wishlist components
+ 	 Built messaging and wishlist components
 
-  Integrated Flask backend routes into front-end views
+	  Integrated Flask backend routes into front-end views
 
-  Assisted team with Git workflows and merge conflict resolution
+	  Assisted team with Git workflows and merge conflict resolution
 
-  Participated in all team meetings, stand-ups, and debugging sessions
+	  Participated in all team meetings, stand-ups, and debugging sessions
 
-  Collected and implemented UI feedback for usability
+	  Collected and implemented UI feedback for usability
 
+**DEMO Video**
+https://github.com/user-attachments/assets/2d2d4285-c5d9-4e3a-bf90-d2602b5c8f32
 
 
 | Student Name | School Email | GitHub Username | Roles | 
@@ -48,5 +52,9 @@ Frontend Lead Developer
 |  Hilary Lui       |         hlui@sfsu.edu      |          Hluii       |    Team Lead/Flex  |
 | Joseph Alhambra      |    jalhambra@sfsu.edu           |        JosephCVA         |    Backend Dev/Flex  |
 | Annison Van      |         avan@sfsu.edu      |          anvan882       |  Frontend Lead  |
+
+
+
+
 
 
