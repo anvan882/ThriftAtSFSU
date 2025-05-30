@@ -4,7 +4,7 @@
 
 
 | Student Name | School Email | GitHub Username | Roles | 
-|    :---:     |     :---:     |     :---:       |
+|    :---:     |     :---:     |     :---:       |  :---: |
 | Sid Padmanabhuni      |      spadmanabhuni@sfsu.edu        |         SidPad03        |    Github/Backend Lead |
 | Joseph Shur      |        jshur1@sfsu.edu       |           joseph-shur       |    Frontend Dev |
 |  Hilary Lui       |         hlui@sfsu.edu      |          Hluii       |    Team Lead/Flex  |
