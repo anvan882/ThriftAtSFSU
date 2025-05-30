@@ -1,42 +1,44 @@
 🛍️ ThriftAtSFSU
+
 ThriftAtSFSU is a web-based platform for SFSU students to buy and sell secondhand items. Designed with accessibility and campus life in mind, it provides a streamlined experience for posting listings, messaging users, and managing personal wishlists.
 
-🔧 Tech Stack
+🔧 **Tech Stack**
 Frontend: HTML5, CSS3, Flask (Jinja templates)
 
-Backend: Python (Flask), SQLite
+  Backend: Python (Flask), SQLite
 
-Hosting: AWS EC2
+  Hosting: AWS EC2
 
-Version Control: Git + GitHub
+  Version Control: Git + GitHub
 
-🎯 Key Features
+🎯 **Key Features**
 Student Listings: Post, edit, and view resale items
 
-Messaging System: Direct message between buyers and sellers
+  Messaging System: Direct message between buyers and sellers
 
-Wishlist: Save items for later
+  Wishlist: Save items for later
 
-Availability Scheduling: Users show availability for meet-ups
+  Availability Scheduling: Users show availability for meet-ups
 
-Campus Map Integration: Location-based context for listings
+  Campus Map Integration: Location-based context for listings
 
-No payment integration – in-person exchanges only
+  No payment integration – in-person exchanges only
 
-👨‍💻 My Role (Annison Van)
+👨‍💻 **My Role** (Annison Van)
 Frontend Lead Developer
 
-Converted Figma wireframes into responsive HTML/CSS + Flask templates
+  Converted Figma wireframes into responsive HTML/CSS + Flask templates
 
-Built messaging and wishlist components
+  Built messaging and wishlist components
 
-Integrated Flask backend routes into front-end views
+  Integrated Flask backend routes into front-end views
 
-Assisted team with Git workflows and merge conflict resolution
+  Assisted team with Git workflows and merge conflict resolution
 
-Participated in all team meetings, stand-ups, and debugging sessions
+  Participated in all team meetings, stand-ups, and debugging sessions
 
-Collected and implemented UI feedback for usability
+  Collected and implemented UI feedback for usability
+
 
 
 | Student Name | School Email | GitHub Username | Roles | 
